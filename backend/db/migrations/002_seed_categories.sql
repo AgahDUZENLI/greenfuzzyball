@@ -7,4 +7,4 @@ INSERT INTO drill_categories (drill_category_id, coach_id, name) VALUES
     (gen_random_uuid(), NULL, 'Footwork'),
     (gen_random_uuid(), NULL, 'Mental Training'),
     (gen_random_uuid(), NULL, 'Fitness'),
-    (gen_random_uuid(), NULL, 'Match Play');
+    (gen_random_uuid(), NULL, 'Match Play');a
