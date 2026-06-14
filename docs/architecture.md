@@ -1,6 +1,6 @@
 # 3. Architecture Diagram
 
-![[CoachPilot-Architecture.png]]
+![Architecture](docs/images/CoachPilot-Architecture.png)
 
 ### Overview
 CoachPilot is a self-hosted full-stack web application running on a

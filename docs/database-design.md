@@ -2,7 +2,7 @@
 
 ### ER Diagram
 
-![[CoachPilot-ERD.png]]
+![Database](docs/images/database-design.md)
 
 ### Overview
 The database is built around a central `users` table that serves as the
