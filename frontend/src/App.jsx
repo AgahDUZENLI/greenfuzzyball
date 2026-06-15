@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard'
 import Students from './pages/Students'
 import Drills from './pages/Drills'
 import Sessions from './pages/Sessions'
+import Register from './pages/Register'
+
 
 // Protected route — redirects to login if not authenticated
 function ProtectedRoute({ children }) {
@@ -23,6 +25,10 @@ function AppRoutes() {
       <Route
         path="/login"
         element={user ? <Navigate to="/" /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={user ? <Navigate to="/" /> : <Register />}
       />
       <Route
         path="/"

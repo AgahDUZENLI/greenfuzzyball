@@ -8,7 +8,8 @@ function Input({
   placeholder,
   icon,
   rightIcon,
-  onRightIconClick,
+  onRightIconDown,
+  onRightIconUp,
   required = false,
   disabled = false
 }) {
@@ -57,12 +58,18 @@ function Input({
       />
       {rightIcon && (
         <span
-          onClick={onRightIconClick}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            onRightIconDown && onRightIconDown()
+          }}
+          onMouseUp={() => onRightIconUp && onRightIconUp()}
+          onMouseLeave={() => onRightIconUp && onRightIconUp()}
           style={{
             cursor: 'pointer',
             color: colors.gray[400],
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            userSelect: 'none'
           }}
         >
           {rightIcon}
