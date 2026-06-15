@@ -1,125 +1,190 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import Layout from '../components/Layout'
+import AuthCard from '../components/AuthCard'
+import Input from '../components/Input'
+import Button from '../components/Button'
+import Typography from '../components/Typography'
+import TabToggle from '../components/TabToggle'
+import Divider from '../components/Divider'
+import FeatureList from '../components/FeatureList'
+import TextLink from '../components/TextLink'
+import { Mail, Lock, Eye, EyeOff, Dumbbell, User } from 'lucide-react'
+import { colors, spacing, radius } from '../styles/tokens'
+
+const PANELS = {
+  coach: {
+    heading: 'Everything you need to coach.',
+    features: [
+      "Track every student's progress over time",
+      'Build sessions from your drill library',
+      'Rate performance and spot trends fast'
+    ]
+  },
+  student: {
+    heading: 'Train with purpose.',
+    features: [
+      'See your sessions and drills at a glance',
+      'Watch your ratings climb over time',
+      'Stay connected with your coach'
+    ]
+  }
+}
 
 function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [tab, setTab] = useState('coach')
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
     try {
       await login(email, password)
       navigate('/')
-    } catch (err) {
+    } catch {
       setError('Invalid email or password')
     } finally {
       setLoading(false)
     }
   }
 
-  return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      backgroundColor: '#f5f5f5'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '12px',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h1 style={{ marginBottom: '8px', fontSize: '28px' }}>CoachPilot</h1>
-        <p style={{ color: '#666', marginBottom: '32px' }}>Sign in to your account</p>
+  const panel = PANELS[tab]
 
+  return (
+    <Layout variant="auth">
+      <AuthCard leftContent={
+        <FeatureList heading={panel.heading} features={panel.features} />
+      }>
+
+        {/* Tab Toggle */}
+        <div style={{ marginBottom: spacing[6] }}>
+          <TabToggle
+            options={[
+              { value: 'coach', label: 'Coach', icon: <Dumbbell size={14} /> },
+              { value: 'student', label: 'Student', icon: <User size={14} /> }
+            ]}
+            active={tab}
+            onChange={setTab}
+          />
+        </div>
+
+        {/* Heading */}
+        <Typography variant="h2" mb={spacing[1]}>
+          Welcome back, {tab === 'coach' ? 'Coach' : 'Student'}
+        </Typography>
+        <Typography variant="bodySmall" mb={spacing[6]}>
+          {tab === 'coach' ? 'Log in to your dashboard.' : 'Log in to track your training.'}
+        </Typography>
+
+        {/* Error */}
         {error && (
           <div style={{
-            backgroundColor: '#fee2e2',
-            color: '#dc2626',
-            padding: '12px',
-            borderRadius: '8px',
-            marginBottom: '16px'
+            backgroundColor: colors.errorLight,
+            padding: spacing[3],
+            borderRadius: radius.md,
+            marginBottom: spacing[4]
           }}>
-            {error}
+            <Typography variant="bodySmall" color={colors.error}>{error}</Typography>
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
-              Email
-            </label>
-            <input
+        {/* Student notice */}
+        {tab === 'student' && (
+          <div style={{
+            backgroundColor: colors.primaryLight,
+            padding: spacing[3],
+            borderRadius: radius.md,
+            marginBottom: spacing[4],
+            textAlign: 'center'
+          }}>
+            <Typography variant="bodySmall" color={colors.primary}>
+              Student login coming soon!
+            </Typography>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleLogin}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3], marginBottom: spacing[4] }}>
+            <Input
               type="email"
+              icon={<Mail size={16} />}
+              placeholder={tab === 'coach' ? 'coach@email.com' : 'student@email.com'}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@email.com"
+              onChange={e => setEmail(e.target.value)}
               required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid #ddd',
-                fontSize: '16px',
-                boxSizing: 'border-box'
-              }}
+              disabled={tab === 'student'}
             />
-          </div>
-
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              icon={<Lock size={16} />}
               placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              rightIcon={showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              onRightIconClick={() => setShowPassword(!showPassword)}
               required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid #ddd',
-                fontSize: '16px',
-                boxSizing: 'border-box'
-              }}
+              disabled={tab === 'student'}
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: loading ? '#93c5fd' : '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
+          {/* Remember + Forgot */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', marginBottom: spacing[5]
+          }}>
+            <label style={{
+              display: 'flex', alignItems: 'center',
+              gap: spacing[2], cursor: 'pointer'
+            }}>
+              <input type="checkbox" style={{ accentColor: colors.primary }} />
+              <Typography variant="bodySmall" color={colors.gray[700]}>
+                Remember me
+              </Typography>
+            </label>
+            <TextLink onClick={() => alert('Coming soon!')}>
+              Forgot password?
+            </TextLink>
+          </div>
+
+          <Button type="submit" fullWidth size="lg" disabled={loading || tab === 'student'}>
+            {loading ? 'Logging in...' : 'Log in'}
+          </Button>
         </form>
-      </div>
-    </div>
+
+        {/* Divider */}
+        <Divider label="or continue with" />
+
+        {/* Apple + Google */}
+        <div style={{ display: 'flex', gap: spacing[3], marginBottom: spacing[6] }}>
+          <Button variant="outline" fullWidth onClick={() => alert('Coming soon!')}>
+            🍎 Apple
+          </Button>
+          <Button variant="outline" fullWidth onClick={() => alert('Coming soon!')}>
+            🔵 Google
+          </Button>
+        </div>
+
+        {/* Create account */}
+        <div style={{ textAlign: 'center' }}>
+          <Typography variant="bodySmall" style={{ display: 'inline' }}>
+            New here?{' '}
+          </Typography>
+          <TextLink onClick={() => alert('Coming soon!')}>
+            {tab === 'coach' ? 'Create an account' : 'Join with a coach code'}
+          </TextLink>
+        </div>
+
+      </AuthCard>
+    </Layout>
   )
 }
 
