@@ -16,15 +16,15 @@ function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [resetLink, setResetLink] = useState('')
+  const [sent, setSent] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const res = await forgotPassword(email)
-      setResetLink(res.data.reset_link)
+      await forgotPassword(email)
+      setSent(true)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -66,28 +66,23 @@ function ForgotPassword() {
           </div>
         )}
 
-        {/* Success — show reset link */}
-        {resetLink ? (
+        {/* Success */}
+        {sent ? (
           <div style={{
             backgroundColor: colors.primaryLight,
-            padding: spacing[4],
+            padding: spacing[5],
             borderRadius: radius.md,
-            marginBottom: spacing[4]
+            marginBottom: spacing[4],
+            textAlign: 'center'
           }}>
-            <Typography variant="bodySmall" color={colors.primary} mb={spacing[3]}>
-              Reset link generated! Click below to reset your password.
+            <div style={{ fontSize: '40px', marginBottom: spacing[3] }}></div>
+            <Typography variant="h4" mb={spacing[2]}>
+              Check your inbox
             </Typography>
-            <a
-              href={resetLink}
-              style={{
-                color: colors.primary,
-                fontWeight: '600',
-                fontSize: '13px',
-                wordBreak: 'break-all'
-              }}
-            >
-              {resetLink}
-            </a>
+            <Typography variant="bodySmall" color={colors.gray[500]}>
+              We sent a password reset link to <strong>{email}</strong>.
+              Check your spam folder if you don't see it.
+            </Typography>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -104,19 +99,18 @@ function ForgotPassword() {
                 required
               />
             </div>
-
             <Button type="submit" fullWidth size="lg" disabled={loading}>
               {loading ? 'Sending...' : 'Send reset link'}
             </Button>
           </form>
         )}
 
-        {/* Back to login */}
         <div style={{ textAlign: 'center', marginTop: spacing[5] }}>
           <TextLink onClick={() => navigate('/login')}>
             ← Back to log in
           </TextLink>
         </div>
+
       </AuthCard>
     </Layout>
   )
