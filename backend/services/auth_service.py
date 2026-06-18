@@ -125,13 +125,16 @@ def store_reset_token(conn, email: str, token: str, expires_at: datetime):
         conn.commit()
 
 def verify_reset_token(conn, token: str):
+    print(f"Verifying token: '{token}'")
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
             SELECT * FROM users
             WHERE password_reset_token = %s
             AND password_reset_expires_at > NOW()
         """, (token,))
-        return cursor.fetchone()
+        result = cursor.fetchone()
+        print(f"Result: {result}")
+        return result
 
 def reset_user_password(conn, user_id, new_password: str):
     hashed = hash_password(new_password)

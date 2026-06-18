@@ -4,14 +4,16 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ─── USERS ───────────────────────────────────────────────────────────────────
 
 CREATE TABLE users (
-    user_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name            VARCHAR NOT NULL,
-    email           VARCHAR UNIQUE,
-    phone           VARCHAR,
-    hashed_password VARCHAR,
-    role            VARCHAR NOT NULL CHECK (role IN ('coach', 'student')),
-    location        VARCHAR,
-    created_at      TIMESTAMP DEFAULT NOW()
+    user_id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name                      VARCHAR NOT NULL,
+    email                     VARCHAR UNIQUE,
+    phone                     VARCHAR,
+    hashed_password           VARCHAR,
+    role                      VARCHAR NOT NULL CHECK (role IN ('coach', 'student')),
+    location                  VARCHAR,
+    password_reset_token      VARCHAR,
+    password_reset_expires_at TIMESTAMP,
+    created_at                TIMESTAMP DEFAULT NOW()
 );
 
 -- ─── COACHES ─────────────────────────────────────────────────────────────────
@@ -109,14 +111,11 @@ CREATE TABLE session_drill_ratings (
 
 -- ─── INDEXES ─────────────────────────────────────────────────────────────────
 
--- Speed up lookups by coach
-CREATE INDEX idx_students_user_id ON students(user_id);
-CREATE INDEX idx_coaches_user_id ON coaches(user_id);
-CREATE INDEX idx_drills_coach_id ON drills(coach_id);
-CREATE INDEX idx_sessions_coach_id ON sessions(coach_id);
-CREATE INDEX idx_sessions_date ON sessions(date);
-
--- Speed up progress tracking queries
+CREATE INDEX idx_students_user_id   ON students(user_id);
+CREATE INDEX idx_coaches_user_id    ON coaches(user_id);
+CREATE INDEX idx_drills_coach_id    ON drills(coach_id);
+CREATE INDEX idx_sessions_coach_id  ON sessions(coach_id);
+CREATE INDEX idx_sessions_date      ON sessions(date);
 CREATE INDEX idx_ratings_student_id ON session_drill_ratings(student_id);
-CREATE INDEX idx_ratings_drill_id ON session_drill_ratings(drill_id);
+CREATE INDEX idx_ratings_drill_id   ON session_drill_ratings(drill_id);
 CREATE INDEX idx_ratings_session_id ON session_drill_ratings(session_id);
