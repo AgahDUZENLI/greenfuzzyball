@@ -53,6 +53,12 @@ export const deleteSession = (id) => api.delete(`/sessions/${id}`)
 export const addRating = (sessionId, data) => api.post(`/sessions/${sessionId}/ratings`, data)
 export const getStudentProgress = (studentId) => api.get(`/sessions/progress/${studentId}`)
 
+// Password reset
+export const forgotPassword = (email) =>
+  api.post('/auth/forgot-password', { email })
+export const resetPassword = (token, newPassword) =>
+  api.post('/auth/reset-password', { token, new_password: newPassword })
+
 // Coach
 export const getProfile = () => api.get('/coaches/profile')
 export const updateProfile = (data) => api.put('/coaches/profile', data)

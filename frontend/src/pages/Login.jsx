@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import AuthCard from '../components/AuthCard'
 import Input from '../components/Input'
@@ -35,19 +35,23 @@ const PANELS = {
 function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()        // ← moved inside
+  const resetSuccess = searchParams.get('reset') === 'success'  // ← moved inside
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState('coach')
+  const [rememberMe, setRememberMe] = useState(true)
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
+      await login(email, password, rememberMe)
       navigate('/')
     } catch {
       setError('Invalid email or password')
@@ -83,6 +87,20 @@ function Login() {
         <Typography variant="bodySmall" mb={spacing[6]}>
           {tab === 'coach' ? 'Log in to your dashboard.' : 'Log in to track your training.'}
         </Typography>
+
+        {/* Reset success */}
+        {resetSuccess && (
+          <div style={{
+            backgroundColor: colors.primaryLight,
+            padding: spacing[3],
+            borderRadius: radius.md,
+            marginBottom: spacing[4]
+          }}>
+            <Typography variant="bodySmall" color={colors.primary}>
+              Password updated successfully! Log in with your new password.
+            </Typography>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -146,12 +164,17 @@ function Login() {
               display: 'flex', alignItems: 'center',
               gap: spacing[2], cursor: 'pointer'
             }}>
-              <input type="checkbox" style={{ accentColor: colors.primary }} />
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                style={{ accentColor: colors.primary }}
+              />
               <Typography variant="bodySmall" color={colors.gray[700]}>
                 Remember me
               </Typography>
             </label>
-            <TextLink onClick={() => alert('Coming soon!')}>
+            <TextLink onClick={() => navigate('/forgot-password')}>
               Forgot password?
             </TextLink>
           </div>

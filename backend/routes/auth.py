@@ -6,9 +6,13 @@ from models.schemas import (
     RegisterRequest,
     LoginRequest,
     TokenResponse,
-    UserResponse
+    UserResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest
 )
 from services.auth_service import (
+    get_user_by_email,
     register_coach,
     login_coach,
     create_access_token,
@@ -45,6 +49,7 @@ def register(data: RegisterRequest, conn=Depends(get_db)):
             detail="Something went wrong"
         )
     
+
 # ─── LOGIN ─────────────────────────────────────────────────────────────────
 @router.post("/login", response_model=TokenResponse)
 def login(
@@ -96,6 +101,43 @@ def refresh_token(refresh_token: str, conn=Depends(get_db)):
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
+
+
+# ─── FORGOT PASSWORD ────────────────────────────────────────────────────────────────
+
+from services.auth_service import (
+    register_coach,
+    login_coach,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_user_by_id,
+    get_user_by_email,
+    generate_password_reset_token,
+    store_reset_token,
+    verify_reset_token,
+    reset_user_password,
+    send_reset_email
+)
+
+@router.post("/forgot-password")
+def forgot_password(data: ForgotPasswordRequest, conn=Depends(get_db)):
+    user = get_user_by_email(conn, data.email)
+
+    if not user:
+        return {"message": "If that email exists you will receive a reset link"}
+
+    token, expires_at = generate_password_reset_token()
+    store_reset_token(conn, data.email, token, expires_at)
+
+    reset_link = f"http://localhost:5173/reset-password?token={token}"
+
+    try:
+        send_reset_email(data.email, reset_link)
+    except Exception as e:
+        print(f"EMAIL ERROR: {e}")
+
+    return {"message": "If that email exists you will receive a reset link"}
 
 # ─── ME ──────────────────────────────────────────────────────────────────────
 

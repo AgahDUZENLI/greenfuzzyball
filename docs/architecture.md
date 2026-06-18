@@ -26,6 +26,31 @@ Compose, making the setup fully reproducible and portable.
 6. FastAPI queries PostgreSQL and returns the response
 7. React renders the data
 
+
+## Authentication
+
+### JWT Token Strategy
+
+CoachPilot uses JWT (JSON Web Token) for authentication with two token types:
+
+| Token | Expiry | Purpose |
+|---|---|---|
+| Access token | 30 minutes | Sent with every API request |
+| Refresh token | 7 days | Used to get a new access token |
+
+### Remember Me
+
+Token storage is controlled by the "Remember me" checkbox at login:
+
+| | Remember Me ON | Remember Me OFF |
+|---|---|---|
+| Storage | localStorage | sessionStorage |
+| Survives tab close | ✅ | ❌ |
+| Survives browser close | ✅ | ❌ |
+| Cleared on logout | manually | automatically |
+
+### Security layers
+
 ### Docker Compose services
 ```yaml
 services:

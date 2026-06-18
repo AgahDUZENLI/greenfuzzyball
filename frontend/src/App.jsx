@@ -6,6 +6,8 @@ import Students from './pages/Students'
 import Drills from './pages/Drills'
 import Sessions from './pages/Sessions'
 import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 
 // Protected route — redirects to login if not authenticated
@@ -63,6 +65,8 @@ function AppRoutes() {
         }
       />
       <Route path="*" element={<Navigate to="/" />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   )
 }

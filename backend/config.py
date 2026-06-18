@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
 
+    #GMAIL
+    GMAIL_USER: str
+    GMAIL_APP_PASSWORD: str
+
     @property
     def DATABASE_URL(self) -> str:
         return (

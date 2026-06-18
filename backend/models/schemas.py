@@ -29,6 +29,17 @@ class UserResponse(BaseModel):
     role: str
     created_at: datetime
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    reset_link: str #dev-mode: returned directly for testing, in production this would be sent via email
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 
 # ─── COACHES ────────────────────────────────────
 
