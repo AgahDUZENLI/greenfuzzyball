@@ -155,14 +155,9 @@ def send_reset_email(to_email: str, reset_link: str):
     <html>
       <body style="font-family: -apple-system, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
         
-        <div style="margin-bottom: 32px; display: flex; align-items: center;">
-        <img 
-            src="https://raw.githubusercontent.com/AgahDUZENLI/coachpilot/main/docs/images/logo.png" 
-            width="40" 
-            height="40" 
-            style="border-radius: 10px;"
-        />
-        <strong style="font-size: 18px; margin-left: 8px;">CoachPilot</strong>
+        <div style="margin-bottom: 32px;">
+          <span style="font-size: 24px;">🎾</span>
+          <strong style="font-size: 18px; margin-left: 8px;">CoachPilot</strong>
         </div>
 
         <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">
