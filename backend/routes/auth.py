@@ -1,5 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from authlib.integrations.starlette_client import OAuth
+from starlette.requests import Request
+from starlette.responses import RedirectResponse
+from config import settings
+import psycopg2
+import psycopg2.extras
 
 from db.connection import get_db
 from models.schemas import (
@@ -26,6 +32,7 @@ from services.auth_service import (
 from middleware.auth_middleware import get_current_user
 
 router = APIRouter()
+
 
 
 # ─── REGISTER ────────────────────────────────────────────────────────────────
@@ -148,3 +155,57 @@ def reset_password(data: ResetPasswordRequest, conn=Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user=Depends(get_current_user)):
     return current_user
+
+
+# ─── GOOGLE OAUTH ──────────────────────────────────────────────────────────
+oauth = OAuth()
+oauth.register(
+    name="google",
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"}
+)
+
+@router.get("/google")
+async def google_login(request: Request):
+    reddirect_uri = "http://localhost:8000/auth/google/callback"
+    return await oauth.google.authorize_redirect(request, reddirect_uri)
+
+@router.get("/google/callback")
+async def google_callback(request: Request, conn=Depends(get_db)):
+    token = await oauth.google.authorize_access_token(request)
+    user_info = token.get("userinfo")
+
+    if not user_info:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to retrieve user info from Google"
+        )
+    email = user_info.get("email")
+    name = user_info.get("name")
+
+    #Check if already exists
+    user = get_user_by_email(conn, email)
+
+    if not user:
+        # Create new coach account
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                INSERT INTO users (name, email, role)
+                VALUES (%s, %s, 'coach')
+                RETURNING user_id, name, email, role, created_at
+            """, (name, email))
+            user = cursor.fetchone()
+            cursor.execute("""
+                INSERT INTO coaches (user_id) VALUES (%s)
+            """, (str(user["user_id"]),))
+            conn.commit()
+
+    # Generate JWT tokens
+    access_token = create_access_token({"sub": str(user["user_id"])})
+    refresh_token = create_refresh_token({"sub": str(user["user_id"])})
+
+    # Redirect to frontend with tokens
+    frontend_url = f"http://localhost:5173/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
+    return RedirectResponse(url=frontend_url)

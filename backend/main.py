@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from starlette.middleware.sessions import SessionMiddleware
+
 
 from config import settings
 from db.connection import init_db, close_db
@@ -41,6 +43,7 @@ app.include_router(coaches.router, prefix="/coaches", tags=["coaches"])
 app.include_router(students.router, prefix="/students", tags=["students"])
 app.include_router(drills.router, prefix="/drills", tags=["drills"])
 app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
 
 @app.get("/")

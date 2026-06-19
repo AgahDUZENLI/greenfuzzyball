@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     GMAIL_USER: str
     GMAIL_APP_PASSWORD: str
 
+    #Google OAuth
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+
     @property
     def DATABASE_URL(self) -> str:
         return (

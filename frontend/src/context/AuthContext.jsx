@@ -43,8 +43,15 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const loginWithTokens = async (accessToken, refreshToken) => {
+    localStorage.setItem('access_token', accessToken)
+    localStorage.setItem('refresh_token', refreshToken)
+    const me = await getMe()
+    setUser(me.data)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, loginWithTokens }}>
       {children}
     </AuthContext.Provider>
   )

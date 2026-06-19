@@ -189,11 +189,11 @@ function Login() {
 
         {/* Apple + Google */}
         <div style={{ display: 'flex', gap: spacing[3], marginBottom: spacing[6] }}>
-          <Button variant="outline" fullWidth onClick={() => alert('Coming soon!')}>
-            🍎 Apple
-          </Button>
-          <Button variant="outline" fullWidth onClick={() => alert('Coming soon!')}>
-            🔵 Google
+          <Button 
+            variant="outline" fullWidth 
+            onClick={() => window.location.href = 'http://localhost:8000/auth/google'}
+            >
+            Google
           </Button>
         </div>
 
