@@ -1,8 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from uuid import UUID
-from datetime import datetime, date
-
+from datetime import datetime, date, time
 
 # ─── AUTH ───────────────────────────────────────
 
@@ -126,6 +125,8 @@ class DrillResponse(BaseModel):
 
 class CreateSessionRequest(BaseModel):
     date: date
+    start_time: Optional[time] = None
+    duration_minutes: Optional[int] = None
     type: str
     notes: Optional[str] = None
     session_location: Optional[str] = None
@@ -135,11 +136,12 @@ class CreateSessionRequest(BaseModel):
 class SessionResponse(BaseModel):
     session_id: UUID
     date: date
+    start_time: Optional[time] = None
+    duration_minutes: Optional[int] = None
     type: str
     notes: Optional[str] = None
     session_location: Optional[str] = None
     created_at: datetime
-
 
 # ─── RATINGS ────────────────────────────────────
 

@@ -75,6 +75,8 @@ CREATE TABLE sessions (
     session_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     coach_id         UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
     date             DATE NOT NULL,
+    start_time       TIME,
+    duration_minutes INTEGER,
     type             VARCHAR CHECK (type IN ('private', 'group')),
     notes            TEXT,
     session_location VARCHAR,

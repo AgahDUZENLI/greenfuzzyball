@@ -26,12 +26,14 @@ def create_session(
 
             # Create session
             cursor.execute("""
-                INSERT INTO sessions (coach_id, date, type, notes, session_location)
-                VALUES (%s, %s, %s, %s, %s)
-                RETURNING session_id, date, type, notes, session_location, created_at
+                INSERT INTO sessions (coach_id, date, start_time, duration_minutes, type, notes, session_location)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING session_id, date, start_time, duration_minutes, type, notes, session_location, created_at
             """, (
                 str(coach["user_id"]),
                 data.date,
+                data.start_time,
+                data.duration_minutes,
                 data.type,
                 data.notes,
                 data.session_location
@@ -75,10 +77,10 @@ def get_sessions(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT session_id, date, type, notes, session_location, created_at
+            SELECT session_id, date, start_time, duration_minutes, type, notes, session_location, created_at
             FROM sessions
             WHERE coach_id = %s
-            ORDER BY date DESC
+            ORDER BY date DESC, start_time ASC
         """, (str(coach["user_id"]),))
         return cursor.fetchall()
 
@@ -93,9 +95,8 @@ def get_session(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
-        # Get session
         cursor.execute("""
-            SELECT session_id, date, type, notes, session_location, created_at
+            SELECT session_id, date, start_time, duration_minutes, type, notes, session_location, created_at
             FROM sessions
             WHERE session_id = %s AND coach_id = %s
         """, (session_id, str(coach["user_id"])))
@@ -107,7 +108,6 @@ def get_session(
                 detail="Session not found"
             )
 
-        # Get students in session
         cursor.execute("""
             SELECT u.user_id, u.name, s.level, s.age_group
             FROM users u
@@ -117,7 +117,6 @@ def get_session(
         """, (session_id,))
         students = cursor.fetchall()
 
-        # Get drills in session
         cursor.execute("""
             SELECT d.drill_id, d.name, d.description
             FROM drills d
@@ -126,7 +125,6 @@ def get_session(
         """, (session_id,))
         drills = cursor.fetchall()
 
-        # Get ratings
         cursor.execute("""
             SELECT sdr.student_id, sdr.drill_id, sdr.rating, sdr.notes,
                    u.name as student_name, d.name as drill_name

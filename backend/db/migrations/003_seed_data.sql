@@ -101,18 +101,17 @@ INSERT INTO drill_drill_categories (drill_id, drill_category_id)
 SELECT 'c0000000-0000-0000-0000-000000000010', drill_category_id FROM drill_categories WHERE name = 'Footwork' AND coach_id IS NULL;
 
 -- ─── SESSIONS ────────────────────────────────────────────────────────────────
-
-INSERT INTO sessions (session_id, coach_id, date, type, notes, session_location) VALUES
-('d0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '2026-06-01', 'private', 'Good session. Maria improving on net.',          'Court 1'),
-('d0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '2026-06-03', 'group',   'Group session adults. Focused on baseline.',      'Court 2'),
-('d0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', '2026-06-05', 'private', 'Tom first real session. Very enthusiastic.',      'Court 1'),
-('d0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', '2026-06-08', 'group',   'Kids session. Emma and Sam worked on footwork.',  'Court 3'),
-('d0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', '2026-06-10', 'private', 'Priya serve session. Big improvement.',           'Court 1'),
-('d0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', '2026-06-12', 'group',   'Advanced group. Maria and Priya match play.',     'Court 2'),
-('d0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', '2026-06-15', 'private', 'Leo backhand session. Slice looking better.',     'Court 1'),
-('d0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', '2026-06-17', 'group',   'Mixed group. Focused on volleys and net play.',   'Court 2'),
-('d0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', '2026-06-18', 'private', 'Jake veteran session. Fitness and consistency.',  'Court 3'),
-('d0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', '2026-06-19', 'group',   'Junior group session. Tournament prep.',          'Court 1');
+INSERT INTO sessions (session_id, coach_id, date, start_time, duration_minutes, type, notes, session_location) VALUES
+('d0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '2026-06-01', '10:00', 60,  'private', 'Good session. Maria improving on net.',         'Court 1'),
+('d0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '2026-06-03', '14:30', 90,  'group',   'Group session adults. Focused on baseline.',     'Court 2'),
+('d0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', '2026-06-05', '09:00', 60,  'private', 'Tom first real session. Very enthusiastic.',     'Court 1'),
+('d0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', '2026-06-08', '11:00', 90,  'group',   'Kids session. Emma and Sam worked on footwork.', 'Court 3'),
+('d0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', '2026-06-10', '15:00', 60,  'private', 'Priya serve session. Big improvement.',          'Court 1'),
+('d0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', '2026-06-12', '10:00', 120, 'group',   'Advanced group. Maria and Priya match play.',    'Court 2'),
+('d0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', '2026-06-15', '16:00', 60,  'private', 'Leo backhand session. Slice looking better.',    'Court 1'),
+('d0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', '2026-06-17', '09:30', 90,  'group',   'Mixed group. Focused on volleys and net play.',  'Court 2'),
+('d0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', '2026-06-18', '11:30', 60,  'private', 'Jake veteran session. Fitness and consistency.', 'Court 3'),
+('d0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', '2026-06-19', '14:00', 90,  'group',   'Junior group session. Tournament prep.',         'Court 1');
 
 -- ─── SESSION STUDENTS ────────────────────────────────────────────────────────
 
