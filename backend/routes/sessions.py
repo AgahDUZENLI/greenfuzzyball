@@ -77,10 +77,27 @@ def get_sessions(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT session_id, date, start_time, duration_minutes, type, notes, session_location, created_at
-            FROM sessions
-            WHERE coach_id = %s
-            ORDER BY date DESC, start_time ASC
+            SELECT 
+                s.session_id,
+                s.date,
+                s.start_time,
+                s.duration_minutes,
+                s.type,
+                s.notes,
+                s.session_location,
+                s.created_at,
+                COALESCE(
+                    array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
+                    ARRAY[]::text[]
+                ) as student_names,
+                COUNT(DISTINCT sdr.student_id) = 0 as unrated
+            FROM sessions s
+            LEFT JOIN session_students ss ON s.session_id = ss.session_id
+            LEFT JOIN users u ON ss.student_id = u.user_id
+            LEFT JOIN session_drill_ratings sdr ON s.session_id = sdr.session_id
+            WHERE s.coach_id = %s
+            GROUP BY s.session_id
+            ORDER BY s.date DESC, s.start_time ASC
         """, (str(coach["user_id"]),))
         return cursor.fetchall()
 

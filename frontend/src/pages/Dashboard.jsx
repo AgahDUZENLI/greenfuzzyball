@@ -6,12 +6,27 @@ import Card from '../components/Card'
 import StatCard from '../components/StatCard'
 import Button from '../components/Button'
 import Typography from '../components/Typography'
-import Badge from '../components/Badge'
 import Avatar from '../components/Avatar'
-import EmptyState from '../components/EmptyState'
+import Calendar from '../components/Calendar'
 import { getStudents, getSessions, getDrills } from '../services/api'
-import { colors, spacing } from '../styles/tokens'
-import { Users, Calendar, Dumbbell, Clock, ChevronRight, Plus } from 'lucide-react'
+import { colors, spacing, radius, shadows } from '../styles/tokens'
+import { Users, Calendar as CalendarIcon, Dumbbell, Clock, ChevronRight, Plus } from 'lucide-react'
+
+function formatTime(t) {
+  if (!t) return null
+  const [h, m] = String(t).split(':')
+  const hour = parseInt(h)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const display = hour % 12 || 12
+  return { hour: `${display}:${m}`, ampm }
+}
+
+function formatDuration(minutes) {
+  if (!minutes) return null
+  if (minutes < 60) return `${minutes}min`
+  if (minutes % 60 === 0) return `${minutes / 60}h`
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}min`
+}
 
 function Dashboard() {
   const { user } = useAuth()
@@ -22,33 +37,32 @@ function Dashboard() {
   const [drills, setDrills] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  const [selectedDate, setSelectedDate] = useState(todayStr)
+
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const [studentsRes, sessionsRes, drillsRes] = await Promise.all([
-        getStudents(),
-        getSessions(),
-        getDrills()
-      ])
-      console.log('Sessions:', sessionsRes.data)  // ← add this
-      console.log('Students:', studentsRes.data)  // ← add this
-      setStudents(studentsRes.data)
-      setSessions(sessionsRes.data)
-      setDrills(drillsRes.data)
-    } catch (err) {
-      console.error('Dashboard fetch error:', err)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [studentsRes, sessionsRes, drillsRes] = await Promise.all([
+          getStudents(),
+          getSessions(),
+          getDrills()
+        ])
+        setStudents(studentsRes.data)
+        setSessions(sessionsRes.data)
+        setDrills(drillsRes.data)
+      } catch (err) {
+        console.error('Dashboard fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
-  fetchData()
-}, [])
+    fetchData()
+  }, [])
 
-  // Sessions this month
   const thisMonth = new Date().getMonth()
   const thisYear = new Date().getFullYear()
   const sessionsThisMonth = sessions.filter(s => {
@@ -56,34 +70,44 @@ useEffect(() => {
     return d.getMonth() === thisMonth && d.getFullYear() === thisYear
   })
 
-  // Today's sessions
-  const todayStr = new Date().toISOString().split('T')[0]
-  const todaySessions = sessions.filter(s => s.date === todayStr)
+  const selectedSessions = sessions
+    .filter(s => s.date === selectedDate)
+    .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
 
-  // Recent sessions (last 5)
-  const recentSessions = [...sessions]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 5)
+  const selectedDateLabel = selectedDate === todayStr
+    ? "Today's Sessions"
+    : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric'
+      })
 
-  // Week ahead
-  const weekDays = []
-  for (let i = 0; i < 7; i++) {
-    const d = new Date()
-    d.setDate(d.getDate() + i)
-    const dateStr = d.toISOString().split('T')[0]
-    const daySessions = sessions.filter(s => s.date === dateStr)
-    weekDays.push({
-      label: i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-      count: daySessions.length,
-      date: dateStr
-    })
-  }
+  const unratedSessions = sessions.filter(s =>
+    s.unrated && new Date(s.date) < new Date()
+  ).slice(0, 5)
+
+  const recentStudents = (() => {
+    const seen = new Set()
+    const result = []
+    ;[...sessions]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .forEach(s => {
+        s.student_names?.forEach(name => {
+          if (!seen.has(name) && result.length < 5) {
+            seen.add(name)
+            result.push(name)
+          }
+        })
+      })
+    return result
+  })()
 
   if (loading) {
     return (
       <Layout>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-          <Typography variant="bodySmall">Loading...</Typography>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', height: '100vh'
+        }}>
+          <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
         </div>
       </Layout>
     )
@@ -91,173 +115,281 @@ useEffect(() => {
 
   return (
     <Layout>
-      <div style={{ padding: spacing[8] }}>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
 
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: spacing[8]
-        }}>
-          <div>
-            <Typography variant="h2" mb={spacing[1]}>
-              {greeting}, {user?.name?.split(' ')[0]}
-            </Typography>
-            <Typography variant="bodySmall">{today}</Typography>
-          </div>
-          <Button onClick={() => navigate('/sessions')}>
-            <Plus size={16} /> New Session
-          </Button>
-        </div>
+        {/* Middle column — main scrollable content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: spacing[8] }}>
 
-        {/* Stats */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: spacing[4],
-          marginBottom: spacing[8]
-        }}>
-          <StatCard
-            label="Total Students"
-            value={students.length}
-            icon={<Users size={20} color={colors.primary} />}
-          />
-          <StatCard
-            label="Sessions this month"
-            value={sessionsThisMonth.length}
-            icon={<Calendar size={20} color={colors.primary} />}
-          />
-          <StatCard
-            label="Drills in library"
-            value={drills.length}
-            icon={<Dumbbell size={20} color={colors.primary} />}
-          />
-          <StatCard
-            label="Total sessions"
-            value={sessions.length}
-            icon={<Clock size={20} color={colors.primary} />}
-          />
-        </div>
-
-        {/* Main content */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 320px',
-          gap: spacing[6]
-        }}>
-
-          {/* Recent Sessions */}
-          <div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: spacing[4]
-            }}>
-              <Typography variant="h4">Recent Sessions</Typography>
-              <button
-                onClick={() => navigate('/sessions')}
-                style={{
-                  background: 'none', border: 'none',
-                  color: colors.primary, fontSize: '14px',
-                  fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
-                }}
-              >
-                See all
-              </button>
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: spacing[8]
+          }}>
+            <div>
+              <Typography variant="h2" mb={spacing[1]}>
+                {greeting}, {user?.name?.split(' ')[0]} 👋
+              </Typography>
+              <Typography variant="bodySmall">
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long', month: 'long', day: 'numeric'
+                })}
+              </Typography>
             </div>
+            <Button onClick={() => navigate('/sessions')}>
+              <Plus size={16} /> New Session
+            </Button>
+          </div>
 
-            {recentSessions.length === 0 ? (
-              <EmptyState
-                icon={<Calendar size={40} color={colors.gray[300]} />}
-                message="No sessions yet"
-                action="Create your first session"
-                onAction={() => navigate('/sessions')}
-              />
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
-                {recentSessions.map((session, i) => (
-                  <Card
+          {/* Stats */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: spacing[4],
+            marginBottom: spacing[6]
+          }}>
+            <StatCard label="Total Students" value={students.length} icon={<Users size={20} color={colors.primary} />} />
+            <StatCard label="Sessions this month" value={sessionsThisMonth.length} icon={<CalendarIcon size={20} color={colors.primary} />} />
+            <StatCard label="Drills in library" value={drills.length} icon={<Dumbbell size={20} color={colors.primary} />} />
+            <StatCard label="Total sessions" value={sessions.length} icon={<Clock size={20} color={colors.primary} />} />
+          </div>
+
+          {/* Calendar — full width */}
+          <div style={{ marginBottom: spacing[6] }}>
+            <Calendar
+              sessions={sessions}
+              selectedDate={selectedDate}
+              onDayClick={setSelectedDate}
+            />
+          </div>
+
+          {/* Sessions for selected day */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: spacing[4]
+          }}>
+            <Typography variant="h3">{selectedDateLabel}</Typography>
+            <button
+              onClick={() => navigate('/sessions')}
+              style={{
+                background: 'none', border: 'none',
+                color: colors.primary, fontSize: '14px',
+                fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+              }}
+            >
+              See all
+            </button>
+          </div>
+
+          {selectedSessions.length === 0 ? (
+            <Card style={{ padding: spacing[6], textAlign: 'center' }}>
+              <Typography variant="bodySmall" color={colors.gray[400]}>
+                No sessions on this day
+              </Typography>
+            </Card>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
+              {selectedSessions.map((session, i) => {
+                const time = formatTime(session.start_time)
+                const isFirst = i === 0
+
+                return (
+                  <div
                     key={session.session_id}
                     onClick={() => navigate('/sessions')}
-                    style={{ padding: `${spacing[4]} ${spacing[5]}` }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: spacing[4],
+                      padding: `${spacing[4]} ${spacing[5]}`,
+                      borderRadius: radius.xl,
+                      backgroundColor: isFirst ? colors.black : 'white',
+                      border: isFirst ? 'none' : `1px solid ${colors.gray[200]}`,
+                      boxShadow: isFirst ? 'none' : shadows.sm,
+                      cursor: 'pointer'
+                    }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing[4] }}>
-                      {/* Date */}
-                      <div style={{ minWidth: '60px' }}>
-                        <Typography variant="h4" style={{ color: colors.primary }}>
-                          {new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </Typography>
+                    {/* Time */}
+                    {time && (
+                      <div style={{ minWidth: '52px', textAlign: 'center' }}>
+                        <div style={{
+                          fontSize: '18px', fontWeight: '700',
+                          color: isFirst ? 'white' : colors.black,
+                          lineHeight: 1
+                        }}>{time.hour}</div>
+                        <div style={{
+                          fontSize: '11px',
+                          color: colors.gray[400],
+                          textTransform: 'uppercase'
+                        }}>{time.ampm}</div>
                       </div>
+                    )}
 
-                      {/* Badge */}
-                      <Badge
-                        label={session.type === 'private' ? 'Private' : 'Group'}
-                        variant={session.type}
-                      />
+                    {/* Avatar */}
+                    <Avatar
+                      name={session.student_names?.[0] || (session.type === 'group' ? 'G' : 'P')}
+                      size="md"
+                    />
 
-                      {/* Notes */}
-                      <Typography variant="body" style={{ flex: 1, color: colors.gray[600] }}>
-                        {session.notes || session.session_location || '—'}
+                    {/* Info */}
+                    <div style={{ flex: 1 }}>
+                      <Typography
+                        variant="body"
+                        style={{ fontWeight: '600', color: isFirst ? 'white' : colors.black }}
+                      >
+                        {session.student_names?.length > 0
+                          ? session.student_names.slice(0, 2).join(', ') +
+                            (session.student_names.length > 2
+                              ? ` +${session.student_names.length - 2}`
+                              : '')
+                          : session.session_location || 'Session'
+                        }
                       </Typography>
-
-                      <ChevronRight size={16} color={colors.gray[400]} />
+                      <Typography
+                        variant="bodySmall"
+                        color={isFirst ? colors.gray[400] : colors.gray[500]}
+                      >
+                        {session.type === 'group' ? 'Group' : 'Private'}
+                        {session.duration_minutes ? ` · ${formatDuration(session.duration_minutes)}` : ''}
+                        {session.session_location ? ` · ${session.session_location}` : ''}
+                      </Typography>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Week Ahead */}
-          <div>
-            <Typography variant="h4" mb={spacing[4]}>Week Ahead</Typography>
-            <Card style={{ padding: 0 }}>
-              {weekDays.map((day, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: `${spacing[4]} ${spacing[5]}`,
-                    borderBottom: i < 6 ? `1px solid ${colors.gray[100]}` : 'none'
-                  }}
-                >
-                  <Typography
-                    variant="body"
-                    color={i === 0 ? colors.primary : colors.gray[700]}
-                    style={{ fontWeight: i === 0 ? '600' : '400' }}
-                  >
-                    {day.label}
-                  </Typography>
-                  {day.count > 0 ? (
-                    <Typography variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
-                      {day.count} {day.count === 1 ? 'session' : 'sessions'}
-                    </Typography>
-                  ) : (
-                    <Typography variant="caption">—</Typography>
-                  )}
-                </div>
-              ))}
-            </Card>
-
-            {/* Quick links */}
-            <Typography variant="h4" mb={spacing[4]} style={{ marginTop: spacing[6] }}>
-              Quick Actions
-            </Typography>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
-              <Button fullWidth variant="secondary" onClick={() => navigate('/students')}>
-                <Users size={16} /> View Students
-              </Button>
-              <Button fullWidth variant="secondary" onClick={() => navigate('/drills')}>
-                <Dumbbell size={16} /> Drill Library
-              </Button>
+                    {/* Action */}
+                    {isFirst
+                      ? <Button onClick={e => { e.stopPropagation(); navigate('/sessions') }}>Start</Button>
+                      : <ChevronRight size={16} color={colors.gray[400]} />
+                    }
+                  </div>
+                )
+              })}
             </div>
-          </div>
+          )}
 
         </div>
+
+        {/* Right column — persistent todo panel */}
+        <div style={{
+          width: '300px',
+          flexShrink: 0,
+          backgroundColor: 'white',
+          borderLeft: `1px solid ${colors.gray[100]}`,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing[6],
+          padding: spacing[6]
+        }}>
+
+          {/* Needs Rating */}
+          <Card style={{ padding: 0 }}>
+            <div style={{
+              padding: `${spacing[4]} ${spacing[4]} ${spacing[3]}`,
+              borderBottom: `1px solid ${colors.gray[100]}`
+            }}>
+              <Typography variant="h4">Needs Rating</Typography>
+            </div>
+            {unratedSessions.length === 0 ? (
+              <div style={{
+                padding: spacing[5],
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing[2]
+              }}>
+                <span style={{ fontSize: '28px' }}>✓</span>
+                <Typography variant="bodySmall" color={colors.gray[400]}>
+                  All caught up!
+                </Typography>
+              </div>
+            ) : (
+              unratedSessions.map((session, i) => (
+                <div
+                  key={session.session_id}
+                  onClick={() => navigate('/sessions')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing[3],
+                    padding: `${spacing[3]} ${spacing[4]}`,
+                    borderBottom: i < unratedSessions.length - 1
+                      ? `1px solid ${colors.gray[100]}`
+                      : 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{
+                    width: '8px', height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: colors.warning,
+                    flexShrink: 0
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <Typography variant="bodySmall" style={{ fontWeight: '600' }}>
+                      {session.student_names?.slice(0, 2).join(', ') || 'Session'}
+                      {session.student_names?.length > 2
+                        ? ` +${session.student_names.length - 2}`
+                        : ''}
+                    </Typography>
+                    <Typography variant="caption" color={colors.gray[400]}>
+                      {new Date(session.date + 'T00:00:00').toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric'
+                      })} · {session.type}
+                    </Typography>
+                  </div>
+                  <ChevronRight size={14} color={colors.gray[400]} />
+                </div>
+              ))
+            )}
+          </Card>
+
+          {/* Recent Students */}
+          <Card style={{ padding: 0 }}>
+            <div style={{
+              padding: `${spacing[4]} ${spacing[4]} ${spacing[3]}`,
+              borderBottom: `1px solid ${colors.gray[100]}`
+            }}>
+              <Typography variant="h4">Recent Students</Typography>
+            </div>
+            {recentStudents.length === 0 ? (
+              <div style={{ padding: spacing[5], textAlign: 'center' }}>
+                <Typography variant="bodySmall" color={colors.gray[400]}>
+                  No students yet
+                </Typography>
+              </div>
+            ) : (
+              recentStudents.map((name, i) => (
+                <div
+                  key={name}
+                  onClick={() => navigate('/students')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing[3],
+                    padding: `${spacing[3]} ${spacing[4]}`,
+                    borderBottom: i < recentStudents.length - 1
+                      ? `1px solid ${colors.gray[100]}`
+                      : 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Avatar name={name} size="sm" />
+                  <Typography variant="bodySmall" style={{ flex: 1, fontWeight: '500' }}>
+                    {name}
+                  </Typography>
+                  <ChevronRight size={14} color={colors.gray[400]} />
+                </div>
+              ))
+            )}
+          </Card>
+
+        </div>
+
       </div>
     </Layout>
   )

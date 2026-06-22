@@ -142,6 +142,8 @@ class SessionResponse(BaseModel):
     notes: Optional[str] = None
     session_location: Optional[str] = None
     created_at: datetime
+    student_names: list[str] = []
+    unrated: bool = False
 
 # ─── RATINGS ────────────────────────────────────
 
