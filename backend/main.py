@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from config import settings
 from db.connection import init_db, close_db
-from routes import auth, coaches, students, drills, sessions
+from routes import auth, coaches, students, drills, sessions, courts
 
 
 @asynccontextmanager
@@ -46,6 +46,7 @@ app.include_router(coaches.router, prefix="/coaches", tags=["coaches"])
 app.include_router(students.router, prefix="/students", tags=["students"])
 app.include_router(drills.router, prefix="/drills", tags=["drills"])
 app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
+app.include_router(courts.router, prefix="/courts", tags=["courts"])
 
 @app.get("/")
 def health_check():

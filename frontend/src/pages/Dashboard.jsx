@@ -93,7 +93,8 @@ function Dashboard() {
         s.student_names?.forEach(name => {
           if (!seen.has(name) && result.length < 5) {
             seen.add(name)
-            result.push(name)
+            const student = students.find(st => st.name === name)
+            result.push({ name, id: student?.user_id })
           }
         })
       })
@@ -271,7 +272,7 @@ function Dashboard() {
 
         </div>
 
-        {/* Right column — persistent todo panel */}
+        {/* Right column — todo panel */}
         <div style={{
           width: '300px',
           flexShrink: 0,
@@ -363,10 +364,10 @@ function Dashboard() {
                 </Typography>
               </div>
             ) : (
-              recentStudents.map((name, i) => (
+              recentStudents.map((student, i) => (
                 <div
-                  key={name}
-                  onClick={() => navigate('/students')}
+                  key={student.name}
+                  onClick={() => navigate(student.id ? `/students?studentId=${student.id}` : '/students')}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -378,9 +379,9 @@ function Dashboard() {
                     cursor: 'pointer'
                   }}
                 >
-                  <Avatar name={name} size="sm" />
+                  <Avatar name={student.name} size="sm" />
                   <Typography variant="bodySmall" style={{ flex: 1, fontWeight: '500' }}>
-                    {name}
+                    {student.name}
                   </Typography>
                   <ChevronRight size={14} color={colors.gray[400]} />
                 </div>

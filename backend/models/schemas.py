@@ -129,7 +129,7 @@ class CreateSessionRequest(BaseModel):
     duration_minutes: Optional[int] = None
     type: str
     notes: Optional[str] = None
-    session_location: Optional[str] = None
+    court_id: Optional[UUID] = None
     student_ids: list[UUID] = []
     drill_ids: list[UUID] = []
 
@@ -140,8 +140,10 @@ class SessionResponse(BaseModel):
     duration_minutes: Optional[int] = None
     type: str
     notes: Optional[str] = None
-    session_location: Optional[str] = None
     created_at: datetime
+    court_id: Optional[UUID] = None
+    court_name: Optional[str] = None
+    court_area: Optional[str] = None
     student_names: list[str] = []
     unrated: bool = False
 

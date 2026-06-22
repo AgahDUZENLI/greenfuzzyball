@@ -24,19 +24,18 @@ def create_session(
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
-            # Create session
             cursor.execute("""
-                INSERT INTO sessions (coach_id, date, start_time, duration_minutes, type, notes, session_location)
+                INSERT INTO sessions (coach_id, court_id, date, start_time, duration_minutes, type, notes)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING session_id, date, start_time, duration_minutes, type, notes, session_location, created_at
+                RETURNING session_id, court_id, date, start_time, duration_minutes, type, notes, created_at
             """, (
                 str(coach["user_id"]),
+                str(data.court_id) if data.court_id else None,
                 data.date,
                 data.start_time,
                 data.duration_minutes,
                 data.type,
-                data.notes,
-                data.session_location
+                data.notes
             ))
 
             session = cursor.fetchone()
@@ -57,7 +56,19 @@ def create_session(
                 """, (str(session_id), str(drill_id)))
 
             conn.commit()
-            return session
+
+            # Fetch with court name
+            cursor.execute("""
+                SELECT 
+                    s.session_id, s.date, s.start_time, s.duration_minutes,
+                    s.type, s.notes, s.created_at,
+                    c.court_id, c.name as court_name, c.area as court_area
+                FROM sessions s
+                LEFT JOIN courts c ON s.court_id = c.court_id
+                WHERE s.session_id = %s
+            """, (str(session_id),))
+
+            return cursor.fetchone()
 
     except Exception as e:
         conn.rollback()
@@ -84,19 +95,22 @@ def get_sessions(
                 s.duration_minutes,
                 s.type,
                 s.notes,
-                s.session_location,
                 s.created_at,
+                c.court_id,
+                c.name as court_name,
+                c.area as court_area,
                 COALESCE(
                     array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
                     ARRAY[]::text[]
                 ) as student_names,
                 COUNT(DISTINCT sdr.student_id) = 0 as unrated
             FROM sessions s
+            LEFT JOIN courts c ON s.court_id = c.court_id
             LEFT JOIN session_students ss ON s.session_id = ss.session_id
             LEFT JOIN users u ON ss.student_id = u.user_id
             LEFT JOIN session_drill_ratings sdr ON s.session_id = sdr.session_id
             WHERE s.coach_id = %s
-            GROUP BY s.session_id
+            GROUP BY s.session_id, c.court_id
             ORDER BY s.date DESC, s.start_time ASC
         """, (str(coach["user_id"]),))
         return cursor.fetchall()
@@ -113,9 +127,13 @@ def get_session(
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
         cursor.execute("""
-            SELECT session_id, date, start_time, duration_minutes, type, notes, session_location, created_at
-            FROM sessions
-            WHERE session_id = %s AND coach_id = %s
+            SELECT 
+                s.session_id, s.date, s.start_time, s.duration_minutes,
+                s.type, s.notes, s.created_at,
+                c.court_id, c.name as court_name, c.area as court_area
+            FROM sessions s
+            LEFT JOIN courts c ON s.court_id = c.court_id
+            WHERE s.session_id = %s AND s.coach_id = %s
         """, (session_id, str(coach["user_id"])))
 
         session = cursor.fetchone()
@@ -181,10 +199,7 @@ def delete_session(
                     detail="Session not found"
                 )
 
-            cursor.execute("""
-                DELETE FROM sessions WHERE session_id = %s
-            """, (session_id,))
-
+            cursor.execute("DELETE FROM sessions WHERE session_id = %s", (session_id,))
             conn.commit()
 
     except HTTPException:
@@ -210,7 +225,6 @@ def add_rating(
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
-            # Verify session belongs to coach
             cursor.execute("""
                 SELECT 1 FROM sessions
                 WHERE session_id = %s AND coach_id = %s
@@ -222,7 +236,6 @@ def add_rating(
                     detail="Session not found"
                 )
 
-            # Insert or update rating
             cursor.execute("""
                 INSERT INTO session_drill_ratings
                     (session_id, drill_id, student_id, rating, notes)
@@ -264,7 +277,6 @@ def get_student_progress(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
-        # Verify student belongs to coach
         cursor.execute("""
             SELECT 1 FROM coach_students
             WHERE coach_id = %s AND student_id = %s
@@ -276,7 +288,6 @@ def get_student_progress(
                 detail="Student not found"
             )
 
-        # Get all ratings over time per drill
         cursor.execute("""
             SELECT
                 d.name as drill_name,

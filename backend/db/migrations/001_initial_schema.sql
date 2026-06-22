@@ -19,8 +19,10 @@ CREATE TABLE users (
 -- ─── COACHES ─────────────────────────────────────────────────────────────────
 
 CREATE TABLE coaches (
-    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    notes   TEXT
+    user_id        UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    notes          TEXT,
+    time_slots     JSONB DEFAULT '["9:00", "10:00", "11:30", "14:00", "15:30", "16:30", "17:30", "18:00"]',
+    coaching_days  JSONB DEFAULT '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]'
 );
 
 -- ─── STUDENTS ────────────────────────────────────────────────────────────────
@@ -74,12 +76,12 @@ CREATE TABLE drill_drill_categories (
 CREATE TABLE sessions (
     session_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     coach_id         UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
+    court_id         UUID REFERENCES courts(court_id) ON DELETE SET NULL,
     date             DATE NOT NULL,
     start_time       TIME,
     duration_minutes INTEGER,
     type             VARCHAR CHECK (type IN ('private', 'group')),
     notes            TEXT,
-    session_location VARCHAR,
     created_at       TIMESTAMP DEFAULT NOW()
 );
 
@@ -109,6 +111,23 @@ CREATE TABLE session_drill_ratings (
     notes      TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY (session_id, drill_id, student_id)
+);
+
+-- ─── COURTS ──────────────────────────────────────────────────────────────────
+
+CREATE TABLE courts (
+    court_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name      VARCHAR NOT NULL,
+    city      VARCHAR NOT NULL,
+    area      VARCHAR
+);
+
+-- ─── COACH COURTS ────────────────────────────────────────────────────────────
+
+CREATE TABLE coach_courts (
+    coach_id  UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
+    court_id  UUID REFERENCES courts(court_id) ON DELETE CASCADE,
+    PRIMARY KEY (coach_id, court_id)
 );
 
 -- ─── INDEXES ─────────────────────────────────────────────────────────────────

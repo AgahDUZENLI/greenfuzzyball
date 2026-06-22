@@ -8,7 +8,7 @@ INSERT INTO users (user_id, name, email, hashed_password, role, phone, location)
     'a0000000-0000-0000-0000-000000000001',
     'Alex Rivera',
     'alex@coachpilot.com',
-    '$2b$12$tiSbLOMHp9B.JLZ2i228AejAk1FOxeW1.B70VpDsXlBN24oV2y.uK',
+    '$2b$12$cNVMsgPdvurpR9vtOqhA.uPSEsrYnDZWtHuvvaMEbRLQ1ra9kX5Ze',
     'coach',
     '+1 713 555 0101',
     'Houston, TX'
@@ -101,17 +101,18 @@ INSERT INTO drill_drill_categories (drill_id, drill_category_id)
 SELECT 'c0000000-0000-0000-0000-000000000010', drill_category_id FROM drill_categories WHERE name = 'Footwork' AND coach_id IS NULL;
 
 -- ─── SESSIONS ────────────────────────────────────────────────────────────────
-INSERT INTO sessions (session_id, coach_id, date, start_time, duration_minutes, type, notes, session_location) VALUES
-('d0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '2026-06-01', '10:00', 60,  'private', 'Good session. Maria improving on net.',         'Court 1'),
-('d0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '2026-06-03', '14:30', 90,  'group',   'Group session adults. Focused on baseline.',     'Court 2'),
-('d0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', '2026-06-05', '09:00', 60,  'private', 'Tom first real session. Very enthusiastic.',     'Court 1'),
-('d0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', '2026-06-08', '11:00', 90,  'group',   'Kids session. Emma and Sam worked on footwork.', 'Court 3'),
-('d0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', '2026-06-10', '15:00', 60,  'private', 'Priya serve session. Big improvement.',          'Court 1'),
-('d0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', '2026-06-12', '10:00', 120, 'group',   'Advanced group. Maria and Priya match play.',    'Court 2'),
-('d0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', '2026-06-15', '16:00', 60,  'private', 'Leo backhand session. Slice looking better.',    'Court 1'),
-('d0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', '2026-06-17', '09:30', 90,  'group',   'Mixed group. Focused on volleys and net play.',  'Court 2'),
-('d0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', '2026-06-18', '11:30', 60,  'private', 'Jake veteran session. Fitness and consistency.', 'Court 3'),
-('d0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', '2026-06-19', '14:00', 90,  'group',   'Junior group session. Tournament prep.',         'Court 1');
+
+INSERT INTO sessions (session_id, coach_id, court_id, date, start_time, duration_minutes, type, notes) VALUES
+('d0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001', '2026-06-01', '10:00', 60,  'private', 'Good session. Maria improving on net.'),
+('d0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000002', '2026-06-03', '14:30', 90,  'group',   'Group session adults. Focused on baseline.'),
+('d0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001', '2026-06-05', '09:00', 60,  'private', 'Tom first real session. Very enthusiastic.'),
+('d0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000004', '2026-06-08', '11:00', 90,  'group',   'Kids session. Emma and Sam worked on footwork.'),
+('d0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000003', '2026-06-10', '15:00', 60,  'private', 'Priya serve session. Big improvement.'),
+('d0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000002', '2026-06-12', '10:00', 120, 'group',   'Advanced group. Maria and Priya match play.'),
+('d0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001', '2026-06-15', '16:00', 60,  'private', 'Leo backhand session. Slice looking better.'),
+('d0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000005', '2026-06-17', '09:30', 90,  'group',   'Mixed group. Focused on volleys and net play.'),
+('d0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000004', '2026-06-18', '11:30', 60,  'private', 'Jake veteran session. Fitness and consistency.'),
+('d0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000003', '2026-06-19', '14:00', 90,  'group',   'Junior group session. Tournament prep.');
 
 -- ─── SESSION STUDENTS ────────────────────────────────────────────────────────
 
@@ -259,3 +260,26 @@ INSERT INTO session_drill_ratings (session_id, drill_id, student_id, rating, not
 ('d0000000-0000-0000-0000-000000000010', 'c0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000006', 6, 'Sam improving steadily'),
 ('d0000000-0000-0000-0000-000000000010', 'c0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000007', 9, 'Emma fastest footwork drill time yet'),
 ('d0000000-0000-0000-0000-000000000010', 'c0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000006', 7, 'Sam much better split step');
+
+-- ─── COURTS ──────────────────────────────────────────────────────────────────
+
+INSERT INTO courts (court_id, name, city, area) VALUES
+('e0000000-0000-0000-0000-000000000001', 'Memorial Park Tennis Center', 'Houston', 'Memorial'),
+('e0000000-0000-0000-0000-000000000002', 'Westside Tennis Club',        'Houston', 'Westside'),
+('e0000000-0000-0000-0000-000000000003', 'River Oaks Country Club',     'Houston', 'River Oaks'),
+('e0000000-0000-0000-0000-000000000004', 'Hermann Park Courts',         'Houston', 'Museum District'),
+('e0000000-0000-0000-0000-000000000005', 'Fonde Recreation Center',     'Houston', 'Midtown'),
+('e0000000-0000-0000-0000-000000000006', 'Houston Racquet Club',        'Houston', 'Greenway Plaza'),
+('e0000000-0000-0000-0000-000000000007', 'Westbury Tennis Club',        'Houston', 'Westbury'),
+('e0000000-0000-0000-0000-000000000008', 'T-Bar M Racquet Club',        'Houston', 'Memorial'),
+('e0000000-0000-0000-0000-000000000009', 'Gus Wortham Park Courts',     'Houston', 'East End'),
+('e0000000-0000-0000-0000-000000000010', 'Greenway Plaza Tennis',       'Houston', 'Greenway Plaza');
+
+-- ─── LINK ALEX TO COURTS ─────────────────────────────────────────────────────
+
+INSERT INTO coach_courts (coach_id, court_id) VALUES
+('a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001'),
+('a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000002'),
+('a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000003'),
+('a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000004'),
+('a0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000005');
