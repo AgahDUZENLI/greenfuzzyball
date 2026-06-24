@@ -210,7 +210,7 @@ function Students() {
                  </Button>
 
                 <Button onClick={() => setShowBookModal(true)}>
-                  <Plus size={14} /> Book Session
+                  <Plus size={14} /> New Session
                 </Button>
               </div>
             </div>
