@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 import psycopg2.extras
 
 from db.connection import get_db
@@ -41,14 +41,12 @@ def create_session(
             session = cursor.fetchone()
             session_id = session["session_id"]
 
-            # Link students
             for student_id in data.student_ids:
                 cursor.execute("""
                     INSERT INTO session_students (session_id, student_id)
                     VALUES (%s, %s)
                 """, (str(session_id), str(student_id)))
 
-            # Link drills
             for drill_id in data.drill_ids:
                 cursor.execute("""
                     INSERT INTO session_drills (session_id, drill_id)
@@ -57,7 +55,6 @@ def create_session(
 
             conn.commit()
 
-            # Fetch with court name
             cursor.execute("""
                 SELECT 
                     s.session_id, s.date, s.start_time, s.duration_minutes,
@@ -79,40 +76,55 @@ def create_session(
         )
 
 
-# ─── GET ALL SESSIONS ─────────────────────────────────────────────────────────
+# ─── GET ALL SESSIONS (with optional date filter) ─────────────────────────────
 
 @router.get("/", response_model=list[SessionResponse])
 def get_sessions(
+    date: str = Query(None),
     conn=Depends(get_db),
     coach=Depends(get_current_coach)
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-        cursor.execute("""
-            SELECT 
-                s.session_id,
-                s.date,
-                s.start_time,
-                s.duration_minutes,
-                s.type,
-                s.notes,
-                s.created_at,
-                c.court_id,
-                c.name as court_name,
-                c.area as court_area,
-                COALESCE(
-                    array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
-                    ARRAY[]::text[]
-                ) as student_names,
-                COUNT(DISTINCT sdr.student_id) = 0 as unrated
-            FROM sessions s
-            LEFT JOIN courts c ON s.court_id = c.court_id
-            LEFT JOIN session_students ss ON s.session_id = ss.session_id
-            LEFT JOIN users u ON ss.student_id = u.user_id
-            LEFT JOIN session_drill_ratings sdr ON s.session_id = sdr.session_id
-            WHERE s.coach_id = %s
-            GROUP BY s.session_id, c.court_id
-            ORDER BY s.date DESC, s.start_time ASC
-        """, (str(coach["user_id"]),))
+        if date:
+            cursor.execute("""
+                SELECT 
+                    s.session_id, s.date, s.start_time, s.duration_minutes,
+                    s.type, s.notes, s.created_at,
+                    c.court_id, c.name as court_name, c.area as court_area,
+                    COALESCE(
+                        array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) as student_names,
+                    COUNT(DISTINCT sdr.student_id) = 0 as unrated
+                FROM sessions s
+                LEFT JOIN courts c ON s.court_id = c.court_id
+                LEFT JOIN session_students ss ON s.session_id = ss.session_id
+                LEFT JOIN users u ON ss.student_id = u.user_id
+                LEFT JOIN session_drill_ratings sdr ON s.session_id = sdr.session_id
+                WHERE s.coach_id = %s AND s.date = %s
+                GROUP BY s.session_id, c.court_id
+                ORDER BY s.start_time ASC
+            """, (str(coach["user_id"]), date))
+        else:
+            cursor.execute("""
+                SELECT 
+                    s.session_id, s.date, s.start_time, s.duration_minutes,
+                    s.type, s.notes, s.created_at,
+                    c.court_id, c.name as court_name, c.area as court_area,
+                    COALESCE(
+                        array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) as student_names,
+                    COUNT(DISTINCT sdr.student_id) = 0 as unrated
+                FROM sessions s
+                LEFT JOIN courts c ON s.court_id = c.court_id
+                LEFT JOIN session_students ss ON s.session_id = ss.session_id
+                LEFT JOIN users u ON ss.student_id = u.user_id
+                LEFT JOIN session_drill_ratings sdr ON s.session_id = sdr.session_id
+                WHERE s.coach_id = %s
+                GROUP BY s.session_id, c.court_id
+                ORDER BY s.date DESC, s.start_time ASC
+            """, (str(coach["user_id"]),))
         return cursor.fetchall()
 
 

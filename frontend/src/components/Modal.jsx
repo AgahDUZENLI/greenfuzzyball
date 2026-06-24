@@ -1,61 +1,66 @@
 import { colors, radius, shadows, spacing } from '../styles/tokens'
 import Typography from './Typography'
+import { X } from 'lucide-react'
 
-function Modal({ title, children, onClose }) {
+function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
   return (
-    // Backdrop
     <div
       onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.4)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000
+        zIndex: 9999,
+        padding: spacing[4]
       }}
     >
-      {/* Modal box — stop click propagation */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          backgroundColor: colors.white,
+          backgroundColor: 'white',
           borderRadius: radius['2xl'],
-          boxShadow: shadows.lg,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
           width: '100%',
-          maxWidth: '560px',
+          maxWidth,
           maxHeight: '90vh',
-          overflow: 'auto',
-          padding: spacing[8]
+          overflowY: 'auto'
         }}
       >
         {/* Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: spacing[6]
+          alignItems: 'flex-start',
+          padding: `${spacing[6]} ${spacing[6]} ${spacing[4]}`,
+          borderBottom: `1px solid ${colors.gray[100]}`
         }}>
-          <Typography variant="h3">{title}</Typography>
+          <div>
+            <Typography variant="h3">{title}</Typography>
+            {subtitle && (
+              <Typography variant="bodySmall" color={colors.gray[400]}>{subtitle}</Typography>
+            )}
+          </div>
           <button
             onClick={onClose}
             style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '20px',
+              width: '32px', height: '32px',
+              border: 'none', borderRadius: radius.lg,
+              backgroundColor: colors.gray[100],
               cursor: 'pointer',
-              color: colors.gray[400],
-              padding: spacing[1],
-              lineHeight: 1
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
           >
-            ×
+            <X size={16} color={colors.gray[500]} />
           </button>
         </div>
 
         {/* Content */}
-        {children}
+        <div style={{ padding: `${spacing[5]} ${spacing[6]} ${spacing[6]}` }}>
+          {children}
+        </div>
       </div>
     </div>
   )

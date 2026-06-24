@@ -11,6 +11,7 @@ import Calendar from '../components/Calendar'
 import { getStudents, getSessions, getDrills } from '../services/api'
 import { colors, spacing, radius, shadows } from '../styles/tokens'
 import { Users, Calendar as CalendarIcon, Dumbbell, Clock, ChevronRight, Plus } from 'lucide-react'
+import BookSessionModal from '../components/BookSessionModal'
 
 function formatTime(t) {
   if (!t) return null
@@ -42,6 +43,10 @@ function Dashboard() {
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
+  const [showBookModal, setShowBookModal] = useState(false)
+  const [bookStudent, setBookStudent] = useState(null)
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,7 +143,7 @@ function Dashboard() {
                 })}
               </Typography>
             </div>
-            <Button onClick={() => navigate('/sessions')}>
+            <Button onClick={() => setShowBookModal(true)}>
               <Plus size={16} /> New Session
             </Button>
           </div>
@@ -392,6 +397,20 @@ function Dashboard() {
         </div>
 
       </div>
+
+      {showBookModal && (
+      <BookSessionModal
+        student={bookStudent}
+        students={students}
+        onClose={() => { setShowBookModal(false); setBookStudent(null) }}
+        onBooked={() => {
+          setShowBookModal(false)
+          setBookStudent(null)
+          getSessions().then(res => setSessions(res.data))
+        }}
+      />
+    )}
+
     </Layout>
   )
 }

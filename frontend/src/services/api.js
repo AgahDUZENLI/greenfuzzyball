@@ -29,6 +29,9 @@ export const login = (data) => {
 }
 export const getMe = () => api.get('/auth/me')
 
+//User
+export const getUserLocation = () => api.get('/user/location')
+
 // Students
 export const getStudents = () => api.get('/students/')
 export const getStudent = (id) => api.get(`/students/${id}`)
@@ -46,12 +49,14 @@ export const getCategories = () => api.get('/drills/categories')
 export const createCategory = (data) => api.post('/drills/categories', data)
 
 // Sessions
-export const getSessions = () => api.get('/sessions/')
+export const getSessions = (date) =>
+  api.get(date ? `/sessions/?date=${date}` : '/sessions/')
 export const getSession = (id) => api.get(`/sessions/${id}`)
 export const createSession = (data) => api.post('/sessions/', data)
 export const deleteSession = (id) => api.delete(`/sessions/${id}`)
 export const addRating = (sessionId, data) => api.post(`/sessions/${sessionId}/ratings`, data)
 export const getStudentProgress = (studentId) => api.get(`/sessions/progress/${studentId}`)
+export const getSessionByDate = (date) => api.get()
 
 //Courts
 export const getCourts = (city) => api.get(`/courts/${city ? `?city=${city}` : ''}`)
@@ -64,5 +69,5 @@ export const resetPassword = (token, newPassword) =>
   api.post('/auth/reset-password', { token, new_password: newPassword })
 
 // Coach
-export const getProfile = () => api.get('/coaches/profile')
-export const updateProfile = (data) => api.put('/coaches/profile', data)
+export const getCoachProfile = () => api.get('/coaches/profile')
+export const updateCoachProfile = (data) => api.put('/coaches/profile', data)

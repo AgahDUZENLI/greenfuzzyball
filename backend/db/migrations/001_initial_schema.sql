@@ -19,10 +19,12 @@ CREATE TABLE users (
 -- ─── COACHES ─────────────────────────────────────────────────────────────────
 
 CREATE TABLE coaches (
-    user_id        UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    notes          TEXT,
-    time_slots     JSONB DEFAULT '["9:00", "10:00", "11:30", "14:00", "15:30", "16:30", "17:30", "18:00"]',
-    coaching_days  JSONB DEFAULT '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]'
+    user_id           UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    notes             TEXT,
+    availability_start TIME DEFAULT '00:00',
+    availability_end   TIME DEFAULT '23:59',
+    session_duration   JSONB DEFAULT '[60, 90, 120]',
+    coaching_days      JSONB DEFAULT '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]'
 );
 
 -- ─── STUDENTS ────────────────────────────────────────────────────────────────
@@ -71,6 +73,23 @@ CREATE TABLE drill_drill_categories (
     PRIMARY KEY (drill_id, drill_category_id)
 );
 
+-- ─── COURTS ──────────────────────────────────────────────────────────────────
+
+CREATE TABLE courts (
+    court_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name      VARCHAR NOT NULL,
+    city      VARCHAR NOT NULL,
+    area      VARCHAR
+);
+
+-- ─── COACH COURTS ────────────────────────────────────────────────────────────
+
+CREATE TABLE coach_courts (
+    coach_id  UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
+    court_id  UUID REFERENCES courts(court_id) ON DELETE CASCADE,
+    PRIMARY KEY (coach_id, court_id)
+);
+
 -- ─── SESSIONS ────────────────────────────────────────────────────────────────
 
 CREATE TABLE sessions (
@@ -111,23 +130,6 @@ CREATE TABLE session_drill_ratings (
     notes      TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY (session_id, drill_id, student_id)
-);
-
--- ─── COURTS ──────────────────────────────────────────────────────────────────
-
-CREATE TABLE courts (
-    court_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name      VARCHAR NOT NULL,
-    city      VARCHAR NOT NULL,
-    area      VARCHAR
-);
-
--- ─── COACH COURTS ────────────────────────────────────────────────────────────
-
-CREATE TABLE coach_courts (
-    coach_id  UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
-    court_id  UUID REFERENCES courts(court_id) ON DELETE CASCADE,
-    PRIMARY KEY (coach_id, court_id)
 );
 
 -- ─── INDEXES ─────────────────────────────────────────────────────────────────

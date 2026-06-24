@@ -50,7 +50,10 @@ class CoachResponse(BaseModel):
     location: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
-
+    availability_start: Optional[time] = None
+    availability_end: Optional[time] = None
+    session_duration: Optional[list[int]] = None
+    coaching_days: Optional[list[str]] = None
 
 # ─── STUDENTS ───────────────────────────────────
 

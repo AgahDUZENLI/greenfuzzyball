@@ -17,8 +17,11 @@ def get_profile(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                   u.created_at, c.notes
+            SELECT 
+                u.user_id, u.name, u.email, u.phone, u.location,
+                u.created_at, c.notes,
+                c.availability_start, c.availability_end,
+                c.session_duration, c.coaching_days
             FROM users u
             JOIN coaches c ON u.user_id = c.user_id
             WHERE u.user_id = %s
