@@ -150,6 +150,20 @@ class SessionResponse(BaseModel):
     student_names: list[str] = []
     unrated: bool = False
 
+# ─── SESSION UPDATES ────────────────────────────
+
+class AddDrillToSessionRequest(BaseModel):
+    drill_id: UUID
+
+class UpdateSessionRequest(BaseModel):
+    date: Optional[date] = None
+    start_time: Optional[time] = None
+    duration_minutes: Optional[int] = None
+    type: Optional[str] = None
+    court_id: Optional[UUID] = None
+    student_ids: Optional[list[UUID]] = None
+    notes: Optional[str] = None
+
 # ─── RATINGS ────────────────────────────────────
 
 class CreateRatingRequest(BaseModel):

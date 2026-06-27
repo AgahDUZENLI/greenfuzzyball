@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Button from './Button'
-import { X, Calendar as CalendarIcon, Check } from 'lucide-react'
-import { createSession, getCoachCourts, getSessions, getCoachProfile, getStudents } from '../services/api'
+import { X, Check } from 'lucide-react'
+import { updateSession, getCoachCourts, getSessions, getCoachProfile, getStudents } from '../services/api'
 import { hasConflict, timeToMinutes, formatTime12 } from '../utils/timeUtils'
 import StudentCard from './StudentCard'
 import DateSelector from './DateSelector'
@@ -11,31 +11,22 @@ import TimeSelector from './TimeSelector'
 import CourtSelector from './CourtSelector'
 import SessionSummary from './SessionSummary'
 
-function BookSessionModal({
-  student: initialStudent,
-  initialStudents = [],
-  initialCourtId = null,
-  initialDuration = null,
-  initialDrillIds = [],
-  onClose,
-  onBooked
-}) {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const defaultDate = tomorrow.toISOString().split('T')[0]
+function EditSessionModal({ session, onClose, onUpdated }) {
+  const initialTime = session.start_time
+    ? String(session.start_time).substring(0, 5)
+    : '09:00'
 
-  const preStudents = initialStudents.length > 0 ? initialStudents : (initialStudent ? [initialStudent] : [])
-
-  const [selectedStudents, setSelectedStudents] = useState(preStudents)
+  const [selectedStudents, setSelectedStudents] = useState(session.students || [])
   const [allStudents, setAllStudents] = useState([])
   const [studentSearch, setStudentSearch] = useState('')
   const [courts, setCourts] = useState([])
   const [daySessions, setDaySessions] = useState([])
-  const [date, setDate] = useState(defaultDate)
-  const [duration, setDuration] = useState(initialDuration || 60)
-  const [timeSlot, setTimeSlot] = useState('09:00')
-  const [courtId, setCourtId] = useState(initialCourtId || '')
-  const [type, setType] = useState(preStudents.length > 1 ? 'group' : 'private')
+  const [date, setDate] = useState(session.date)
+  const [duration, setDuration] = useState(session.duration_minutes || 60)
+  const [timeSlot, setTimeSlot] = useState(initialTime)
+  const [courtId, setCourtId] = useState(session.court_id ? String(session.court_id) : '')
+  const [type, setType] = useState(session.type || 'private')
+  const [notes, setNotes] = useState(session.notes || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [durations, setDurations] = useState([60, 90, 120])
@@ -49,7 +40,6 @@ function BookSessionModal({
       .then(res => {
         const d = res.data.session_duration || [60, 90, 120]
         setDurations(d)
-        if (!initialDuration) setDuration(d[0])
       })
       .catch(() => setDurations([60, 90, 120]))
   }, [])
@@ -58,19 +48,24 @@ function BookSessionModal({
     getCoachCourts()
       .then(res => {
         setCourts(res.data)
-        if (!initialCourtId && res.data.length > 0) setCourtId(res.data[0].court_id)
+        // Only default to first court if session has no court
+        if (!session.court_id && res.data.length > 0) setCourtId(res.data[0].court_id)
       })
       .catch(() => setCourts([]))
   }, [])
 
   useEffect(() => {
     getSessions(date)
-      .then(res => setDaySessions(res.data))
+      .then(res => {
+        // Exclude current session so it doesn't conflict with itself
+        setDaySessions(res.data.filter(s => String(s.session_id) !== String(session.session_id)))
+      })
       .catch(() => setDaySessions([]))
   }, [date])
 
   useEffect(() => {
     if (selectedStudents.length > 1) setType('group')
+    else if (selectedStudents.length === 1) setType('private')
   }, [selectedStudents.length])
 
   const addStudent = (s) => {
@@ -84,25 +79,29 @@ function BookSessionModal({
 
   const conflict = hasConflict(daySessions, timeSlot, duration)
 
-  const handleBook = async () => {
+  const handleUpdate = async () => {
+    if (selectedStudents.length === 0) {
+      setError('Please select at least one student.')
+      return
+    }
     setError('')
     setLoading(true)
     try {
       const [h, m] = timeSlot.split(':')
       const paddedTime = `${String(h).padStart(2, '0')}:${m || '00'}`
-      const res = await createSession({
+      await updateSession(session.session_id, {
         date,
         start_time: paddedTime,
         duration_minutes: duration,
         type,
         court_id: courtId || null,
         student_ids: selectedStudents.map(s => s.user_id),
-        drill_ids: initialDrillIds
+        notes: notes || null
       })
-      onBooked && onBooked(res.data)
+      onUpdated && onUpdated()
       onClose()
     } catch {
-      setError('Could not book session. Please try again.')
+      setError('Could not update session. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -155,7 +154,7 @@ function BookSessionModal({
           borderBottom: `1px solid ${colors.gray[100]}`
         }}>
           <div>
-            <Typography variant="h3">{initialStudents.length > 0 ? 'Repeat Session' : 'Book Session'}</Typography>
+            <Typography variant="h3">Edit Session</Typography>
             {selectedStudents.length > 0 && (
               <Typography variant="bodySmall" color={colors.gray[400]}>
                 with {selectedStudents.map(s => s.name).join(', ')}
@@ -193,7 +192,6 @@ function BookSessionModal({
                 {selectedStudents.length === 0 ? 'Select Student' : 'Add Another Student'}
               </Typography>
               <input
-                autoFocus={selectedStudents.length === 0}
                 placeholder="Search students..."
                 value={studentSearch}
                 onChange={e => setStudentSearch(e.target.value)}
@@ -204,47 +202,46 @@ function BookSessionModal({
                   boxSizing: 'border-box', marginBottom: spacing[2]
                 }}
               />
-              <div style={{
-                maxHeight: '180px', overflowY: 'auto',
-                border: `1px solid ${colors.gray[200]}`, borderRadius: radius.lg
-              }}>
-                {filteredStudents.map((s, i, arr) => (
-                  <div
-                    key={s.user_id}
-                    onClick={() => addStudent(s)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: spacing[3],
-                      padding: `${spacing[3]} ${spacing[4]}`,
-                      borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray[100]}` : 'none',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = colors.gray[50]}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '50%',
-                      backgroundColor: colors.primaryLight, display: 'flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      fontSize: '13px', fontWeight: '600', color: colors.primary, flexShrink: 0
-                    }}>
-                      {s.name.charAt(0).toUpperCase()}
+              {studentSearch && (
+                <div style={{
+                  maxHeight: '160px', overflowY: 'auto',
+                  border: `1px solid ${colors.gray[200]}`, borderRadius: radius.lg
+                }}>
+                  {filteredStudents.length === 0 ? (
+                    <div style={{ padding: spacing[4], textAlign: 'center' }}>
+                      <Typography variant="bodySmall" color={colors.gray[400]}>No students found</Typography>
                     </div>
-                    <div>
-                      <Typography variant="bodySmall" style={{ fontWeight: '600' }}>{s.name}</Typography>
-                      <Typography variant="caption" color={colors.gray[400]}>
-                        {s.age_group} · {s.level}
-                      </Typography>
+                  ) : filteredStudents.map((s, i, arr) => (
+                    <div
+                      key={s.user_id}
+                      onClick={() => addStudent(s)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: spacing[3],
+                        padding: `${spacing[3]} ${spacing[4]}`,
+                        borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray[100]}` : 'none',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = colors.gray[50]}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        backgroundColor: colors.primaryLight, display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                        fontSize: '13px', fontWeight: '600', color: colors.primary, flexShrink: 0
+                      }}>
+                        {s.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <Typography variant="bodySmall" style={{ fontWeight: '600' }}>{s.name}</Typography>
+                        <Typography variant="caption" color={colors.gray[400]}>
+                          {s.age_group} · {s.level}
+                        </Typography>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {filteredStudents.length === 0 && (
-                  <div style={{ padding: spacing[4], textAlign: 'center' }}>
-                    <Typography variant="bodySmall" color={colors.gray[400]}>
-                      {allStudents.length === 0 ? 'Loading...' : 'No students found'}
-                    </Typography>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <DateSelector
@@ -257,8 +254,32 @@ function BookSessionModal({
               duration={duration} daySessions={daySessions} conflict={conflict}
             />
             <CourtSelector courts={courts} courtId={courtId} onCourtChange={setCourtId} />
+
+            {/* Notes */}
+            <div style={{ marginTop: spacing[4] }}>
+              <Typography variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing[2] }}>
+                Notes
+              </Typography>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Add session notes..."
+                rows={3}
+                style={{
+                  width: '100%', border: `1px solid ${colors.gray[200]}`,
+                  borderRadius: radius.lg, padding: spacing[3],
+                  fontSize: '13px', fontFamily: 'inherit', color: colors.gray[700],
+                  resize: 'vertical', outline: 'none', lineHeight: '1.5',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={e => e.target.style.borderColor = colors.primary}
+                onBlur={e => e.target.style.borderColor = colors.gray[200]}
+              />
+            </div>
+
             {error && (
               <div style={{
+                marginTop: spacing[3],
                 backgroundColor: colors.errorLight, color: colors.error,
                 padding: spacing[3], borderRadius: radius.md, fontSize: '13px'
               }}>
@@ -309,9 +330,11 @@ function BookSessionModal({
             }}>
               Cancel
             </button>
-            <Button onClick={handleBook} disabled={loading || conflict || selectedStudents.length === 0}>
-              <CalendarIcon size={16} />
-              {loading ? 'Booking...' : 'Book Session'}
+            <Button
+              onClick={handleUpdate}
+              disabled={loading || conflict || selectedStudents.length === 0}
+            >
+              {loading ? 'Saving...' : 'Update Session'}
             </Button>
           </div>
         </div>
@@ -321,4 +344,4 @@ function BookSessionModal({
   )
 }
 
-export default BookSessionModal
+export default EditSessionModal

@@ -6,6 +6,7 @@ import { getStudents, getSessions } from '../services/api'
 import { colors, spacing, radius } from '../styles/tokens'
 import { ChevronLeft, ChevronRight, Plus, Clock, CheckCircle, Calendar as CalendarIcon } from 'lucide-react'
 import BookSessionModal from '../components/BookSessionModal'
+import { useNavigate } from 'react-router-dom'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -18,8 +19,9 @@ function Sessions() {
   const [bookStudent, setBookStudent] = useState(null)
   const [students, setStudents] = useState([])
   const [sessions, setSessions] = useState([])
-  const [selectedSession, setSelectedSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+
 
   useEffect(() => {
     getStudents().then(res => setStudents(res.data))
@@ -73,7 +75,7 @@ function Sessions() {
     return (
       <div
         key={session.session_id}
-        onClick={() => setSelectedSession(session)}
+        onClick={() => navigate(`/sessions/${session.session_id}`)}
         style={{
           display: 'grid',
           gridTemplateColumns: '140px 120px 1fr 80px 160px 40px',
@@ -137,7 +139,7 @@ function Sessions() {
           )
         )}
 
-        <ChevronRight size={16} color={colors.gray[400]} />
+        <ChevronRight size={16} color={colors.gray[400]}/>
       </div>
     )
   }

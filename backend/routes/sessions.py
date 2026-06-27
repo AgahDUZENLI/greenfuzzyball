@@ -7,7 +7,9 @@ from models.schemas import (
     CreateSessionRequest,
     SessionResponse,
     CreateRatingRequest,
-    RatingResponse
+    RatingResponse,
+    AddDrillToSessionRequest,
+    UpdateSessionRequest,
 )
 
 router = APIRouter()
@@ -320,3 +322,133 @@ def get_student_progress(
         """, (student_id, str(coach["user_id"])))
 
         return {"progress": cursor.fetchall()}
+
+
+# ─── ADD DRILL TO SESSION ─────────────────────────────────────────────────────
+
+@router.post("/{session_id}/drills", status_code=201)
+def add_drill_to_session(
+    session_id: str,
+    data: AddDrillToSessionRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT 1 FROM sessions WHERE session_id = %s AND coach_id = %s
+            """, (session_id, str(coach["user_id"])))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Session not found")
+
+            cursor.execute("""
+                INSERT INTO session_drills (session_id, drill_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """, (session_id, str(data.drill_id)))
+            conn.commit()
+
+            cursor.execute("""
+                SELECT drill_id, name, description FROM drills WHERE drill_id = %s
+            """, (str(data.drill_id),))
+            return cursor.fetchone()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Could not add drill")
+
+
+# ─── REMOVE DRILL FROM SESSION ────────────────────────────────────────────────
+
+@router.delete("/{session_id}/drills/{drill_id}", status_code=204)
+def remove_drill_from_session(
+    session_id: str,
+    drill_id: str,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT 1 FROM sessions WHERE session_id = %s AND coach_id = %s
+            """, (session_id, str(coach["user_id"])))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Session not found")
+
+            cursor.execute("""
+                DELETE FROM session_drills WHERE session_id = %s AND drill_id = %s
+            """, (session_id, drill_id))
+            conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Could not remove drill")
+
+
+# ─── UPDATE SESSION ───────────────────────────────────────────────────────────
+
+@router.patch("/{session_id}")
+def update_session(
+    session_id: str,
+    data: UpdateSessionRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT 1 FROM sessions WHERE session_id = %s AND coach_id = %s
+            """, (session_id, str(coach["user_id"])))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Session not found")
+
+            # Build dynamic SET clause for session fields
+            set_parts = []
+            values = []
+            if data.date is not None:
+                set_parts.append("date = %s")
+                values.append(data.date)
+            if data.start_time is not None:
+                set_parts.append("start_time = %s")
+                values.append(data.start_time)
+            if data.duration_minutes is not None:
+                set_parts.append("duration_minutes = %s")
+                values.append(data.duration_minutes)
+            if data.type is not None:
+                set_parts.append("type = %s")
+                values.append(data.type)
+            if data.court_id is not None:
+                set_parts.append("court_id = %s")
+                values.append(str(data.court_id))
+            if data.notes is not None:
+                set_parts.append("notes = %s")
+                values.append(data.notes.strip() if data.notes.strip() else None)
+
+            if set_parts:
+                values.append(session_id)
+                cursor.execute(
+                    f"UPDATE sessions SET {', '.join(set_parts)} WHERE session_id = %s",
+                    values
+                )
+
+            # Rebuild student list if provided
+            if data.student_ids is not None:
+                cursor.execute(
+                    "DELETE FROM session_students WHERE session_id = %s", (session_id,)
+                )
+                for student_id in data.student_ids:
+                    cursor.execute(
+                        "INSERT INTO session_students (session_id, student_id) VALUES (%s, %s)",
+                        (session_id, str(student_id))
+                    )
+
+            conn.commit()
+            return {"session_id": session_id, "updated": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Could not update session")

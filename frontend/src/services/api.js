@@ -49,14 +49,16 @@ export const getCategories = () => api.get('/drills/categories')
 export const createCategory = (data) => api.post('/drills/categories', data)
 
 // Sessions
-export const getSessions = (date) =>
-  api.get(date ? `/sessions/?date=${date}` : '/sessions/')
+export const getSessions = (date) => api.get(date ? `/sessions/?date=${date}` : '/sessions/')
 export const getSession = (id) => api.get(`/sessions/${id}`)
 export const createSession = (data) => api.post('/sessions/', data)
 export const deleteSession = (id) => api.delete(`/sessions/${id}`)
 export const addRating = (sessionId, data) => api.post(`/sessions/${sessionId}/ratings`, data)
 export const getStudentProgress = (studentId) => api.get(`/sessions/progress/${studentId}`)
-export const getSessionByDate = (date) => api.get()
+export const getSessionByDate = (date) => api.get(`/sessions/?date=${date}`)
+export const addDrillToSession = (sessionId, drillId) => api.post(`/sessions/${sessionId}/drills`, { drill_id: drillId })
+export const removeDrillFromSession = (sessionId, drillId) => api.delete(`/sessions/${sessionId}/drills/${drillId}`)
+export const updateSession = (sessionId, data) => api.patch(`/sessions/${sessionId}`, data)
 
 //Courts
 export const getCourts = (city) => api.get(`/courts/${city ? `?city=${city}` : ''}`)
