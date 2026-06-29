@@ -19,8 +19,8 @@ CREATE TABLE users (
 -- ─── COACHES ─────────────────────────────────────────────────────────────────
 
 CREATE TABLE coaches (
-    user_id           UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    notes             TEXT,
+    user_id            UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    notes              TEXT,
     availability_start TIME DEFAULT '00:00',
     availability_end   TIME DEFAULT '23:59',
     session_duration   JSONB DEFAULT '[60, 90, 120]',
@@ -62,7 +62,17 @@ CREATE TABLE drills (
     coach_id    UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
     name        VARCHAR NOT NULL,
     description TEXT,
+    share_token VARCHAR UNIQUE DEFAULT encode(gen_random_bytes(6), 'hex'),
     created_at  TIMESTAMP DEFAULT NOW()
+);
+
+-- ─── COACH DRILLS ────────────────────────────────────────────────────────────
+
+CREATE TABLE coach_drills (
+    coach_id   UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
+    drill_id   UUID REFERENCES drills(drill_id) ON DELETE CASCADE,
+    added_at   TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (coach_id, drill_id)
 );
 
 -- ─── DRILL DRILL CATEGORIES ──────────────────────────────────────────────────
@@ -142,3 +152,5 @@ CREATE INDEX idx_sessions_date      ON sessions(date);
 CREATE INDEX idx_ratings_student_id ON session_drill_ratings(student_id);
 CREATE INDEX idx_ratings_drill_id   ON session_drill_ratings(drill_id);
 CREATE INDEX idx_ratings_session_id ON session_drill_ratings(session_id);
+CREATE INDEX idx_coach_drills       ON coach_drills(coach_id);
+CREATE INDEX idx_drills_share_token ON drills(share_token);

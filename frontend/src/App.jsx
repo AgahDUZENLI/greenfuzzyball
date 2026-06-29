@@ -10,7 +10,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import AuthCallback from './pages/AuthCallback'
 import SessionDetail from './pages/SessionDetail'
-
+import DrillShare from './pages/DrillShare'
 
 
 // Protected route — redirects to login if not authenticated
@@ -67,12 +67,13 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/sessions/:sessionId" element={<ProtectedRoute><SessionDetail /></ProtectedRoute>} />
-
+      <Route path="/drills/share/:token" element={<DrillShare />} />
+      <Route path="*" element={<Navigate to="/" />} />
+      
     </Routes>
   )
 }

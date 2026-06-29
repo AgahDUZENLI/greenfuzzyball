@@ -41,12 +41,12 @@ export const deleteStudent = (id) => api.delete(`/students/${id}`)
 
 // Drills
 export const getDrills = () => api.get('/drills/')
-export const getDrill = (id) => api.get(`/drills/${id}`)
+export const getDrillCategories = () => api.get('/drills/categories')
 export const createDrill = (data) => api.post('/drills/', data)
 export const updateDrill = (id, data) => api.put(`/drills/${id}`, data)
 export const deleteDrill = (id) => api.delete(`/drills/${id}`)
-export const getCategories = () => api.get('/drills/categories')
-export const createCategory = (data) => api.post('/drills/categories', data)
+export const removeDrillFromLibrary = (id) => api.delete(`/drills/${id}/remove`)
+export const getSharedDrill = (token) => api.get(`/drills/share/${token}`)
 
 // Sessions
 export const getSessions = (date) => api.get(date ? `/sessions/?date=${date}` : '/sessions/')
@@ -59,6 +59,7 @@ export const getSessionByDate = (date) => api.get(`/sessions/?date=${date}`)
 export const addDrillToSession = (sessionId, drillId) => api.post(`/sessions/${sessionId}/drills`, { drill_id: drillId })
 export const removeDrillFromSession = (sessionId, drillId) => api.delete(`/sessions/${sessionId}/drills/${drillId}`)
 export const updateSession = (sessionId, data) => api.patch(`/sessions/${sessionId}`, data)
+export const importSharedDrill = (token, force = false) => api.post(`/drills/share/${token}/import${force ? '?force=true' : ''}`)
 
 //Courts
 export const getCourts = (city) => api.get(`/courts/${city ? `?city=${city}` : ''}`)
