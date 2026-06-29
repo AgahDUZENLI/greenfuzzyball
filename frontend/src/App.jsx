@@ -11,9 +11,10 @@ import ResetPassword from './pages/ResetPassword'
 import AuthCallback from './pages/AuthCallback'
 import SessionDetail from './pages/SessionDetail'
 import DrillShare from './pages/DrillShare'
+import Settings from './pages/Settings'
 
 
-// Protected route — redirects to login if not authenticated
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
 
@@ -72,6 +73,7 @@ function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/sessions/:sessionId" element={<ProtectedRoute><SessionDetail /></ProtectedRoute>} />
       <Route path="/drills/share/:token" element={<DrillShare />} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />
       
     </Routes>

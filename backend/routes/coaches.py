@@ -32,51 +32,43 @@ def get_profile(
 
 # ─── UPDATE COACH PROFILE ─────────────────────────────────────────────────────
 
-@router.put("/profile", response_model=CoachResponse)
+@router.put("/profile")
 def update_profile(
     data: dict,
     conn=Depends(get_db),
     coach=Depends(get_current_coach)
 ):
     try:
+        import json
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-
-            # Update users table
             cursor.execute("""
-                UPDATE users SET
-                    name     = COALESCE(%s, name),
-                    phone    = COALESCE(%s, phone),
-                    location = COALESCE(%s, location)
+                UPDATE users SET name = %s, email = %s, phone = %s, location = %s
                 WHERE user_id = %s
             """, (
                 data.get("name"),
+                data.get("email"),
                 data.get("phone"),
                 data.get("location"),
                 str(coach["user_id"])
             ))
-
-            # Update coaches table
             cursor.execute("""
-                UPDATE coaches SET
-                    notes = COALESCE(%s, notes)
+                UPDATE coaches SET 
+                    notes = %s,
+                    availability_start = %s,
+                    availability_end = %s,
+                    session_duration = %s,
+                    coaching_days = %s
                 WHERE user_id = %s
             """, (
                 data.get("notes"),
+                data.get("availability_start"),
+                data.get("availability_end"),
+                json.dumps(data.get("session_duration", [60, 90, 120])),
+                json.dumps(data.get("coaching_days", [])),
                 str(coach["user_id"])
             ))
-
-            # Return updated profile
-            cursor.execute("""
-                SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                       u.created_at, c.notes
-                FROM users u
-                JOIN coaches c ON u.user_id = c.user_id
-                WHERE u.user_id = %s
-            """, (str(coach["user_id"]),))
-
             conn.commit()
-            return cursor.fetchone()
-
+            return {"message": "Profile updated"}
     except Exception as e:
         conn.rollback()
         print(f"UPDATE PROFILE ERROR: {type(e).__name__}: {str(e)}")

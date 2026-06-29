@@ -88,7 +88,7 @@ function Sidebar() {
 
       {/* User Profile */}
       <button
-        onClick={handleLogout}
+        onClick={() => navigate('/settings')}
         style={{
           display: 'flex',
           alignItems: 'center',
