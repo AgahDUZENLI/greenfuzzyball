@@ -28,6 +28,7 @@ export const login = (data) => {
   return axios.post(`${API_URL}/auth/login`, formData)
 }
 export const getMe = () => api.get('/auth/me')
+export const changePassword = (data) => api.post('/auth/change-password', data)
 
 //User
 export const getUserLocation = () => api.get('/user/location')

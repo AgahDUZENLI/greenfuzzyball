@@ -6,11 +6,11 @@ import Typography from '../components/Typography'
 import Button from '../components/Button'
 import Input from '../components/Input'
 import Avatar from '../components/Avatar'
-import { getCoachProfile, updateCoachProfile } from '../services/api'
+import { getCoachProfile, updateCoachProfile, changePassword } from '../services/api'
 import { colors, spacing, radius } from '../styles/tokens'
 import {
-  User, Mail, Phone, MapPin, Clock, Calendar,
-  Bell, Shield, CreditCard, LogOut, ChevronRight, Save
+  User, Mail, Phone, MapPin, Clock,
+  Bell, Shield, LogOut, ChevronRight, Save
 } from 'lucide-react'
 
 const TABS = [
@@ -26,12 +26,11 @@ function Settings() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
-  const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // Form state
+  // Profile state
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -42,11 +41,19 @@ function Settings() {
   const [sessionDuration, setSessionDuration] = useState([60, 90, 120])
   const [coachingDays, setCoachingDays] = useState([])
 
+  // Change password state
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+
   useEffect(() => {
     getCoachProfile()
       .then(res => {
         const p = res.data
-        setProfile(p)
         setName(p.name || '')
         setEmail(p.email || '')
         setPhone(p.phone || '')
@@ -75,6 +82,30 @@ function Settings() {
     } catch {
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordError('')
+    if (!currentPassword) return setPasswordError('Enter your current password')
+    if (!newPassword) return setPasswordError('Enter a new password')
+    if (newPassword.length < 6) return setPasswordError('Password must be at least 6 characters')
+    if (newPassword !== confirmPassword) return setPasswordError('Passwords do not match')
+    setChangingPassword(true)
+    try {
+      await changePassword({ current_password: currentPassword, new_password: newPassword })
+      setPasswordSuccess(true)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setTimeout(() => {
+        setPasswordSuccess(false)
+        setShowChangePassword(false)
+      }, 2000)
+    } catch (err) {
+      setPasswordError(err.response?.data?.detail || 'Could not change password')
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -158,7 +189,6 @@ function Settings() {
               ))}
             </nav>
 
-            {/* Logout */}
             <button
               onClick={handleLogout}
               style={{
@@ -182,8 +212,6 @@ function Settings() {
             {/* ── PROFILE TAB ── */}
             {activeTab === 'profile' && (
               <div style={{ maxWidth: '760px' }}>
-
-                {/* Avatar */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: spacing[5],
                   marginBottom: spacing[8]
@@ -197,7 +225,6 @@ function Settings() {
                   </div>
                 </div>
 
-                {/* Personal info */}
                 <Typography variant="h4" mb={spacing[4]}>Personal info</Typography>
                 <div style={{
                   backgroundColor: 'white', borderRadius: radius.xl,
@@ -211,7 +238,23 @@ function Settings() {
                     </div>
                     <div>
                       <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>LOCATION</Typography>
-                      <Input icon={<MapPin size={16} />} value={location} onChange={e => setLocation(e.target.value)} placeholder="City, State" />
+                      <select
+                        value={location}
+                        onChange={e => setLocation(e.target.value)}
+                        style={{
+                          width: '100%', padding: '12px 16px',
+                          border: `1.5px solid ${colors.gray[200]}`,
+                          borderRadius: radius.lg, fontSize: '15px',
+                          fontFamily: 'inherit', color: colors.black,
+                          backgroundColor: 'white', cursor: 'pointer',
+                          outline: 'none', boxSizing: 'border-box'
+                        }}
+                      >
+                        <option value="">Select location</option>
+                        <optgroup label="TX">
+                          <option value="Houston, TX">Houston, TX</option>
+                        </optgroup>
+                      </select>
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
@@ -249,111 +292,64 @@ function Settings() {
             {/* ── PREFERENCES TAB ── */}
             {activeTab === 'preferences' && (
               <div style={{ maxWidth: '760px' }}>
-
                 <Typography variant="h4" mb={spacing[4]}>Coaching preferences</Typography>
                 <div style={{
                   backgroundColor: 'white', borderRadius: radius.xl,
                   border: `1px solid ${colors.gray[200]}`,
                   padding: spacing[6], marginBottom: spacing[6]
                 }}>
-
-                  {/* Availability */}
                   <div style={{ marginBottom: spacing[6] }}>
-                    <Typography variant="label" mb={spacing[3]} style={{ display: 'block' }}>
-                      AVAILABILITY HOURS
-                    </Typography>
+                    <Typography variant="label" mb={spacing[3]} style={{ display: 'block' }}>AVAILABILITY HOURS</Typography>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4] }}>
                       <div>
-                        <Typography variant="caption" color={colors.gray[400]} mb={spacing[2]} style={{ display: 'block' }}>
-                          Start time
-                        </Typography>
-                        <div style={{
-                          padding: '12px 16px',
-                          border: `1.5px solid ${colors.gray[200]}`,
-                          borderRadius: radius.lg
-                        }}>
-                          <input
-                            type="time"
-                            value={availStart}
-                            onChange={e => setAvailStart(e.target.value)}
-                            style={{
-                              border: 'none', outline: 'none',
-                              fontSize: '15px', fontFamily: 'inherit',
-                              width: '100%', backgroundColor: 'transparent'
-                            }}
+                        <Typography variant="caption" color={colors.gray[400]} mb={spacing[2]} style={{ display: 'block' }}>Start time</Typography>
+                        <div style={{ padding: '12px 16px', border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg }}>
+                          <input type="time" value={availStart} onChange={e => setAvailStart(e.target.value)}
+                            style={{ border: 'none', outline: 'none', fontSize: '15px', fontFamily: 'inherit', width: '100%', backgroundColor: 'transparent' }}
                           />
                         </div>
                       </div>
                       <div>
-                        <Typography variant="caption" color={colors.gray[400]} mb={spacing[2]} style={{ display: 'block' }}>
-                          End time
-                        </Typography>
-                        <div style={{
-                          padding: '12px 16px',
-                          border: `1.5px solid ${colors.gray[200]}`,
-                          borderRadius: radius.lg
-                        }}>
-                          <input
-                            type="time"
-                            value={availEnd}
-                            onChange={e => setAvailEnd(e.target.value)}
-                            style={{
-                              border: 'none', outline: 'none',
-                              fontSize: '15px', fontFamily: 'inherit',
-                              width: '100%', backgroundColor: 'transparent'
-                            }}
+                        <Typography variant="caption" color={colors.gray[400]} mb={spacing[2]} style={{ display: 'block' }}>End time</Typography>
+                        <div style={{ padding: '12px 16px', border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg }}>
+                          <input type="time" value={availEnd} onChange={e => setAvailEnd(e.target.value)}
+                            style={{ border: 'none', outline: 'none', fontSize: '15px', fontFamily: 'inherit', width: '100%', backgroundColor: 'transparent' }}
                           />
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Session durations */}
                   <div style={{ marginBottom: spacing[6] }}>
-                    <Typography variant="label" mb={spacing[3]} style={{ display: 'block' }}>
-                      SESSION DURATIONS
-                    </Typography>
+                    <Typography variant="label" mb={spacing[3]} style={{ display: 'block' }}>SESSION DURATIONS</Typography>
                     <div style={{ display: 'flex', gap: spacing[2] }}>
                       {[30, 60, 90, 120].map(d => (
-                        <button
-                          key={d}
-                          onClick={() => toggleDuration(d)}
-                          style={{
-                            padding: '8px 20px',
-                            borderRadius: radius.full,
-                            border: `1.5px solid ${sessionDuration.includes(d) ? colors.primary : colors.gray[200]}`,
-                            backgroundColor: sessionDuration.includes(d) ? colors.primaryLight : 'white',
-                            color: sessionDuration.includes(d) ? colors.primary : colors.gray[600],
-                            fontFamily: 'inherit', fontSize: '14px', fontWeight: '500',
-                            cursor: 'pointer', transition: 'all 0.15s'
-                          }}
-                        >
+                        <button key={d} onClick={() => toggleDuration(d)} style={{
+                          padding: '8px 20px', borderRadius: radius.full,
+                          border: `1.5px solid ${sessionDuration.includes(d) ? colors.primary : colors.gray[200]}`,
+                          backgroundColor: sessionDuration.includes(d) ? colors.primaryLight : 'white',
+                          color: sessionDuration.includes(d) ? colors.primary : colors.gray[600],
+                          fontFamily: 'inherit', fontSize: '14px', fontWeight: '500',
+                          cursor: 'pointer', transition: 'all 0.15s'
+                        }}>
                           {d === 30 ? '30 min' : d === 60 ? '1 hour' : d === 90 ? '1.5 hours' : '2 hours'}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Coaching days */}
                   <div>
-                    <Typography variant="label" mb={spacing[3]} style={{ display: 'block' }}>
-                      COACHING DAYS
-                    </Typography>
+                    <Typography variant="label" mb={spacing[3]} style={{ display: 'block' }}>COACHING DAYS</Typography>
                     <div style={{ display: 'flex', gap: spacing[2], flexWrap: 'wrap' }}>
                       {DAYS.map(day => (
-                        <button
-                          key={day}
-                          onClick={() => toggleDay(day)}
-                          style={{
-                            padding: '8px 16px',
-                            borderRadius: radius.full,
-                            border: `1.5px solid ${coachingDays.includes(day) ? colors.primary : colors.gray[200]}`,
-                            backgroundColor: coachingDays.includes(day) ? colors.primaryLight : 'white',
-                            color: coachingDays.includes(day) ? colors.primary : colors.gray[600],
-                            fontFamily: 'inherit', fontSize: '14px', fontWeight: '500',
-                            cursor: 'pointer', transition: 'all 0.15s'
-                          }}
-                        >
+                        <button key={day} onClick={() => toggleDay(day)} style={{
+                          padding: '8px 16px', borderRadius: radius.full,
+                          border: `1.5px solid ${coachingDays.includes(day) ? colors.primary : colors.gray[200]}`,
+                          backgroundColor: coachingDays.includes(day) ? colors.primaryLight : 'white',
+                          color: coachingDays.includes(day) ? colors.primary : colors.gray[600],
+                          fontFamily: 'inherit', fontSize: '14px', fontWeight: '500',
+                          cursor: 'pointer', transition: 'all 0.15s'
+                        }}>
                           {day.slice(0, 3)}
                         </button>
                       ))}
@@ -369,22 +365,18 @@ function Settings() {
                 <Typography variant="h4" mb={spacing[4]}>Notifications</Typography>
                 <div style={{
                   backgroundColor: 'white', borderRadius: radius.xl,
-                  border: `1px solid ${colors.gray[200]}`,
-                  overflow: 'hidden'
+                  border: `1px solid ${colors.gray[200]}`, overflow: 'hidden'
                 }}>
                   {[
                     { label: 'Session reminders', desc: 'Get notified before sessions start' },
                     { label: 'New student requests', desc: 'When a student requests to join' },
                     { label: 'Weekly summary', desc: 'Weekly recap every Monday' },
                   ].map((item, i, arr) => (
-                    <div
-                      key={item.label}
-                      style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: `${spacing[4]} ${spacing[6]}`,
-                        borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray[100]}` : 'none'
-                      }}
-                    >
+                    <div key={item.label} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: `${spacing[4]} ${spacing[6]}`,
+                      borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray[100]}` : 'none'
+                    }}>
                       <div>
                         <Typography variant="body" style={{ fontWeight: '500' }}>{item.label}</Typography>
                         <Typography variant="caption" color={colors.gray[400]}>{item.desc}</Typography>
@@ -402,32 +394,126 @@ function Settings() {
                 <Typography variant="h4" mb={spacing[4]}>Security</Typography>
                 <div style={{
                   backgroundColor: 'white', borderRadius: radius.xl,
-                  border: `1px solid ${colors.gray[200]}`,
-                  overflow: 'hidden'
+                  border: `1px solid ${colors.gray[200]}`, overflow: 'hidden'
                 }}>
-                  {[
-                    { label: 'Change password', desc: 'Update your password' },
-                    { label: 'Two-factor authentication', desc: 'Add an extra layer of security' },
-                  ].map((item, i, arr) => (
+
+                  {/* Change password */}
+                  <div style={{
+                    padding: `${spacing[4]} ${spacing[6]}`,
+                    borderBottom: `1px solid ${colors.gray[100]}`
+                  }}>
                     <div
-                      key={item.label}
-                      onClick={() => {}}
-                      style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: `${spacing[4]} ${spacing[6]}`,
-                        borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray[100]}` : 'none',
-                        cursor: 'pointer'
+                      onClick={() => {
+                        setShowChangePassword(!showChangePassword)
+                        setPasswordError('')
+                        setPasswordSuccess(false)
                       }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = colors.gray[50]}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center', cursor: 'pointer'
+                      }}
                     >
                       <div>
-                        <Typography variant="body" style={{ fontWeight: '500' }}>{item.label}</Typography>
-                        <Typography variant="caption" color={colors.gray[400]}>{item.desc}</Typography>
+                        <Typography variant="body" style={{ fontWeight: '500' }}>Change password</Typography>
+                        <Typography variant="caption" color={colors.gray[400]}>Update your password</Typography>
                       </div>
-                      <ChevronRight size={16} color={colors.gray[400]} />
+                      <ChevronRight size={16} color={colors.gray[400]} style={{
+                        transform: showChangePassword ? 'rotate(90deg)' : 'none',
+                        transition: 'transform 0.2s'
+                      }} />
                     </div>
-                  ))}
+
+                    {showChangePassword && (
+                      <div style={{ marginTop: spacing[5] }}>
+                        {passwordError && (
+                          <div style={{
+                            backgroundColor: colors.errorLight, color: colors.error,
+                            padding: spacing[3], borderRadius: radius.md,
+                            marginBottom: spacing[3], fontSize: '13px'
+                          }}>
+                            {passwordError}
+                          </div>
+                        )}
+                        {passwordSuccess && (
+                          <div style={{
+                            backgroundColor: colors.primaryLight, color: colors.primary,
+                            padding: spacing[3], borderRadius: radius.md,
+                            marginBottom: spacing[3], fontSize: '13px', fontWeight: '600'
+                          }}>
+                            Password changed successfully!
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
+                          <div>
+                            <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>CURRENT PASSWORD</Typography>
+                            <Input
+                              type="password"
+                              placeholder="Enter current password"
+                              value={currentPassword}
+                              onChange={e => setCurrentPassword(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>NEW PASSWORD</Typography>
+                            <Input
+                              type="password"
+                              placeholder="Enter new password"
+                              value={newPassword}
+                              onChange={e => setNewPassword(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>CONFIRM NEW PASSWORD</Typography>
+                            <Input
+                              type="password"
+                              placeholder="Confirm new password"
+                              value={confirmPassword}
+                              onChange={e => setConfirmPassword(e.target.value)}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing[3] }}>
+                            <button
+                              onClick={() => {
+                                setShowChangePassword(false)
+                                setCurrentPassword('')
+                                setNewPassword('')
+                                setConfirmPassword('')
+                                setPasswordError('')
+                                setPasswordSuccess(false)
+                              }}
+                              style={{
+                                background: 'none', border: 'none',
+                                color: colors.gray[500], fontSize: '14px',
+                                fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <Button onClick={handleChangePassword} disabled={changingPassword}>
+                              {changingPassword ? 'Changing...' : 'Change password'}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2FA */}
+                  <div
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: `${spacing[4]} ${spacing[6]}`, cursor: 'pointer'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = colors.gray[50]}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <div>
+                      <Typography variant="body" style={{ fontWeight: '500' }}>Two-factor authentication</Typography>
+                      <Typography variant="caption" color={colors.gray[400]}>Add an extra layer of security</Typography>
+                    </div>
+                    <ChevronRight size={16} color={colors.gray[400]} />
+                  </div>
+
                 </div>
               </div>
             )}
@@ -439,26 +525,21 @@ function Settings() {
   )
 }
 
-// Toggle component
 function Toggle({ defaultOn = false }) {
   const [on, setOn] = useState(defaultOn)
   return (
     <div
       onClick={() => setOn(!on)}
       style={{
-        width: '44px', height: '24px',
-        borderRadius: '12px',
+        width: '44px', height: '24px', borderRadius: '12px',
         backgroundColor: on ? colors.primary : colors.gray[200],
-        cursor: 'pointer', position: 'relative',
-        transition: 'background 0.2s'
+        cursor: 'pointer', position: 'relative', transition: 'background 0.2s'
       }}
     >
       <div style={{
-        position: 'absolute',
-        top: '2px',
+        position: 'absolute', top: '2px',
         left: on ? '22px' : '2px',
-        width: '20px', height: '20px',
-        borderRadius: '50%',
+        width: '20px', height: '20px', borderRadius: '50%',
         backgroundColor: 'white',
         boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
         transition: 'left 0.2s'

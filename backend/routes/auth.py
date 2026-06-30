@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
+from passlib.context import CryptContext
 from config import settings
 import psycopg2
 import psycopg2.extras
@@ -29,10 +30,10 @@ from services.auth_service import (
     reset_user_password,
     send_reset_email
 )
-from middleware.auth_middleware import get_current_user
+from middleware.auth_middleware import get_current_user, get_current_coach
 
 router = APIRouter()
-
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # ─── REGISTER ────────────────────────────────────────────────────────────────
@@ -157,7 +158,8 @@ def get_me(current_user=Depends(get_current_user)):
     return current_user
 
 
-# ─── GOOGLE OAUTH ──────────────────────────────────────────────────────────
+# ─── GOOGLE OAUTH ────────────────────────────────────────────────────────────
+
 oauth = OAuth()
 oauth.register(
     name="google",
@@ -169,8 +171,8 @@ oauth.register(
 
 @router.get("/google")
 async def google_login(request: Request):
-    reddirect_uri = "http://localhost:8000/auth/google/callback"
-    return await oauth.google.authorize_redirect(request, reddirect_uri)
+    redirect_uri = "http://localhost:8000/auth/google/callback"
+    return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
 async def google_callback(request: Request, conn=Depends(get_db)):
@@ -182,14 +184,13 @@ async def google_callback(request: Request, conn=Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to retrieve user info from Google"
         )
+
     email = user_info.get("email")
     name = user_info.get("name")
 
-    #Check if already exists
     user = get_user_by_email(conn, email)
 
     if not user:
-        # Create new coach account
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             cursor.execute("""
                 INSERT INTO users (name, email, role)
@@ -202,10 +203,49 @@ async def google_callback(request: Request, conn=Depends(get_db)):
             """, (str(user["user_id"]),))
             conn.commit()
 
-    # Generate JWT tokens
     access_token = create_access_token({"sub": str(user["user_id"])})
     refresh_token = create_refresh_token({"sub": str(user["user_id"])})
 
-    # Redirect to frontend with tokens
     frontend_url = f"http://localhost:5173/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
     return RedirectResponse(url=frontend_url)
+
+
+# ─── CHANGE PASSWORD ─────────────────────────────────────────────────────────
+
+@router.post("/change-password")
+def change_password(
+    data: dict,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT hashed_password FROM users WHERE user_id = %s
+            """, (str(coach["user_id"]),))
+            user = cursor.fetchone()
+
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            if not pwd_context.verify(data.get("current_password"), user["hashed_password"]):
+                raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+            new_hash = pwd_context.hash(data.get("new_password"))
+
+            cursor.execute("""
+                UPDATE users SET hashed_password = %s WHERE user_id = %s
+            """, (new_hash, str(coach["user_id"])))
+
+            conn.commit()
+            return {"message": "Password changed successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"CHANGE PASSWORD ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not change password"
+        )
