@@ -49,7 +49,17 @@ def register(data: RegisterRequest, conn=Depends(get_db)):
             phone=data.phone,
             location=data.location
         )
+
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO coach_drills (coach_id, drill_id)
+                SELECT %s, drill_id FROM drills
+                WHERE coach_id IS NULL
+            """, (str(user["user_id"]),))
+            conn.commit()
+
         return user
+
     except Exception as e:
         print(f"REGISTER ERROR: {type(e).__name__}: {str(e)}")
         if "unique constraint" in str(e).lower():
@@ -61,8 +71,7 @@ def register(data: RegisterRequest, conn=Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Something went wrong"
         )
-
-
+    
 # ─── LOGIN ───────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)

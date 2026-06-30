@@ -58,18 +58,17 @@ INSERT INTO coach_students (coach_id, student_id, started_at) VALUES
 ('a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000008', '2026-04-15');
 
 -- ─── DRILLS ──────────────────────────────────────────────────────────────────
-
 INSERT INTO drills (drill_id, coach_id, name, description) VALUES
-('c0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Flat Serve Reps',           '30 serves to deuce court, tracking consistency'),
-('c0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'Toss Consistency',          'Catch-toss without hitting, 20 reps'),
-('c0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'Cross Court Forehand',      'Rally cross court from deuce side, 50 balls'),
-('c0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'Inside Out Forehand',       'Run around backhand and hit inside out forehand'),
-('c0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', 'Two Handed Backhand Drive', 'Drive backhand down the line, 40 balls'),
-('c0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', 'Slice Backhand',            'Low slice backhand, stay low through contact'),
-('c0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', 'Reaction Volley',           'Rapid net feeds, quick hands reaction drill'),
-('c0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', 'Half Volley Touch',         'Soft hands at the T, half volley placement'),
-('c0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', 'Ladder Drill',              'Quick feet agility ladder, 3 rounds'),
-('c0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', 'Spider Drill',              'Run to each corner of the court and back to center');
+('c0000000-0000-0000-0000-000000000001', NULL, 'Flat Serve Reps',           '30 serves to deuce court, tracking consistency'),
+('c0000000-0000-0000-0000-000000000002', NULL, 'Toss Consistency',          'Catch-toss without hitting, 20 reps'),
+('c0000000-0000-0000-0000-000000000003', NULL, 'Cross Court Forehand',      'Rally cross court from deuce side, 50 balls'),
+('c0000000-0000-0000-0000-000000000004', NULL, 'Inside Out Forehand',       'Run around backhand and hit inside out forehand'),
+('c0000000-0000-0000-0000-000000000005', NULL, 'Two Handed Backhand Drive', 'Drive backhand down the line, 40 balls'),
+('c0000000-0000-0000-0000-000000000006', NULL, 'Slice Backhand',            'Low slice backhand, stay low through contact'),
+('c0000000-0000-0000-0000-000000000007', NULL, 'Reaction Volley',           'Rapid net feeds, quick hands reaction drill'),
+('c0000000-0000-0000-0000-000000000008', NULL, 'Half Volley Touch',         'Soft hands at the T, half volley placement'),
+('c0000000-0000-0000-0000-000000000009', NULL, 'Ladder Drill',              'Quick feet agility ladder, 3 rounds'),
+('c0000000-0000-0000-0000-000000000010', NULL, 'Spider Drill',              'Run to each corner of the court and back to center');
 
 -- ─── LINK DRILLS TO CATEGORIES ───────────────────────────────────────────────
 
