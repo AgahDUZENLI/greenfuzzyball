@@ -339,16 +339,54 @@ def import_shared_drill(
                 VALUES (%s, %s)
             """, (str(coach["user_id"]), str(new_drill_id)))
 
+            # Handle categories
             category_ids = original["category_ids"] or []
             if isinstance(category_ids, str):
                 category_ids = [c.strip() for c in category_ids.strip('{}').split(',') if c.strip()]
 
             for cat_id in category_ids:
-                if cat_id:
+                if not cat_id:
+                    continue
+
+                # Check category ownership
+                cursor.execute("""
+                    SELECT drill_category_id, name, coach_id 
+                    FROM drill_categories 
+                    WHERE drill_category_id = %s
+                """, (str(cat_id),))
+                cat = cursor.fetchone()
+
+                if not cat:
+                    continue
+
+                if cat["coach_id"] is None:
+                    # System category — use directly
+                    new_cat_id = str(cat_id)
+                elif str(cat["coach_id"]) != str(coach["user_id"]):
+                    # Another coach's custom category — copy for this coach
                     cursor.execute("""
-                        INSERT INTO drill_drill_categories (drill_id, drill_category_id)
-                        VALUES (%s, %s) ON CONFLICT DO NOTHING
-                    """, (str(new_drill_id), str(cat_id)))
+                        SELECT drill_category_id FROM drill_categories
+                        WHERE coach_id = %s AND LOWER(name) = LOWER(%s)
+                    """, (str(coach["user_id"]), cat["name"]))
+                    existing_cat = cursor.fetchone()
+
+                    if existing_cat:
+                        new_cat_id = str(existing_cat["drill_category_id"])
+                    else:
+                        cursor.execute("""
+                            INSERT INTO drill_categories (coach_id, name)
+                            VALUES (%s, %s)
+                            RETURNING drill_category_id
+                        """, (str(coach["user_id"]), cat["name"]))
+                        new_cat_id = str(cursor.fetchone()["drill_category_id"])
+                else:
+                    # Coach's own category — use directly
+                    new_cat_id = str(cat_id)
+
+                cursor.execute("""
+                    INSERT INTO drill_drill_categories (drill_id, drill_category_id)
+                    VALUES (%s, %s) ON CONFLICT DO NOTHING
+                """, (str(new_drill_id), new_cat_id))
 
             conn.commit()
             return {"message": "Drill imported successfully", "drill_id": str(new_drill_id), "name": name}
@@ -361,4 +399,75 @@ def import_shared_drill(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not import drill"
+        )
+    
+# ─── Create Category ─────────────────────────────────────────────────────
+   
+@router.post("/categories", status_code=201)
+def create_category(
+    data: dict,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                INSERT INTO drill_categories (coach_id, name)
+                VALUES (%s, %s)
+                RETURNING drill_category_id, name, coach_id
+            """, (str(coach["user_id"]), data.get("name")))
+            conn.commit()
+            return cursor.fetchone()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not create category"
+        )
+    
+
+# ─── DELETE CATEGORY ─────────────────────────────────────────────────────────
+
+@router.delete("/categories/{category_id}", status_code=204)
+def delete_category(
+    category_id: str,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor() as cursor:
+            # Only allow deleting own categories
+            cursor.execute("""
+                SELECT coach_id FROM drill_categories
+                WHERE drill_category_id = %s
+            """, (category_id,))
+            cat = cursor.fetchone()
+
+            if not cat:
+                raise HTTPException(status_code=404, detail="Category not found")
+
+            if cat[0] is None:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cannot delete system categories"
+                )
+
+            if str(cat[0]) != str(coach["user_id"]):
+                raise HTTPException(
+                    status_code=403,
+                    detail="You can only delete your own categories"
+                )
+
+            cursor.execute("""
+                DELETE FROM drill_categories WHERE drill_category_id = %s
+            """, (category_id,))
+            conn.commit()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not delete category"
         )

@@ -47,6 +47,8 @@ export const updateDrill = (id, data) => api.put(`/drills/${id}`, data)
 export const deleteDrill = (id) => api.delete(`/drills/${id}`)
 export const removeDrillFromLibrary = (id) => api.delete(`/drills/${id}/remove`)
 export const getSharedDrill = (token) => api.get(`/drills/share/${token}`)
+export const createDrillCategory = (data) => api.post('/drills/categories', data)
+export const deleteDrillCategory = (id) => api.delete(`/drills/categories/${id}`)
 
 // Sessions
 export const getSessions = (date) => api.get(date ? `/sessions/?date=${date}` : '/sessions/')

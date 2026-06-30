@@ -1,7 +1,7 @@
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
-import { Calendar as CalendarIcon, ChevronUp, ChevronDown } from 'lucide-react'
-import { hasConflict, timeToMinutes, minutesToTime } from '../utils/timeUtils'
+import { Calendar as CalendarIcon, ChevronUp, ChevronDown, ArrowRight } from 'lucide-react'
+import { hasConflict, timeToMinutes, minutesToTime, formatTime12 } from '../utils/timeUtils'
 
 const QUICK_PICKS = ['09:00', '10:00', '11:30', '13:00', '14:30', '16:00', '18:00', '18:30']
 
@@ -11,35 +11,50 @@ function TimeSelector({ timeSlot, onTimeChange, duration, daySessions, conflict 
     onTimeChange(minutesToTime(Math.max(0, Math.min(23 * 60 + 30, mins))))
   }
 
+  const endTime = minutesToTime(Math.min(timeToMinutes(timeSlot) + (duration || 60), 23 * 60 + 59))
+
   return (
     <div style={{ marginBottom: spacing[4] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[2] }}>
         <Typography variant="label">START TIME</Typography>
         <Typography variant="caption" color={colors.primary}>Any time · 30-min steps</Typography>
       </div>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: spacing[3], padding: '12px 16px',
-        border: `1.5px solid ${conflict ? colors.error : colors.primary}`,
-        borderRadius: radius.lg,
-        backgroundColor: conflict ? colors.errorLight : 'white'
-      }}>
-        <CalendarIcon size={18} color={conflict ? colors.error : colors.primary} />
-        <input type="time" value={timeSlot} onChange={e => onTimeChange(e.target.value)} style={{
-          border: 'none', outline: 'none', fontSize: '22px', fontWeight: '700',
-          fontFamily: 'inherit', color: conflict ? colors.error : colors.black,
-          flex: 1, backgroundColor: 'transparent'
-        }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {[30, -30].map(delta => (
-            <button key={delta} onClick={() => adjustTime(delta)} style={{
-              border: 'none', backgroundColor: colors.gray[100],
-              borderRadius: '4px', cursor: 'pointer', padding: '2px 6px'
-            }}>
-              {delta > 0
-                ? <ChevronUp size={14} color={colors.gray[500]} />
-                : <ChevronDown size={14} color={colors.gray[500]} />}
-            </button>
-          ))}
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: spacing[3], padding: '12px 16px',
+          border: `1.5px solid ${conflict ? colors.error : colors.primary}`,
+          borderRadius: radius.lg, flex: 1,
+          backgroundColor: conflict ? colors.errorLight : 'white'
+        }}>
+          <CalendarIcon size={18} color={conflict ? colors.error : colors.primary} />
+          <input type="time" value={timeSlot} onChange={e => onTimeChange(e.target.value)} style={{
+            border: 'none', outline: 'none', fontSize: '22px', fontWeight: '700',
+            fontFamily: 'inherit', color: conflict ? colors.error : colors.black,
+            flex: 1, backgroundColor: 'transparent'
+          }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {[30, -30].map(delta => (
+              <button key={delta} onClick={() => adjustTime(delta)} style={{
+                border: 'none', backgroundColor: colors.gray[100],
+                borderRadius: '4px', cursor: 'pointer', padding: '2px 6px'
+              }}>
+                {delta > 0
+                  ? <ChevronUp size={14} color={colors.gray[500]} />
+                  : <ChevronDown size={14} color={colors.gray[500]} />}
+              </button>
+            ))}
+          </div>
+        </div>
+        <ArrowRight size={16} color={colors.gray[400]} style={{ flexShrink: 0 }} />
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '10px 14px', border: `1.5px solid ${colors.gray[200]}`,
+          borderRadius: radius.lg, backgroundColor: colors.gray[50], minWidth: '90px'
+        }}>
+          <Typography variant="caption" color={colors.gray[400]} style={{ marginBottom: '2px' }}>ENDS AT</Typography>
+          <span style={{ fontSize: '18px', fontWeight: '700', color: colors.gray[600], fontFamily: 'inherit' }}>
+            {formatTime12(endTime)}
+          </span>
         </div>
       </div>
 

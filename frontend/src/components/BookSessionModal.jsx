@@ -3,7 +3,7 @@ import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Button from './Button'
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react'
-import { createSession, getCoachCourts, getSessions, getCoachProfile, getStudents } from '../services/api'
+import { createSession, getCoachCourts, getSessions, getStudents } from '../services/api'
 import { hasConflict, timeToMinutes, formatTime12 } from '../utils/timeUtils'
 import StudentCard from './StudentCard'
 import DateSelector from './DateSelector'
@@ -32,26 +32,15 @@ function BookSessionModal({
   const [courts, setCourts] = useState([])
   const [daySessions, setDaySessions] = useState([])
   const [date, setDate] = useState(defaultDate)
-  const [duration, setDuration] = useState(initialDuration || 60)
   const [timeSlot, setTimeSlot] = useState('09:00')
   const [courtId, setCourtId] = useState(initialCourtId || '')
   const [type, setType] = useState(preStudents.length > 1 ? 'group' : 'private')
+  const [duration, setDuration] = useState(initialDuration || 60)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [durations, setDurations] = useState([60, 90, 120])
 
   useEffect(() => {
     getStudents().then(res => setAllStudents(res.data)).catch(() => setAllStudents([]))
-  }, [])
-
-  useEffect(() => {
-    getCoachProfile()
-      .then(res => {
-        const d = res.data.session_duration || [60, 90, 120]
-        setDurations(d)
-        if (!initialDuration) setDuration(d[0])
-      })
-      .catch(() => setDurations([60, 90, 120]))
   }, [])
 
   useEffect(() => {
@@ -250,7 +239,6 @@ function BookSessionModal({
             <DateSelector
               date={date} onDateChange={setDate}
               duration={duration} onDurationChange={setDuration}
-              durations={durations}
             />
             <TimeSelector
               timeSlot={timeSlot} onTimeChange={setTimeSlot}

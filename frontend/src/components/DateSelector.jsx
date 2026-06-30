@@ -1,7 +1,17 @@
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 
-function DateSelector({ date, onDateChange, duration, onDurationChange, durations }) {
+const ALL_DURATIONS = [30, 45, 60, 75, 90, 105, 120, 150, 180]
+
+const formatDuration = (mins) => {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  if (h === 0) return `${m} min`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}min`
+}
+
+function DateSelector({ date, onDateChange, duration, onDurationChange }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
       <div>
@@ -24,10 +34,8 @@ function DateSelector({ date, onDateChange, duration, onDurationChange, duration
           backgroundColor: 'white', cursor: 'pointer',
           outline: 'none', boxSizing: 'border-box'
         }}>
-          {durations.map(d => (
-            <option key={d} value={d}>
-              {d === 30 ? '30 min' : d === 60 ? '1 hour' : d === 90 ? '1.5 hours' : '2 hours'}
-            </option>
+          {ALL_DURATIONS.map(d => (
+            <option key={d} value={d}>{formatDuration(d)}</option>
           ))}
         </select>
       </div>
