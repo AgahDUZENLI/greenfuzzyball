@@ -497,27 +497,9 @@ function Settings() {
                       </div>
                     )}
                   </div>
-
-                  {/* 2FA */}
-                  <div
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: `${spacing[4]} ${spacing[6]}`, cursor: 'pointer'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = colors.gray[50]}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <div>
-                      <Typography variant="body" style={{ fontWeight: '500' }}>Two-factor authentication</Typography>
-                      <Typography variant="caption" color={colors.gray[400]}>Add an extra layer of security</Typography>
-                    </div>
-                    <ChevronRight size={16} color={colors.gray[400]} />
                   </div>
-
                 </div>
-              </div>
             )}
-
           </div>
         </div>
       </div>
