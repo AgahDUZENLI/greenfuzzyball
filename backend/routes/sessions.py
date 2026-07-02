@@ -57,6 +57,45 @@ def create_session(
 
             conn.commit()
 
+            # Fetch student names
+            student_names = []
+            if data.student_ids:
+                cursor.execute("""
+                    SELECT name FROM users
+                    WHERE user_id = ANY(%s::uuid[])
+                """, ([str(s) for s in data.student_ids],))
+                student_names = [row["name"] for row in cursor.fetchall()]
+
+            # Fetch court name
+            court_name = None
+            if data.court_id:
+                cursor.execute("""
+                    SELECT name FROM courts WHERE court_id = %s
+                """, (str(data.court_id),))
+                court = cursor.fetchone()
+                if court:
+                    court_name = court["name"]
+
+            # Send booking confirmation email
+            try:
+                from services.email_service import send_email, session_booked_email
+                body = session_booked_email(
+                    coach_name=coach["name"],
+                    student_names=student_names,
+                    date=str(data.date),
+                    start_time=str(data.start_time),
+                    duration=data.duration_minutes,
+                    court_name=court_name
+                )
+                send_email(
+                    to=coach["email"],
+                    subject=f"Session booked — {', '.join(student_names) if student_names else 'No students'}",
+                    body=body
+                )
+            except Exception as e:
+                print(f"EMAIL ERROR: {e}")
+
+            # Return session
             cursor.execute("""
                 SELECT 
                     s.session_id, s.date, s.start_time, s.duration_minutes,
@@ -76,7 +115,6 @@ def create_session(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not create session"
         )
-
 
 # ─── GET ALL SESSIONS (with optional date filter) ─────────────────────────────
 
