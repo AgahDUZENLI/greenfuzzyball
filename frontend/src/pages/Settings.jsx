@@ -50,6 +50,12 @@ function Settings() {
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
 
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    session_booked: true,
+    session_reminder: true,
+    weekly_summary: false
+  })
+
   useEffect(() => {
     getCoachProfile()
       .then(res => {
@@ -63,6 +69,11 @@ function Settings() {
         setAvailEnd(p.availability_end?.slice(0, 5) || '23:59')
         setSessionDuration(p.session_duration || [60, 90, 120])
         setCoachingDays(p.coaching_days || DAYS)
+        setNotificationPrefs(p.notification_preferences || {
+          session_booked: true,
+          session_reminder: true,
+          weekly_summary: false
+        })
       })
       .finally(() => setLoading(false))
   }, [])
@@ -75,7 +86,8 @@ function Settings() {
         availability_start: availStart,
         availability_end: availEnd,
         session_duration: sessionDuration,
-        coaching_days: coachingDays
+        coaching_days: coachingDays,
+        notification_preferences: notificationPrefs
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -368,11 +380,23 @@ function Settings() {
                   border: `1px solid ${colors.gray[200]}`, overflow: 'hidden'
                 }}>
                   {[
-                    { label: 'Session reminders', desc: 'Get notified before sessions start' },
-                    { label: 'New student requests', desc: 'When a student requests to join' },
-                    { label: 'Weekly summary', desc: 'Weekly recap every Monday' },
+                    { 
+                      key: 'session_booked',
+                      label: 'Session confirmation', 
+                      desc: 'Email when you book a new session'
+                    },
+                    { 
+                      key: 'session_reminder',
+                      label: 'Session reminders', 
+                      desc: 'Email reminder the day before a session'
+                    },
+                    { 
+                      key: 'weekly_summary',
+                      label: 'Weekly summary', 
+                      desc: 'Weekly recap every Monday'
+                    },
                   ].map((item, i, arr) => (
-                    <div key={item.label} style={{
+                    <div key={item.key} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       padding: `${spacing[4]} ${spacing[6]}`,
                       borderBottom: i < arr.length - 1 ? `1px solid ${colors.gray[100]}` : 'none'
@@ -381,10 +405,16 @@ function Settings() {
                         <Typography variant="body" style={{ fontWeight: '500' }}>{item.label}</Typography>
                         <Typography variant="caption" color={colors.gray[400]}>{item.desc}</Typography>
                       </div>
-                      <Toggle />
+                      <Toggle
+                        on={notificationPrefs[item.key] || false}
+                        onChange={val => setNotificationPrefs(prev => ({ ...prev, [item.key]: val }))}
+                      />
                     </div>
                   ))}
                 </div>
+                <Typography variant="caption" color={colors.gray[400]} style={{ display: 'block', marginTop: spacing[3] }}>
+                  Emails sent to {email}. Click Save changes to apply.
+                </Typography>
               </div>
             )}
 
@@ -507,11 +537,10 @@ function Settings() {
   )
 }
 
-function Toggle({ defaultOn = false }) {
-  const [on, setOn] = useState(defaultOn)
+function Toggle({ on, onChange }) {
   return (
     <div
-      onClick={() => setOn(!on)}
+      onClick={() => onChange(!on)}
       style={{
         width: '44px', height: '24px', borderRadius: '12px',
         backgroundColor: on ? colors.primary : colors.gray[200],

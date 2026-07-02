@@ -24,7 +24,8 @@ CREATE TABLE coaches (
     availability_start TIME DEFAULT '00:00',
     availability_end   TIME DEFAULT '23:59',
     session_duration   JSONB DEFAULT '[60, 90, 120]',
-    coaching_days      JSONB DEFAULT '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]'
+    coaching_days      JSONB DEFAULT '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]',
+    notification_preferences JSONB DEFAULT '{"session_booked": true, "session_reminder": true, "weekly_summary": false}'
 );
 
 -- ─── STUDENTS ────────────────────────────────────────────────────────────────

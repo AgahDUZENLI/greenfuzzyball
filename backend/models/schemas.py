@@ -45,15 +45,16 @@ class ResetPasswordRequest(BaseModel):
 class CoachResponse(BaseModel):
     user_id: UUID
     name: str
-    email: EmailStr
-    phone: Optional[str] = None
-    location: Optional[str] = None
-    notes: Optional[str] = None
+    email: Optional[str]
+    phone: Optional[str]
+    location: Optional[str]
+    notes: Optional[str]
     created_at: datetime
-    availability_start: Optional[time] = None
-    availability_end: Optional[time] = None
-    session_duration: Optional[list[int]] = None
-    coaching_days: Optional[list[str]] = None
+    availability_start: Optional[time]
+    availability_end: Optional[time]
+    session_duration: Optional[list[int]]
+    coaching_days: Optional[list[str]]
+    notification_preferences: Optional[dict] = None
 
 # ─── STUDENTS ───────────────────────────────────
 

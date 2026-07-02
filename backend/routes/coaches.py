@@ -21,7 +21,8 @@ def get_profile(
                 u.user_id, u.name, u.email, u.phone, u.location,
                 u.created_at, c.notes,
                 c.availability_start, c.availability_end,
-                c.session_duration, c.coaching_days
+                c.session_duration, c.coaching_days,
+                c.notification_preferences
             FROM users u
             JOIN coaches c ON u.user_id = c.user_id
             WHERE u.user_id = %s
@@ -57,7 +58,8 @@ def update_profile(
                     availability_start = %s,
                     availability_end = %s,
                     session_duration = %s,
-                    coaching_days = %s
+                    coaching_days = %s,
+                    notification_preferences = %s
                 WHERE user_id = %s
             """, (
                 data.get("notes"),
@@ -65,6 +67,11 @@ def update_profile(
                 data.get("availability_end"),
                 json.dumps(data.get("session_duration", [60, 90, 120])),
                 json.dumps(data.get("coaching_days", [])),
+                json.dumps(data.get("notification_preferences", {
+                    "session_booked": True,
+                    "session_reminder": True,
+                    "weekly_summary": False
+                })),
                 str(coach["user_id"])
             ))
             conn.commit()

@@ -13,14 +13,15 @@ INSERT INTO users (user_id, name, email, hashed_password, role, phone, location)
     'Houston, TX'
 );
 
-INSERT INTO coaches (user_id, notes, availability_start, availability_end, session_duration, coaching_days) VALUES
+INSERT INTO coaches (user_id, notes, availability_start, availability_end, session_duration, coaching_days, notification_preferences) VALUES
 (
     'a0000000-0000-0000-0000-000000000001',
     '10 years coaching experience. Specializes in juniors and competitive adults.',
     '00:00',
     '23:59',
     '[60, 90]',
-    '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]'
+    '["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]',
+    '{"session_booked": true, "session_reminder": true, "weekly_summary": false}'
 );
 
 -- ─── STUDENTS ────────────────────────────────────────────────────────────────
