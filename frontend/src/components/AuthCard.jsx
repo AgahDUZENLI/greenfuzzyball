@@ -20,20 +20,20 @@ function AuthCard({ leftContent, children }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <img
             src="/logo.png"
-            alt="CoachPilot"
+            alt="Green Fuzzy Ball"
             style={{
             width: '40px',
             height: '40px',
             borderRadius: '10px'
             }}
         />
-        <span style={{ fontSize: '18px', fontWeight: '700' }}>CoachPilot</span>
+        <span style={{ fontSize: '18px', fontWeight: '700' }}>Green Fuzzy Ball</span>
         </div>
 
         {/* Whatever content you pass in */}
         <div>{leftContent}</div>
 
-        <p style={{ color: '#6b7280', fontSize: '13px' }}>© 2026 CoachPilot</p>
+        <p style={{ color: '#6b7280', fontSize: '13px' }}>© 2026 Green Fuzzy Ball</p>
       </div>
 
       {/* White right panel */}

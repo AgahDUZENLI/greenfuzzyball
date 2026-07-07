@@ -41,11 +41,11 @@ function Sidebar() {
       }}>
         <img
           src="/logo.png"
-          alt="CoachPilot"
+          alt="Green Fuzzy Ball"
           style={{ width: '36px', height: '36px', borderRadius: radius.lg }}
         />
         <span style={{ fontWeight: '700', fontSize: '16px', color: colors.black }}>
-          CoachPilot
+          Green Fuzzy Ball
         </span>
       </div>
 

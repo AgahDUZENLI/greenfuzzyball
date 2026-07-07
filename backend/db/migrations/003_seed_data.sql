@@ -6,7 +6,7 @@ INSERT INTO users (user_id, name, email, hashed_password, role, phone, location)
 (
     'a0000000-0000-0000-0000-000000000001',
     'Alex Rivera',
-    'alex@coachpilot.com',
+    'alex@greenfuzzyball.com',
     '$2b$12$CrPZb7JpGru0FrU0Y2IMFujAj5PWxVYxk2J5nYWmijtIg0RBR6RGa',
     'coach',
     '+1 713 555 0101',

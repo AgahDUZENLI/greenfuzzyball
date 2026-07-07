@@ -1,9 +1,9 @@
 # 3. Architecture Diagram
 
-![Architecture](docs/images/CoachPilot-Architecture.png)
+![Architecture](docs/images/GreenFuzzyBall-Architecture.png)
 
 ### Overview
-CoachPilot is a self-hosted full-stack web application running on a
+Green Fuzzy Ball is a self-hosted full-stack web application running on a
 home server. All services run as Docker containers managed by Docker
 Compose, making the setup fully reproducible and portable.
 
@@ -31,7 +31,7 @@ Compose, making the setup fully reproducible and portable.
 
 ### JWT Token Strategy
 
-CoachPilot uses JWT (JSON Web Token) for authentication with two token types:
+Green Fuzzy Ball uses JWT (JSON Web Token) for authentication with two token types:
 
 | Token | Expiry | Purpose |
 |---|---|---|

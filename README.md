@@ -1,4 +1,4 @@
-# CoachPilot 🎾
+# Green Fuzzy Ball 🎾
 
 A self-hosted tennis coaching management app for tracking students,
 sessions, drills, and progress over time.
@@ -6,7 +6,7 @@ sessions, drills, and progress over time.
 Built as a full-stack portfolio project with a focus on database
 design, pure SQL, and self-hosted infrastructure.
 
-![Architecture](docs/images/CoachPilot-Architecture.png)
+![Architecture](docs/images/GreenFuzzyBall-Architecture.png)
 
 ---
 
@@ -38,7 +38,7 @@ design, pure SQL, and self-hosted infrastructure.
 
 ## Architecture
 
-CoachPilot runs entirely on a home server. All services are
+Green Fuzzy Ball runs entirely on a home server. All services are
 containerized with Docker Compose — Nginx, FastAPI, and PostgreSQL
 each run in their own container with a shared Docker volume for
 persistent data.
@@ -67,7 +67,7 @@ access control for coaches and students.
 ---
 
 ## Project Structure
-CoachPilot/
+GreenFuzzyBall/
 ├── README.md
 ├── docker-compose.yml
 ├── docs/
@@ -75,8 +75,8 @@ CoachPilot/
 │   ├── database-design.md
 │   ├── api.md
 │   └── images/
-│       ├── CoachPilot-Architecture.png
-│       └── CoachPilot-ERD.png
+│       ├── GreenFuzzyBall-Architecture.png
+│       └── GreenFuzzyBall-ERD.png
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -100,8 +100,8 @@ CoachPilot/
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/coachpilot.git
-cd coachpilot
+git clone https://github.com/yourusername/greenfuzzyball.git
+cd greenfuzzyball
 
 # Copy environment variables
 cp .env.example .env

@@ -150,9 +150,9 @@ def reset_user_password(conn, user_id, new_password: str):
 
 def send_reset_email(to_email: str, reset_link: str):
     msg = MIMEMultipart()
-    msg['From'] = f"CoachPilot <{settings.GMAIL_USER}>"
+    msg['From'] = f"Green Fuzzy Ball <{settings.GMAIL_USER}>"
     msg['To'] = to_email
-    msg['Subject'] = 'Reset your CoachPilot password'
+    msg['Subject'] = 'Reset your Green Fuzzy Ball password'
 
     body = f"""
     <html>
@@ -160,14 +160,14 @@ def send_reset_email(to_email: str, reset_link: str):
         
         <div style="margin-bottom: 32px;">
           <span style="font-size: 24px;">🎾</span>
-          <strong style="font-size: 18px; margin-left: 8px;">CoachPilot</strong>
+          <strong style="font-size: 18px; margin-left: 8px;">Green Fuzzy Ball</strong>
         </div>
 
         <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">
           Reset your password
         </h2>
         <p style="color: #6b7280; margin-bottom: 32px;">
-          We received a request to reset your CoachPilot password. 
+          We received a request to reset your Green Fuzzy Ball password.
           Click the button below to choose a new one.
         </p>
 
@@ -194,7 +194,7 @@ def send_reset_email(to_email: str, reset_link: str):
 
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
         <p style="color: #9ca3af; font-size: 12px;">
-          © 2026 CoachPilot
+          © 2026 Green Fuzzy Ball
         </p>
 
       </body>

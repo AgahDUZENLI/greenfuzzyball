@@ -45,7 +45,7 @@ def session_booked_email(coach_name: str, student_names: list, date: str, start_
                 <tr><td style="padding: 8px 0; color: #9ca3af; font-size: 13px;">COURT</td><td style="padding: 8px 0; color: #111827; font-weight: 600;">{court_label}</td></tr>
             </table>
         </div>
-        <p style="color: #6b7280; font-size: 13px;">This is an automated message from CoachPilot.</p>
+        <p style="color: #6b7280; font-size: 13px;">This is an automated message from Green Fuzzy Ball.</p>
     </div>
     """
     return body
@@ -75,7 +75,7 @@ def session_reminder_email(coach_name: str, student_names: list, date: str, star
                 <tr><td style="padding: 8px 0; color: #9ca3af; font-size: 13px;">COURT</td><td style="padding: 8px 0; color: #111827; font-weight: 600;">{court_label}</td></tr>
             </table>
         </div>
-        <p style="color: #6b7280; font-size: 13px;">This is an automated message from CoachPilot.</p>
+        <p style="color: #6b7280; font-size: 13px;">This is an automated message from Green Fuzzy Ball.</p>
     </div>
     """
     return body

@@ -2,7 +2,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: coachpilot-postgres
+    container_name: greenfuzzyball-postgres
     env_file:
       - .env
     environment:
@@ -24,7 +24,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: coachpilot-backend
+    container_name: greenfuzzyball-backend
     env_file:
       - .env
     ports:
@@ -38,7 +38,7 @@ services:
 
   frontend:
     image: node:20
-    container_name: coachpilot-frontend
+    container_name: greenfuzzyball-frontend
     working_dir: /app
     volumes:
       - ./frontend:/app

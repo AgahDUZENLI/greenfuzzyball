@@ -13,15 +13,15 @@ from routes import auth, coaches, students, drills, sessions, courts
 async def lifespan(app: FastAPI):
     # Startup
     init_db()
-    print(f"CoachPilot API starting in {settings.ENVIRONMENT} mode")
+    print(f"Green Fuzzy Ball API starting in {settings.ENVIRONMENT} mode")
     yield
     # Shutdown
     close_db()
-    print("CoachPilot API shutting down")
+    print("Green Fuzzy Ball API shutting down")
 
 
 app = FastAPI(
-    title="CoachPilot API",
+    title="Green Fuzzy Ball API",
     description="Tennis coaching management API",
     version="1.0.0",
     lifespan=lifespan
@@ -52,6 +52,6 @@ app.include_router(courts.router, prefix="/courts", tags=["courts"])
 def health_check():
     return {
         "status": "healthy",
-        "app": "CoachPilot API",
+        "app": "Green Fuzzy Ball API",
         "version": "1.0.0"
     }
