@@ -12,6 +12,7 @@ import AuthCallback from './pages/AuthCallback'
 import SessionDetail from './pages/SessionDetail'
 import DrillShare from './pages/DrillShare'
 import Settings from './pages/Settings'
+import Landing from './pages/Landing'
 
 
 
@@ -28,46 +29,13 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={user ? <Navigate to="/" /> : <Login />}
-      />
-      <Route
-        path="/register"
-        element={user ? <Navigate to="/" /> : <Register />}
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/students"
-        element={
-          <ProtectedRoute>
-            <Students />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/drills"
-        element={
-          <ProtectedRoute>
-            <Drills />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sessions"
-        element={
-          <ProtectedRoute>
-            <Sessions />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+      <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
+      
+      <Route path="/" element={user ? <Dashboard /> : <Landing />} />    
+      <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
+      <Route path="/drills" element={<ProtectedRoute><Drills /></ProtectedRoute>} />
+      <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
@@ -75,7 +43,7 @@ function AppRoutes() {
       <Route path="/drills/share/:token" element={<DrillShare />} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />
-      
+
     </Routes>
   )
 }
