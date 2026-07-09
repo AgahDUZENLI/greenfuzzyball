@@ -132,17 +132,20 @@ def refresh_token(refresh_token: str, conn=Depends(get_db)):
 def forgot_password(data: ForgotPasswordRequest, conn=Depends(get_db)):
     user = get_user_by_email(conn, data.email)
 
-    if user:
-        token, expires_at = generate_password_reset_token()
-        store_reset_token(conn, data.email, token, expires_at)
-        reset_link = f"http://localhost:5173/reset-password?token={token}"
-        try:
-            send_reset_email(data.email, reset_link)
-        except Exception as e:
-            print(f"EMAIL ERROR: {e}")
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with that email address"
+        )
+    token, expires_at = generate_password_reset_token()
+    store_reset_token(conn, data.email, token, expires_at)
+    reset_link = f"http://localhost:5173/reset-password?token={token}"
+    try:
+        send_reset_email(data.email, reset_link)
+    except Exception as e:
+        print(f"EMAIL ERROR: {e}")
 
-    return {"message": "If that email exists you will receive a reset link"}
-
+    return {"message": "Reset link sent to your email"}
 
 # ─── RESET PASSWORD ──────────────────────────────────────────────────────────
 

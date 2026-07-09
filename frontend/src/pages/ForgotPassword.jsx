@@ -25,8 +25,12 @@ function ForgotPassword() {
     try {
       await forgotPassword(email)
       setSent(true)
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setError('No account found with that email address.')
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -54,7 +58,6 @@ function ForgotPassword() {
           Enter the email linked to your account.
         </Typography>
 
-        {/* Error */}
         {error && (
           <div style={{
             backgroundColor: colors.errorLight,
@@ -66,7 +69,6 @@ function ForgotPassword() {
           </div>
         )}
 
-        {/* Success */}
         {sent ? (
           <div style={{
             backgroundColor: colors.primaryLight,
@@ -75,7 +77,7 @@ function ForgotPassword() {
             marginBottom: spacing[4],
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '40px', marginBottom: spacing[3] }}></div>
+            <div style={{ fontSize: '40px', marginBottom: spacing[3] }}>📧</div>
             <Typography variant="h4" mb={spacing[2]}>
               Check your inbox
             </Typography>
