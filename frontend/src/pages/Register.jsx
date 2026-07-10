@@ -9,9 +9,11 @@ import Typography from '../components/Typography'
 import TabToggle from '../components/TabToggle'
 import FeatureList from '../components/FeatureList'
 import TextLink from '../components/TextLink'
+import Divider from '../components/Divider'
 import { User, Mail, Lock, Eye, EyeOff, Building } from 'lucide-react'
 import { colors, spacing, radius } from '../styles/tokens'
 import { register } from '../services/api'
+
 
 const PANELS = {
   coach: {
@@ -154,6 +156,19 @@ function Register() {
               onChange={e => setLocation(e.target.value)}
               disabled={tab === 'student'}
             />
+          </div>
+
+          {/* Divider */}
+          <Divider label="or continue with" />
+
+          {/* Apple + Google */}
+          <div style={{ display: 'flex', gap: spacing[3], marginBottom: spacing[6] }}>
+            <Button 
+              variant="outline" fullWidth 
+              onClick={() => window.location.href = 'http://localhost:8000/auth/google'}
+              >
+              Google
+            </Button>
           </div>
 
           {/* Terms */}

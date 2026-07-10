@@ -35,8 +35,8 @@ const PANELS = {
 function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()        // ← moved inside
-  const resetSuccess = searchParams.get('reset') === 'success'  // ← moved inside
+  const [searchParams] = useSearchParams()       
+  const resetSuccess = searchParams.get('reset') === 'success'  
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
