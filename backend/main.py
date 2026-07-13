@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
-
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from config import settings
 from db.connection import init_db, close_db
@@ -11,11 +11,9 @@ from routes import auth, coaches, students, drills, sessions, courts
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     init_db()
     print(f"Green Fuzzy Ball API starting in {settings.ENVIRONMENT} mode")
     yield
-    # Shutdown
     close_db()
     print("Green Fuzzy Ball API shutting down")
 
@@ -27,18 +25,27 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-
-# CORS — allows React frontend to talk to the API
 app.add_middleware(
-    SessionMiddleware, 
+    SessionMiddleware,
     secret_key=settings.SECRET_KEY,
-    https_only=False,
+    https_only=True,
     same_site="none"
 )
 
-# Routes
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://greenfuzzyball.duckdns.org"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(coaches.router, prefix="/coaches", tags=["coaches"])
 app.include_router(students.router, prefix="/students", tags=["students"])
