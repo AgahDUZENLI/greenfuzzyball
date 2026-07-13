@@ -50,6 +50,8 @@ services:
       - "127.0.0.1:5173:5173"
     depends_on:
       - backend
+    environment:
+      - VITE_API_URL=https://greenfuzzyball.duckdns.org/api
     command: sh -c "npm install && npm run dev -- --host"
     networks:
       - app-network
