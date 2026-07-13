@@ -189,11 +189,11 @@ oauth.register(
 @router.get("/google")
 async def google_login(request: Request):
     redirect_uri = f"{settings.BACKEND_URL}/auth/google/callback"
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    return await oauth.google.authorize_redirect(request, redirect_uri, state=None)
 
 @router.get("/google/callback")
 async def google_callback(request: Request, conn=Depends(get_db)):
-    token = await oauth.google.authorize_access_token(request)
+    token = await oauth.google.authorize_access_token(request, state=None)
     user_info = token.get("userinfo")
 
     if not user_info:
