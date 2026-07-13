@@ -17,6 +17,10 @@ def get_db():
     conn = connection_pool.getconn()
     try:
         yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         connection_pool.putconn(conn)
 
