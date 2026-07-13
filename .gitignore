@@ -200,4 +200,4 @@ Thumbs.db
 .vscode/
 
 # Logs
-*.log
+*.log.env.local
