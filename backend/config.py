@@ -4,6 +4,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
+    # Environment
+    ENVIRONMENT: str = "development"
+
+    # URLs
+    FRONTEND_URL: str = "http://localhost:5173"
+    BACKEND_URL: str = "http://localhost:8000"
+
     # Database
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
@@ -16,9 +23,6 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-
-    # Environment
-    ENVIRONMENT: str = "development"
 
     #GMAIL
     GMAIL_USER: str

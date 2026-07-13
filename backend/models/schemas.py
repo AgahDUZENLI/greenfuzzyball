@@ -31,13 +31,17 @@ class UserResponse(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
-class ForgotPasswordResponse(BaseModel):
-    message: str
-    reset_link: str #dev-mode: returned directly for testing, in production this would be sent via email
-
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+    
 
 
 # ─── COACHES ────────────────────────────────────

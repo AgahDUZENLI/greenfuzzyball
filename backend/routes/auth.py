@@ -14,7 +14,9 @@ from models.schemas import (
     TokenResponse,
     UserResponse,
     ForgotPasswordRequest,
-    ResetPasswordRequest
+    ResetPasswordRequest,
+    ChangePasswordRequest,
+    RefreshTokenRequest
 )
 from services.auth_service import (
     get_user_by_email,
@@ -61,6 +63,7 @@ def register(data: RegisterRequest, conn=Depends(get_db)):
         return user
 
     except Exception as e:
+        conn.rollback()
         print(f"REGISTER ERROR: {type(e).__name__}: {str(e)}")
         if "unique constraint" in str(e).lower():
             raise HTTPException(
@@ -71,7 +74,8 @@ def register(data: RegisterRequest, conn=Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Something went wrong"
         )
-    
+
+
 # ─── LOGIN ───────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)
@@ -98,8 +102,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), conn=Depends(get_db)
 # ─── REFRESH TOKEN ───────────────────────────────────────────────────────────
 
 @router.post("/refresh", response_model=TokenResponse)
-def refresh_token(refresh_token: str, conn=Depends(get_db)):
-    payload = decode_token(refresh_token)
+def refresh_access_token(data: RefreshTokenRequest, conn=Depends(get_db)):
+    payload = decode_token(data.refresh_token)
 
     if payload is None or payload.get("type") != "refresh":
         raise HTTPException(
@@ -139,13 +143,14 @@ def forgot_password(data: ForgotPasswordRequest, conn=Depends(get_db)):
         )
     token, expires_at = generate_password_reset_token()
     store_reset_token(conn, data.email, token, expires_at)
-    reset_link = f"http://localhost:5173/reset-password?token={token}"
+    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
     try:
         send_reset_email(data.email, reset_link)
     except Exception as e:
         print(f"EMAIL ERROR: {e}")
 
     return {"message": "Reset link sent to your email"}
+
 
 # ─── RESET PASSWORD ──────────────────────────────────────────────────────────
 
@@ -183,7 +188,7 @@ oauth.register(
 
 @router.get("/google")
 async def google_login(request: Request):
-    redirect_uri = "http://localhost:8000/auth/google/callback"
+    redirect_uri = f"{settings.BACKEND_URL}/auth/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
@@ -203,22 +208,38 @@ async def google_callback(request: Request, conn=Depends(get_db)):
     user = get_user_by_email(conn, email)
 
     if not user:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-            cursor.execute("""
-                INSERT INTO users (name, email, role)
-                VALUES (%s, %s, 'coach')
-                RETURNING user_id, name, email, role, created_at
-            """, (name, email))
-            user = cursor.fetchone()
-            cursor.execute("""
-                INSERT INTO coaches (user_id) VALUES (%s)
-            """, (str(user["user_id"]),))
-            conn.commit()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+                cursor.execute("""
+                    INSERT INTO users (name, email, role)
+                    VALUES (%s, %s, 'coach')
+                    RETURNING user_id, name, email, role, created_at
+                """, (name, email))
+                user = cursor.fetchone()
+
+                cursor.execute("""
+                    INSERT INTO coaches (user_id) VALUES (%s)
+                """, (str(user["user_id"]),))
+
+                cursor.execute("""
+                    INSERT INTO coach_drills (coach_id, drill_id)
+                    SELECT %s, drill_id FROM drills
+                    WHERE coach_id IS NULL
+                """, (str(user["user_id"]),))
+
+                conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"GOOGLE OAUTH SIGNUP ERROR: {type(e).__name__}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create account"
+            )
 
     access_token = create_access_token({"sub": str(user["user_id"])})
     refresh_token = create_refresh_token({"sub": str(user["user_id"])})
 
-    frontend_url = f"http://localhost:5173/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
+    frontend_url = f"{settings.FRONTEND_URL}/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
     return RedirectResponse(url=frontend_url)
 
 
@@ -226,7 +247,7 @@ async def google_callback(request: Request, conn=Depends(get_db)):
 
 @router.post("/change-password")
 def change_password(
-    data: dict,
+    data: ChangePasswordRequest,
     conn=Depends(get_db),
     coach=Depends(get_current_coach)
 ):
@@ -240,10 +261,10 @@ def change_password(
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
 
-            if not pwd_context.verify(data.get("current_password"), user["hashed_password"]):
+            if not pwd_context.verify(data.current_password, user["hashed_password"]):
                 raise HTTPException(status_code=400, detail="Current password is incorrect")
 
-            new_hash = pwd_context.hash(data.get("new_password"))
+            new_hash = pwd_context.hash(data.new_password)
 
             cursor.execute("""
                 UPDATE users SET hashed_password = %s WHERE user_id = %s
