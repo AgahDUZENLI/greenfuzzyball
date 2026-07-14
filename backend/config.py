@@ -5,7 +5,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     # Environment
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "Development"
 
     # URLs
     FRONTEND_URL: str = "http://localhost:5173"
