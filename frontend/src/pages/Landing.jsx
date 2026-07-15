@@ -7,11 +7,12 @@ import Typography from '../components/Typography'
 import StatCard from '../components/StatCard'
 import PublicNav from '../components/PublicNav'
 import PublicFooter from '../components/PublicFooter'
+import InstallButton from '../components/InstallButton'
 import { colors, spacing, radius, shadows } from '../styles/tokens'
 import {
   Zap, FileText, CalendarX2, BrainCircuit,
   Users, Calendar, Share2, Gauge, Mail, Smartphone,
-  Map as MapIcon, ArrowRight
+  Map as MapIcon, ArrowRight, Home, Search, Download, ChevronRight
 } from 'lucide-react'
 
 const PROBLEMS = [
@@ -254,6 +255,107 @@ function Landing() {
             </Typography>
           </div>
           <Badge label="Coming soon" />
+        </div>
+      </div>
+
+      {/* Mobile */}
+      <div style={{
+        display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: spacing[12],
+        padding: `${spacing[12]} ${spacing[28]}`,
+        backgroundColor: colors.gray[50]
+      }}>
+        <div style={{ flex: '1 1 420px', minWidth: '320px' }}>
+          <SectionLabel>Also on mobile</SectionLabel>
+          <Typography variant="h2" mb={spacing[5]}>
+            Everything, in your pocket too.
+          </Typography>
+          <Typography variant="body" color={colors.gray[600]} mb={spacing[8]}>
+            Check today's schedule, rate drills courtside, and message students — the full app,
+            right from your phone. Nothing to switch between, nothing to sync.
+          </Typography>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: spacing[4],
+            backgroundColor: colors.white, borderRadius: radius.xl,
+            border: `1px solid ${colors.gray[200]}`, padding: spacing[5]
+          }}>
+            <Download size={20} color={colors.primary} style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <Typography variant="h4" mb={spacing[1]}>Install the web app</Typography>
+              <Typography variant="bodySmall">No app store — add it straight to your home screen</Typography>
+            </div>
+            <InstallButton variant="inline" />
+          </div>
+        </div>
+
+        <div style={{ flex: '1 1 420px', minWidth: '320px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            width: '280px', backgroundColor: colors.white, borderRadius: radius['2xl'],
+            border: `1px solid ${colors.gray[200]}`, boxShadow: shadows.lg,
+            overflow: 'hidden'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: `${spacing[3]} 0` }}>
+              <div style={{ width: '80px', height: '20px', borderRadius: radius.full, backgroundColor: colors.black }} />
+            </div>
+
+            <div style={{ padding: spacing[5] }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[4] }}>
+                <div>
+                  <Typography variant="caption" mb={spacing[1]}>Tuesday, Jul 4</Typography>
+                  <Typography variant="h4">Good morning</Typography>
+                </div>
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: radius.full, backgroundColor: colors.black,
+                  color: colors.white, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '12px', fontWeight: '700'
+                }}>AR</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2], marginBottom: spacing[5] }}>
+                {[
+                  { label: 'Students', value: 24 },
+                  { label: 'Sessions', value: 18 },
+                  { label: 'Drills', value: 32 }
+                ].map(s => (
+                  <div key={s.label} style={{
+                    padding: spacing[3], borderRadius: radius.lg,
+                    backgroundColor: colors.gray[50], border: `1px solid ${colors.gray[200]}`
+                  }}>
+                    <Typography variant="h4" mb={spacing[1]}>{s.value}</Typography>
+                    <Typography variant="caption">{s.label}</Typography>
+                  </div>
+                ))}
+              </div>
+
+              <Typography variant="label" mb={spacing[3]}>Today's Sessions</Typography>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
+                {[
+                  { time: '10:00', type: 'private', name: 'Maria C.' },
+                  { time: '2:30', type: 'group', name: 'Leo +2' }
+                ].map(s => (
+                  <div key={s.time} style={{
+                    display: 'flex', alignItems: 'center', gap: spacing[3],
+                    padding: spacing[3], borderRadius: radius.lg,
+                    border: `1px solid ${colors.gray[200]}`
+                  }}>
+                    <Typography variant="bodySmall" style={{ fontWeight: '700', minWidth: '40px' }}>{s.time}</Typography>
+                    <Badge label={s.type === 'private' ? 'Private' : 'Group'} variant={s.type} />
+                    <Typography variant="bodySmall" style={{ fontWeight: '600', flex: 1 }}>{s.name}</Typography>
+                    <ChevronRight size={16} color={colors.gray[400]} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+              padding: `${spacing[3]} 0`, borderTop: `1px solid ${colors.gray[200]}`
+            }}>
+              {[Home, Users, Calendar, Search].map((Icon, i) => (
+                <Icon key={i} size={20} color={i === 0 ? colors.primary : colors.gray[400]} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
