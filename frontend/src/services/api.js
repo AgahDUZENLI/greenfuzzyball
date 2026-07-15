@@ -52,7 +52,13 @@ export const createDrillCategory = (data) => api.post('/drills/categories', data
 export const deleteDrillCategory = (id) => api.delete(`/drills/categories/${id}`)
 
 // Sessions
-export const getSessions = (date) => api.get(date ? `/sessions/?date=${date}` : '/sessions/')
+export const getSessions = (date, studentId) => {
+  const params = new URLSearchParams()
+  if (date) params.append('date', date)
+  if (studentId) params.append('student_id', studentId)
+  const qs = params.toString()
+  return api.get(`/sessions/${qs ? `?${qs}` : ''}`)
+}
 export const getSession = (id) => api.get(`/sessions/${id}`)
 export const createSession = (data) => api.post('/sessions/', data)
 export const deleteSession = (id) => api.delete(`/sessions/${id}`)

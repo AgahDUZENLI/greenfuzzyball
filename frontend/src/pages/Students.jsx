@@ -5,13 +5,14 @@ import Avatar from '../components/Avatar'
 import Button from '../components/Button'
 import Typography from '../components/Typography'
 import Input from '../components/Input'
-import { getStudents, getStudentProgress } from '../services/api'
+import { getStudents, getStudentProgress, getSessions } from '../services/api'
 import { colors, spacing, radius } from '../styles/tokens'
-import { Search, Plus, Pencil } from 'lucide-react'
+import { Search, Plus, Pencil, ChevronRight, CheckCircle } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import AddStudentModal from '../components/AddStudentModal'
 import EditStudentModal from '../components/EditStudentModal'
 import BookSessionModal from '../components/BookSessionModal'
+import { useNavigate } from 'react-router-dom'
 
 
 
@@ -30,9 +31,11 @@ const levelColor = level =>
   : colors.primary
 
 function Students() {
+  const navigate = useNavigate()
   const [students, setStudents] = useState([])
   const [selected, setSelected] = useState(null)
   const [progress, setProgress] = useState([])
+  const [sessions, setSessions] = useState([])
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -55,6 +58,9 @@ function Students() {
     getStudentProgress(selected.user_id)
       .then(res => setProgress(res.data.progress || []))
       .catch(() => setProgress([]))
+    getSessions(null, selected.user_id)
+      .then(res => setSessions(res.data.sort((a, b) => b.date.localeCompare(a.date))))
+      .catch(() => setSessions([]))
   }, [selected])
 
   const filtered = students.filter(s =>
@@ -77,6 +83,9 @@ function Students() {
     : '—'
 
   const capitalize = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
+
+  const formatSessionDate = dateStr =>
+    new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
   if (loading) return (
     <Layout>
@@ -218,7 +227,7 @@ function Students() {
             {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[4], marginBottom: spacing[5] }}>
               {[
-                { label: 'Sessions', value: progress.length > 0 ? new Set(progress.map(p => p.session_date)).size : '—' },
+                { label: 'Sessions', value: sessions.length },
                 { label: 'Avg rating', value: avgRating, green: true },
                 { label: 'Level', value: capitalize(selected.level) }
               ].map((stat, i) => (
@@ -294,6 +303,59 @@ function Students() {
                     ))}
                   </AreaChart>
                 </ResponsiveContainer>
+              )}
+            </Card>
+
+            {/* Sessions */}
+            <Card style={{ marginTop: spacing[5] }}>
+              <Typography variant="h4" mb={spacing[4]}>Sessions</Typography>
+
+              {sessions.length === 0 ? (
+                <div style={{ padding: spacing[8], textAlign: 'center' }}>
+                  <Typography variant="bodySmall" color={colors.gray[400]}>No sessions yet</Typography>
+                </div>
+              ) : (
+                <div>
+                  {sessions.map(session => (
+                    <div
+                      key={session.session_id}
+                      onClick={() => navigate(`/sessions/${session.session_id}`)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: spacing[3], padding: `${spacing[3]} 0`,
+                        borderBottom: `1px solid ${colors.gray[100]}`,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Typography variant="body" style={{ width: '130px', flexShrink: 0 }}>
+                        {formatSessionDate(session.date)}
+                      </Typography>
+
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: radius.full,
+                        backgroundColor: session.type === 'group' ? '#fef3c7' : colors.gray[100],
+                        color: session.type === 'group' ? '#d97706' : colors.gray[600],
+                        fontSize: '13px', fontWeight: '500'
+                      }}>
+                        {session.type === 'group' ? 'Group' : 'Private'}
+                      </span>
+
+                      <div style={{ flex: 1, textAlign: 'right' }}>
+                        {session.unrated ? (
+                          <Typography variant="caption" color={colors.gray[300]}>No ratings</Typography>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: spacing[2], color: colors.primary, fontSize: '13px', fontWeight: '600' }}>
+                            <CheckCircle size={14} color={colors.primary} />
+                            Rated
+                          </div>
+                        )}
+                      </div>
+
+                      <ChevronRight size={16} color={colors.gray[400]} />
+                    </div>
+                  ))}
+                </div>
               )}
             </Card>
 

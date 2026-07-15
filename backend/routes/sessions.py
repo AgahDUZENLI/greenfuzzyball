@@ -121,13 +121,27 @@ def create_session(
 @router.get("/", response_model=list[SessionResponse])
 def get_sessions(
     date: str = Query(None),
+    student_id: str = Query(None),
     conn=Depends(get_db),
     coach=Depends(get_current_coach)
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        student_filter = ""
+        params = [str(coach["user_id"])]
+
+        if student_id:
+            student_filter = """
+                AND EXISTS (
+                    SELECT 1 FROM session_students ss2
+                    WHERE ss2.session_id = s.session_id AND ss2.student_id = %s
+                )
+            """
+            params.append(student_id)
+
         if date:
-            cursor.execute("""
-                SELECT 
+            params.append(date)
+            cursor.execute(f"""
+                SELECT
                     s.session_id, s.date, s.start_time, s.duration_minutes,
                     s.type, s.notes, s.created_at,
                     c.court_id, c.name as court_name, c.area as court_area,
@@ -141,13 +155,13 @@ def get_sessions(
                 LEFT JOIN session_students ss ON s.session_id = ss.session_id
                 LEFT JOIN users u ON ss.student_id = u.user_id
                 LEFT JOIN session_drill_ratings sdr ON s.session_id = sdr.session_id
-                WHERE s.coach_id = %s AND s.date = %s
+                WHERE s.coach_id = %s {student_filter} AND s.date = %s
                 GROUP BY s.session_id, c.court_id
                 ORDER BY s.start_time ASC
-            """, (str(coach["user_id"]), date))
+            """, params)
         else:
-            cursor.execute("""
-                SELECT 
+            cursor.execute(f"""
+                SELECT
                     s.session_id, s.date, s.start_time, s.duration_minutes,
                     s.type, s.notes, s.created_at,
                     c.court_id, c.name as court_name, c.area as court_area,
@@ -161,10 +175,10 @@ def get_sessions(
                 LEFT JOIN session_students ss ON s.session_id = ss.session_id
                 LEFT JOIN users u ON ss.student_id = u.user_id
                 LEFT JOIN session_drill_ratings sdr ON s.session_id = sdr.session_id
-                WHERE s.coach_id = %s
+                WHERE s.coach_id = %s {student_filter}
                 GROUP BY s.session_id, c.court_id
                 ORDER BY s.date DESC, s.start_time ASC
-            """, (str(coach["user_id"]),))
+            """, params)
         return cursor.fetchall()
 
 
