@@ -12,7 +12,7 @@ import TextLink from '../components/TextLink'
 import Divider from '../components/Divider'
 import { User, Mail, Lock, Eye, EyeOff, Building } from 'lucide-react'
 import { colors, spacing, radius } from '../styles/tokens'
-import { register } from '../services/api'
+import { register, API_URL } from '../services/api'
 
 
 const PANELS = {
@@ -165,7 +165,7 @@ function Register() {
           <div style={{ display: 'flex', gap: spacing[3], marginBottom: spacing[6] }}>
             <Button 
               variant="outline" fullWidth 
-              onClick={() => window.location.href = 'http://localhost:8000/auth/google'}
+              onClick={() => window.location.href = `${API_URL}/auth/google`}
               >
               Google
             </Button>
