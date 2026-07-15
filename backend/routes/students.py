@@ -28,7 +28,7 @@ def create_student(
                 INSERT INTO users (name, email, phone, location, role)
                 VALUES (%s, %s, %s, %s, 'student')
                 RETURNING user_id
-            """, (data.name, data.email, data.phone, data.location))
+            """, (data.name, data.email or None, data.phone or None, data.location or None))
 
             user = cursor.fetchone()
             user_id = user["user_id"]
