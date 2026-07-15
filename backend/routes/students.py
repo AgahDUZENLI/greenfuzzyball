@@ -207,7 +207,28 @@ def delete_student(
                     detail="Student not found"
                 )
 
-            # Delete user (cascades to students, coach_students)
+            # Find sessions where this student is the only participant
+            cursor.execute("""
+                SELECT ss.session_id
+                FROM session_students ss
+                WHERE ss.student_id = %s
+                  AND NOT EXISTS (
+                      SELECT 1 FROM session_students ss2
+                      WHERE ss2.session_id = ss.session_id AND ss2.student_id != %s
+                  )
+            """, (student_id, student_id))
+
+            solo_session_ids = [row[0] for row in cursor.fetchall()]
+
+            # Delete those sessions entirely (cascades to session_students,
+            # session_drills, session_drill_ratings)
+            if solo_session_ids:
+                cursor.execute("""
+                    DELETE FROM sessions WHERE session_id = ANY(%s::uuid[])
+                """, (solo_session_ids,))
+
+            # Delete user (cascades to students, coach_students, and removes
+            # this student from any remaining shared sessions)
             cursor.execute("""
                 DELETE FROM users WHERE user_id = %s
             """, (student_id,))
