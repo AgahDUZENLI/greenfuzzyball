@@ -1,5 +1,6 @@
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
+import useIsMobile from '../hooks/useIsMobile'
 
 const ALL_DURATIONS = [30, 45, 60, 75, 90, 105, 120, 150, 180]
 
@@ -12,8 +13,9 @@ const formatDuration = (mins) => {
 }
 
 function DateSelector({ date, onDateChange, duration, onDurationChange }) {
+  const isMobile = useIsMobile()
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
       <div>
         <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>DATE</Typography>
         <div style={{ padding: '12px 16px', border: `1.5px solid ${colors.primary}`, borderRadius: radius.lg }}>

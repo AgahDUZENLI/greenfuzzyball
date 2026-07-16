@@ -7,8 +7,10 @@ import Avatar from './Avatar'
 import Modal from './Modal'
 import { User, Phone, Mail, Trash2 } from 'lucide-react'
 import { updateStudent, deleteStudent } from '../services/api'
+import useIsMobile from '../hooks/useIsMobile'
 
 function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
+  const isMobile = useIsMobile()
   const [name, setName] = useState(student.name || '')
   const [ageGroup, setAgeGroup] = useState(student.age_group || 'adults')
   const [phone, setPhone] = useState(student.phone || '')
@@ -74,7 +76,7 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
       )}
 
       {/* Name + Age Group */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>FULL NAME</Typography>
           <Input icon={<User size={16} />} placeholder="Full name" value={name} onChange={e => setName(e.target.value)} />
@@ -95,7 +97,7 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
       </div>
 
       {/* Phone + Email */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
           <Input icon={<Phone size={16} />} placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />

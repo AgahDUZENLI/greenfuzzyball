@@ -9,8 +9,10 @@ import { Search, Plus, Target, X } from 'lucide-react'
 import CreateDrillModal from '../components/CreateDrillModal'
 import DrillMenu from '../components/DrillMenu'
 import DrillDetailPanel from '../components/DrillDetailPanel'
+import useIsMobile from '../hooks/useIsMobile'
 
 function Drills() {
+  const isMobile = useIsMobile()
   const [drills, setDrills] = useState([])
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -66,12 +68,16 @@ function Drills() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? '100dvh' : '100vh', overflow: 'hidden' }}>
 
         {/* Header */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: `${spacing[5]} ${spacing[8]}`,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? spacing[3] : 0,
+          padding: isMobile ? `${spacing[4]} ${spacing[4]}` : `${spacing[5]} ${spacing[8]}`,
           borderBottom: `1px solid ${colors.gray[200]}`,
           backgroundColor: 'white', flexShrink: 0
         }}>
@@ -81,8 +87,13 @@ function Drills() {
               {drills.length} drills · {usedCategories.length} categories
             </Typography>
           </div>
-          <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
-            <div style={{ width: '240px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: spacing[3],
+            alignItems: isMobile ? 'stretch' : 'center'
+          }}>
+            <div style={{ width: isMobile ? '100%' : '240px' }}>
               <Input
                 icon={<Search size={16} />}
                 placeholder="Search drills"
@@ -99,7 +110,7 @@ function Drills() {
         {/* Category filter tabs */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: spacing[2],
-          padding: `${spacing[3]} ${spacing[8]}`,
+          padding: `${spacing[3]} ${isMobile ? spacing[4] : spacing[8]}`,
           borderBottom: `1px solid ${colors.gray[200]}`,
           backgroundColor: 'white', flexShrink: 0,
           overflowX: 'auto'
@@ -183,7 +194,7 @@ function Drills() {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: spacing[8], backgroundColor: colors.gray[50] }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? spacing[4] : spacing[8], backgroundColor: colors.gray[50] }}>
           {grouped.map(group => (
             <div key={group.drill_category_id} style={{ marginBottom: spacing[8] }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3], marginBottom: spacing[4] }}>
@@ -192,7 +203,7 @@ function Drills() {
                 <Typography variant="caption" color={colors.gray[400]}>{group.drills.length} drills</Typography>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[4] }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: spacing[4] }}>
                 {group.drills.map(drill => (
                   <div
                     key={drill.drill_id}

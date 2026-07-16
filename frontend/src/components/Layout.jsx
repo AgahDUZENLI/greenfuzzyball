@@ -1,6 +1,10 @@
 import Sidebar from './Sidebar'
+import BottomTabBar from './BottomTabBar'
+import useIsMobile from '../hooks/useIsMobile'
 
 function Layout({ children, variant = 'app' }) {
+  const isMobile = useIsMobile()
+
   if (variant === 'auth') {
     return (
       <div style={{
@@ -21,10 +25,11 @@ function Layout({ children, variant = 'app' }) {
       backgroundColor: '#f9fafb',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     }}>
-      <Sidebar />
-      <main style={{ flex: 1, overflow: 'auto' }}>
+      {!isMobile && <Sidebar />}
+      <main style={{ flex: 1, overflow: 'auto', paddingBottom: isMobile ? '64px' : 0 }}>
         {children}
       </main>
+      {isMobile && <BottomTabBar />}
     </div>
   )
 }

@@ -10,15 +10,17 @@ import BookSessionModal from '../components/BookSessionModal'
 import { useSessionDetail } from '../hooks/useSessionDetail'
 import { colors, spacing, radius } from '../styles/tokens'
 import { ArrowLeft, ChevronRight, FileText, Check, Pencil, RefreshCw } from 'lucide-react'
+import useIsMobile from '../hooks/useIsMobile'
 
 function SessionDetail() {
   const { sessionId } = useParams()
   const navigate = useNavigate()
   const d = useSessionDetail(sessionId)
+  const isMobile = useIsMobile()
 
   if (d.loading) return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? '100dvh' : '100vh' }}>
         <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
       </div>
     </Layout>
@@ -26,7 +28,7 @@ function SessionDetail() {
 
   if (!d.session) return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? '100dvh' : '100vh' }}>
         <Typography variant="bodySmall" color={colors.gray[400]}>Session not found</Typography>
       </div>
     </Layout>
@@ -36,12 +38,21 @@ function SessionDetail() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: isMobile ? '100dvh' : '100vh',
+        overflow: isMobile ? 'auto' : 'hidden'
+      }}>
 
         {/* Breadcrumb */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: `${spacing[4]} ${spacing[6]}`,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? spacing[3] : 0,
+          padding: isMobile ? `${spacing[3]} ${spacing[4]}` : `${spacing[4]} ${spacing[6]}`,
           borderBottom: `1px solid ${colors.gray[100]}`,
           backgroundColor: 'white', flexShrink: 0
         }}>
@@ -73,16 +84,24 @@ function SessionDetail() {
         </div>
 
         {/* Content */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          flex: 1,
+          overflow: isMobile ? 'visible' : 'hidden'
+        }}>
 
           {/* Main */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: spacing[6] }}>
+          <div style={{ flex: 1, overflowY: isMobile ? 'visible' : 'auto', padding: isMobile ? spacing[4] : spacing[6] }}>
 
             {/* Hero card */}
             <div style={{
               backgroundColor: colors.black, borderRadius: radius['2xl'],
               padding: spacing[6], marginBottom: spacing[6],
-              display: 'flex', alignItems: 'center', gap: spacing[8]
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: isMobile ? 'stretch' : 'center',
+              gap: isMobile ? spacing[4] : spacing[8]
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3], marginBottom: spacing[2] }}>
@@ -158,9 +177,10 @@ function SessionDetail() {
 
           {/* Right panel */}
           <div style={{
-            width: '300px', flexShrink: 0,
-            borderLeft: `1px solid ${colors.gray[100]}`,
-            overflowY: 'auto', padding: spacing[6],
+            width: isMobile ? '100%' : '300px', flexShrink: 0,
+            borderLeft: isMobile ? 'none' : `1px solid ${colors.gray[100]}`,
+            borderTop: isMobile ? `1px solid ${colors.gray[100]}` : 'none',
+            overflowY: isMobile ? 'visible' : 'auto', padding: spacing[6],
             display: 'flex', flexDirection: 'column', gap: spacing[4]
           }}>
 

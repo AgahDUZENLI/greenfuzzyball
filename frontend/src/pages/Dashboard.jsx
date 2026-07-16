@@ -12,6 +12,7 @@ import { getStudents, getSessions, getDrills } from '../services/api'
 import { colors, spacing, radius, shadows } from '../styles/tokens'
 import { Users, Calendar as CalendarIcon, Dumbbell, Clock, ChevronRight, Plus } from 'lucide-react'
 import BookSessionModal from '../components/BookSessionModal'
+import useIsMobile from '../hooks/useIsMobile'
 
 function formatTime(t) {
   if (!t) return null
@@ -32,6 +33,7 @@ function formatDuration(minutes) {
 function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const [students, setStudents] = useState([])
   const [sessions, setSessions] = useState([])
@@ -111,7 +113,7 @@ function Dashboard() {
       <Layout>
         <div style={{
           display: 'flex', alignItems: 'center',
-          justifyContent: 'center', height: '100vh'
+          justifyContent: 'center', height: isMobile ? '100dvh' : '100vh'
         }}>
           <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
         </div>
@@ -121,16 +123,27 @@ function Dashboard() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        height: isMobile ? '100dvh' : '100vh',
+        overflow: isMobile ? 'auto' : 'hidden'
+      }}>
 
         {/* Middle column — main scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: spacing[8] }}>
+        <div style={{
+          flex: 1,
+          overflowY: isMobile ? 'visible' : 'auto',
+          padding: isMobile ? spacing[4] : spacing[8]
+        }}>
 
           {/* Header */}
           <div style={{
             display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            alignItems: isMobile ? 'stretch' : 'flex-start',
+            gap: isMobile ? spacing[3] : 0,
             marginBottom: spacing[8]
           }}>
             <div>
@@ -151,7 +164,7 @@ function Dashboard() {
           {/* Stats */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
             gap: spacing[4],
             marginBottom: spacing[6]
           }}>
@@ -279,11 +292,12 @@ function Dashboard() {
 
         {/* Right column — todo panel */}
         <div style={{
-          width: '300px',
+          width: isMobile ? '100%' : '300px',
           flexShrink: 0,
           backgroundColor: 'white',
-          borderLeft: `1px solid ${colors.gray[100]}`,
-          overflowY: 'auto',
+          borderLeft: isMobile ? 'none' : `1px solid ${colors.gray[100]}`,
+          borderTop: isMobile ? `1px solid ${colors.gray[100]}` : 'none',
+          overflowY: isMobile ? 'visible' : 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: spacing[6],

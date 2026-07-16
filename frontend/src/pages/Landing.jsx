@@ -14,6 +14,7 @@ import {
   Users, Calendar, Share2, Gauge, Mail, Smartphone,
   Map as MapIcon, ArrowRight, Home, Search, Download, ChevronRight
 } from 'lucide-react'
+import useIsMobile from '../hooks/useIsMobile'
 
 const PROBLEMS = [
   {
@@ -65,6 +66,9 @@ function SectionLabel({ children }) {
 function Landing() {
   const navigate = useNavigate()
   const location = useLocation()
+  const isMobile = useIsMobile()
+  const featureCols = isMobile ? 1 : 3
+  const sectionPadding = v => isMobile ? `${spacing[8]} ${spacing[4]}` : `${v} ${spacing[28]}`
 
   useEffect(() => {
     if (location.hash) {
@@ -81,7 +85,7 @@ function Landing() {
       {/* Hero */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: spacing[12],
-        padding: `${spacing[12]} ${spacing[28]}`,
+        padding: sectionPadding(spacing[12]),
         backgroundColor: colors.gray[50]
       }}>
         <div style={{ flex: '1 1 420px', minWidth: '320px' }}>
@@ -177,7 +181,7 @@ function Landing() {
       </div>
 
       {/* Problem */}
-      <div style={{ padding: `${spacing[12]} ${spacing[28]}`, backgroundColor: colors.white }}>
+      <div style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.white }}>
         <SectionLabel>The problem</SectionLabel>
         <Typography variant="h2" mb={spacing[10]} style={{ maxWidth: '640px' }}>
           Coaches waste time on admin instead of coaching.
@@ -200,30 +204,33 @@ function Landing() {
       </div>
 
       {/* Features */}
-      <div id="features" style={{ padding: `${spacing[12]} ${spacing[28]}`, backgroundColor: colors.gray[50] }}>
+      <div id="features" style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.gray[50] }}>
         <SectionLabel>Features</SectionLabel>
         <Typography variant="h2" mb={spacing[10]} style={{ maxWidth: '640px' }}>
           Everything you need to run your coaching business.
         </Typography>
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-            {FEATURES.map((f, i) => (
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${featureCols}, 1fr)` }}>
+            {FEATURES.map((f, i) => {
+              const lastRowStart = featureCols * Math.floor((FEATURES.length - 1) / featureCols)
+              return (
               <div key={f.title} style={{
                 padding: spacing[6],
-                borderRight: (i % 3 !== 2) ? `1px solid ${colors.gray[200]}` : 'none',
-                borderBottom: i < 3 ? `1px solid ${colors.gray[200]}` : 'none'
+                borderRight: (i % featureCols !== featureCols - 1) ? `1px solid ${colors.gray[200]}` : 'none',
+                borderBottom: i < lastRowStart ? `1px solid ${colors.gray[200]}` : 'none'
               }}>
                 <f.icon size={22} color={colors.primary} style={{ marginBottom: spacing[3] }} />
                 <Typography variant="h4" mb={spacing[2]}>{f.title}</Typography>
                 <Typography variant="bodySmall">{f.text}</Typography>
               </div>
-            ))}
+              )
+            })}
           </div>
         </Card>
       </div>
 
       {/* How it works */}
-      <div id="how-it-works" style={{ padding: `${spacing[12]} ${spacing[28]}`, backgroundColor: colors.white }}>
+      <div id="how-it-works" style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.white }}>
         <SectionLabel>How it works</SectionLabel>
         <Typography variant="h2" mb={spacing[10]}>Up and running in three steps.</Typography>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: spacing[8], marginBottom: spacing[10] }}>
@@ -261,7 +268,7 @@ function Landing() {
       {/* Mobile */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: spacing[12],
-        padding: `${spacing[12]} ${spacing[28]}`,
+        padding: sectionPadding(spacing[12]),
         backgroundColor: colors.gray[50]
       }}>
         <div style={{ flex: '1 1 420px', minWidth: '320px' }}>
@@ -362,7 +369,7 @@ function Landing() {
       {/* Stats band */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', gap: spacing[8], alignItems: 'center', justifyContent: 'space-between',
-        padding: `${spacing[10]} ${spacing[28]}`, backgroundColor: colors.black
+        padding: sectionPadding(spacing[10]), backgroundColor: colors.black
       }}>
         <div style={{ maxWidth: '420px' }}>
           <Typography variant="label" color={colors.primary} mb={spacing[3]}>Built for real coaching businesses</Typography>

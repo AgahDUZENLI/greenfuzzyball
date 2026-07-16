@@ -12,6 +12,7 @@ import {
   User, Mail, Phone, MapPin, Clock,
   Bell, Shield, LogOut, ChevronRight, Save
 } from 'lucide-react'
+import useIsMobile from '../hooks/useIsMobile'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -25,6 +26,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 function Settings() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState('profile')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -140,7 +142,7 @@ function Settings() {
 
   if (loading) return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? '100dvh' : '100vh' }}>
         <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
       </div>
     </Layout>
@@ -148,12 +150,16 @@ function Settings() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? '100dvh' : '100vh', overflow: isMobile ? 'auto' : 'hidden' }}>
 
         {/* Header */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: `${spacing[5]} ${spacing[8]}`,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? spacing[3] : 0,
+          padding: isMobile ? `${spacing[4]} ${spacing[4]}` : `${spacing[5]} ${spacing[8]}`,
           borderBottom: `1px solid ${colors.gray[200]}`,
           backgroundColor: 'white', flexShrink: 0
         }}>
@@ -170,16 +176,22 @@ function Settings() {
         </div>
 
         {/* Body */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', flex: 1, overflow: isMobile ? 'visible' : 'hidden' }}>
 
           {/* Left sidebar */}
           <div style={{
-            width: '220px', flexShrink: 0,
-            borderRight: `1px solid ${colors.gray[200]}`,
+            width: isMobile ? '100%' : '220px', flexShrink: 0,
+            borderRight: isMobile ? 'none' : `1px solid ${colors.gray[200]}`,
+            borderBottom: isMobile ? `1px solid ${colors.gray[200]}` : 'none',
             backgroundColor: 'white', padding: spacing[4],
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
           }}>
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: spacing[1] }}>
+            <nav style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'row' : 'column',
+              gap: spacing[1],
+              overflowX: isMobile ? 'auto' : 'visible'
+            }}>
               {TABS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -192,7 +204,7 @@ function Settings() {
                     fontSize: '14px', fontWeight: activeTab === id ? '600' : '400',
                     backgroundColor: activeTab === id ? colors.primaryLight : 'transparent',
                     color: activeTab === id ? colors.primary : colors.gray[600],
-                    textAlign: 'left'
+                    textAlign: 'left', whiteSpace: 'nowrap'
                   }}
                 >
                   <Icon size={16} />
@@ -210,7 +222,8 @@ function Settings() {
                 cursor: 'pointer', fontFamily: 'inherit',
                 fontSize: '14px', fontWeight: '500',
                 backgroundColor: 'transparent',
-                color: colors.error, textAlign: 'left'
+                color: colors.error, textAlign: 'left',
+                marginTop: isMobile ? spacing[3] : 0
               }}
             >
               <LogOut size={16} />
@@ -219,7 +232,7 @@ function Settings() {
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: spacing[8], backgroundColor: colors.gray[50] }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? spacing[4] : spacing[8], backgroundColor: colors.gray[50] }}>
 
             {/* ── PROFILE TAB ── */}
             {activeTab === 'profile' && (
@@ -243,7 +256,7 @@ function Settings() {
                   border: `1px solid ${colors.gray[200]}`,
                   padding: spacing[6], marginBottom: spacing[6]
                 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
                     <div>
                       <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>FULL NAME</Typography>
                       <Input icon={<User size={16} />} value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
@@ -269,7 +282,7 @@ function Settings() {
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
                     <div>
                       <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>EMAIL</Typography>
                       <Input icon={<Mail size={16} />} value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" />
@@ -312,7 +325,7 @@ function Settings() {
                 }}>
                   <div style={{ marginBottom: spacing[6] }}>
                     <Typography variant="label" mb={spacing[3]} style={{ display: 'block' }}>AVAILABILITY HOURS</Typography>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4] }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4] }}>
                       <div>
                         <Typography variant="caption" color={colors.gray[400]} mb={spacing[2]} style={{ display: 'block' }}>Start time</Typography>
                         <div style={{ padding: '12px 16px', border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg }}>

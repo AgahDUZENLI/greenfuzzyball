@@ -84,6 +84,12 @@ export const spacing = {
   40: '160px',
 }
 
+// ─── BREAKPOINTS ─────────────────────────────────────────────────────────────
+
+export const breakpoints = {
+  mobile: 768
+}
+
 // ─── BORDER RADIUS ───────────────────────────────────────────────────────────
 
 export const radius = {

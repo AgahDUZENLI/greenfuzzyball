@@ -7,12 +7,13 @@ import Typography from '../components/Typography'
 import Input from '../components/Input'
 import { getStudents, getStudentProgress, getSessions } from '../services/api'
 import { colors, spacing, radius } from '../styles/tokens'
-import { Search, Plus, Pencil, ChevronRight, CheckCircle } from 'lucide-react'
+import { Search, Plus, Pencil, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import AddStudentModal from '../components/AddStudentModal'
 import EditStudentModal from '../components/EditStudentModal'
 import BookSessionModal from '../components/BookSessionModal'
 import { useNavigate } from 'react-router-dom'
+import useIsMobile from '../hooks/useIsMobile'
 
 
 
@@ -32,8 +33,10 @@ const levelColor = level =>
 
 function Students() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [students, setStudents] = useState([])
   const [selected, setSelected] = useState(null)
+  const [mobileShowDetail, setMobileShowDetail] = useState(false)
   const [progress, setProgress] = useState([])
   const [sessions, setSessions] = useState([])
   const [filter, setFilter] = useState('all')
@@ -89,7 +92,7 @@ function Students() {
 
   if (loading) return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? '100dvh' : '100vh' }}>
         <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
       </div>
     </Layout>
@@ -97,11 +100,12 @@ function Students() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', height: isMobile ? '100dvh' : '100vh', overflow: 'hidden' }}>
 
         {/* ── Left panel ── */}
+        {(!isMobile || !mobileShowDetail) && (
         <div style={{
-          width: '320px', flexShrink: 0,
+          width: isMobile ? '100%' : '320px', flexShrink: 0,
           borderRight: `1px solid ${colors.gray[200]}`,
           backgroundColor: 'white',
           display: 'flex', flexDirection: 'column'
@@ -163,7 +167,7 @@ function Students() {
               return (
                 <div
                   key={student.user_id}
-                  onClick={() => setSelected(student)}
+                  onClick={() => { setSelected(student); setMobileShowDetail(true) }}
                   style={{
                     display: 'flex', alignItems: 'center',
                     gap: spacing[3], padding: `${spacing[3]} ${spacing[5]}`,
@@ -197,13 +201,36 @@ function Students() {
             })}
           </div>
         </div>
+        )}
 
         {/* ── Right panel ── */}
-        {selected ? (
-          <div style={{ flex: 1, overflowY: 'auto', padding: spacing[8], backgroundColor: colors.gray[50] }}>
+        {(!isMobile || mobileShowDetail) && (
+        selected ? (
+          <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? spacing[4] : spacing[8], backgroundColor: colors.gray[50] }}>
+
+            {isMobile && (
+              <button
+                onClick={() => setMobileShowDetail(false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: spacing[1],
+                  border: 'none', background: 'none', cursor: 'pointer',
+                  color: colors.gray[500], fontSize: '14px', fontWeight: '500',
+                  fontFamily: 'inherit', padding: 0, marginBottom: spacing[4]
+                }}
+              >
+                <ChevronLeft size={16} /> Back to students
+              </button>
+            )}
 
             {/* Profile header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[6] }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: 'space-between',
+              alignItems: isMobile ? 'stretch' : 'center',
+              gap: isMobile ? spacing[4] : 0,
+              marginBottom: spacing[6]
+            }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: spacing[4] }}>
                 <Avatar name={selected.name} size="lg" />
                 <div>
@@ -225,7 +252,7 @@ function Students() {
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[4], marginBottom: spacing[5] }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: spacing[4], marginBottom: spacing[5] }}>
               {[
                 { label: 'Sessions', value: sessions.length },
                 { label: 'Avg rating', value: avgRating, green: true },
@@ -241,7 +268,7 @@ function Students() {
             </div>
 
             {/* Contact */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[5] }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: spacing[4], marginBottom: spacing[5] }}>
               {[
                 { label: 'PHONE', value: selected.phone, placeholder: '— — ——————' },
                 { label: 'EMAIL', value: selected.email, placeholder: '————————@———' }
@@ -364,7 +391,7 @@ function Students() {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="bodySmall" color={colors.gray[400]}>Select a student</Typography>
           </div>
-        )}
+        ))}
 
       </div>
       {/* Modal — outside everything so it covers full screen */}

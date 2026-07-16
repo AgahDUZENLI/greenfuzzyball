@@ -7,6 +7,7 @@ import { colors, spacing, radius } from '../styles/tokens'
 import { ChevronLeft, ChevronRight, Plus, Clock, CheckCircle, Calendar as CalendarIcon } from 'lucide-react'
 import BookSessionModal from '../components/BookSessionModal'
 import { useNavigate } from 'react-router-dom'
+import useIsMobile from '../hooks/useIsMobile'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -21,6 +22,7 @@ function Sessions() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
 
   useEffect(() => {
@@ -72,6 +74,76 @@ function Sessions() {
   const SessionRow = ({ session, isUpcoming }) => {
     const dateLabel = formatDateLabel(session.date)
     const time = formatTime(session.start_time)
+
+    const typeBadge = (
+      <span style={{
+        display: 'inline-block', padding: '4px 12px',
+        borderRadius: radius.full,
+        backgroundColor: session.type === 'group' ? '#fef3c7' : colors.gray[100],
+        color: session.type === 'group' ? '#d97706' : colors.gray[600],
+        fontSize: '13px', fontWeight: '500', width: 'fit-content'
+      }}>
+        {session.type === 'group' ? 'Group' : 'Private'}
+      </span>
+    )
+
+    const statusNode = isUpcoming ? (
+      time ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: spacing[2],
+          color: colors.primary, fontSize: '13px', fontWeight: '600'
+        }}>
+          <Clock size={14} color={colors.primary} />
+          {time}
+        </div>
+      ) : <span />
+    ) : (
+      session.avg_rating ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: spacing[2],
+          color: colors.primary, fontSize: '13px', fontWeight: '600'
+        }}>
+          <CheckCircle size={14} color={colors.primary} />
+          Avg {parseFloat(session.avg_rating).toFixed(1)}
+        </div>
+      ) : (
+        <Typography variant="caption" color={colors.gray[300]}>No ratings</Typography>
+      )
+    )
+
+    if (isMobile) {
+      return (
+        <div
+          key={session.session_id}
+          onClick={() => navigate(`/sessions/${session.session_id}`)}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: spacing[2],
+            padding: `${spacing[3]} ${spacing[4]}`,
+            borderBottom: `1px solid ${colors.gray[100]}`,
+            cursor: 'pointer',
+            borderLeft: isUpcoming ? `3px solid ${colors.primary}` : '3px solid transparent'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <Typography variant="body" style={{ fontWeight: '600' }}>{dateLabel.main}</Typography>
+              <Typography variant="caption" color={colors.gray[400]}>{dateLabel.sub}</Typography>
+            </div>
+            {statusNode}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+            {typeBadge}
+            <Typography variant="body" color={colors.gray[700]}>
+              {session.student_names?.slice(0, 3).join(', ')}
+              {session.student_names?.length > 3 ? ` +${session.student_names.length - 3}` : ''}
+            </Typography>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div
         key={session.session_id}
@@ -93,16 +165,8 @@ function Sessions() {
           <Typography variant="body" style={{ fontWeight: '600' }}>{dateLabel.main}</Typography>
           <Typography variant="caption" color={colors.gray[400]}>{dateLabel.sub}</Typography>
         </div>
-       {/* Type */}
-        <span style={{
-          display: 'inline-block', padding: '4px 12px',
-          borderRadius: radius.full,
-          backgroundColor: session.type === 'group' ? '#fef3c7' : colors.gray[100],
-          color: session.type === 'group' ? '#d97706' : colors.gray[600],
-          fontSize: '13px', fontWeight: '500', width: 'fit-content'
-        }}>
-          {session.type === 'group' ? 'Group' : 'Private'}
-        </span>
+        {/* Type */}
+        {typeBadge}
 
         {/* Students */}
         <Typography variant="body" color={colors.gray[700]}>
@@ -115,29 +179,7 @@ function Sessions() {
         </Typography>
 
         {/* Status */}
-        {isUpcoming ? (
-          time ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: spacing[2],
-              color: colors.primary, fontSize: '13px', fontWeight: '600'
-            }}>
-              <Clock size={14} color={colors.primary} />
-              {time}
-            </div>
-          ) : <span />
-        ) : (
-          session.avg_rating ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: spacing[2],
-              color: colors.primary, fontSize: '13px', fontWeight: '600'
-            }}>
-              <CheckCircle size={14} color={colors.primary} />
-              Avg {parseFloat(session.avg_rating).toFixed(1)}
-            </div>
-          ) : (
-            <Typography variant="caption" color={colors.gray[300]}>No ratings</Typography>
-          )
-        )}
+        {statusNode}
 
         <ChevronRight size={16} color={colors.gray[400]}/>
       </div>
@@ -146,19 +188,25 @@ function Sessions() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? '100dvh' : '100vh' }}>
 
         {/* Top panel */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: `${spacing[5]} ${spacing[8]}`,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? spacing[3] : 0,
+          padding: isMobile ? `${spacing[4]} ${spacing[4]}` : `${spacing[5]} ${spacing[8]}`,
           borderBottom: `1px solid ${colors.gray[200]}`,
           backgroundColor: 'white', flexShrink: 0
         }}>
           <Typography variant="h3">Sessions</Typography>
 
           <div style={{
-            display: 'flex', alignItems: 'center', gap: spacing[3],
+            display: 'flex', alignItems: 'center',
+            justifyContent: isMobile ? 'space-between' : 'flex-start',
+            gap: spacing[3],
             border: `1px solid ${colors.gray[200]}`,
             borderRadius: radius.xl, padding: `${spacing[2]} ${spacing[4]}`
           }}>
@@ -185,7 +233,7 @@ function Sessions() {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
           {/* Upcoming */}
       {upcoming.length > 0 && (
         <>
@@ -206,16 +254,18 @@ function Sessions() {
           </div>
 
           {/* Column headers */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '140px 120px 1fr 80px 160px 40px',
-            padding: `${spacing[2]} ${spacing[6]}`,
-            borderBottom: `1px solid ${colors.gray[200]}`,
-          }}>
-            {['DATE', 'TYPE', 'STUDENTS', 'DRILLS', 'STATUS', ''].map(col => (
-              <Typography key={col} variant="label" color={colors.gray[400]}>{col}</Typography>
-            ))}
-          </div>
+          {!isMobile && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '140px 120px 1fr 80px 160px 40px',
+              padding: `${spacing[2]} ${spacing[6]}`,
+              borderBottom: `1px solid ${colors.gray[200]}`,
+            }}>
+              {['DATE', 'TYPE', 'STUDENTS', 'DRILLS', 'STATUS', ''].map(col => (
+                <Typography key={col} variant="label" color={colors.gray[400]}>{col}</Typography>
+              ))}
+            </div>
+          )}
           {upcoming.map(s => <SessionRow key={s.session_id} session={s} isUpcoming={true} />)}
         </>
       )}

@@ -10,6 +10,7 @@ import DateSelector from './DateSelector'
 import TimeSelector from './TimeSelector'
 import CourtSelector from './CourtSelector'
 import SessionSummary from './SessionSummary'
+import useIsMobile from '../hooks/useIsMobile'
 
 function BookSessionModal({
   student: initialStudent,
@@ -20,6 +21,7 @@ function BookSessionModal({
   onClose,
   onBooked
 }) {
+  const isMobile = useIsMobile()
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const defaultDate = tomorrow.toISOString().split('T')[0]
@@ -161,10 +163,14 @@ function BookSessionModal({
         </div>
 
         {/* Body */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', flex: 1 }}>
 
           {/* Left */}
-          <div style={{ padding: spacing[6], borderRight: `1px solid ${colors.gray[100]}` }}>
+          <div style={{
+            padding: spacing[6],
+            borderRight: isMobile ? 'none' : `1px solid ${colors.gray[100]}`,
+            borderBottom: isMobile ? `1px solid ${colors.gray[100]}` : 'none'
+          }}>
 
             {/* Selected students */}
             {selectedStudents.length > 0 && (
@@ -269,7 +275,11 @@ function BookSessionModal({
 
         {/* Footer */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? spacing[3] : 0,
           padding: `${spacing[4]} ${spacing[6]}`,
           borderTop: `1px solid ${colors.gray[100]}`
         }}>

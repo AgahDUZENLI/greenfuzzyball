@@ -6,8 +6,10 @@ import Button from './Button'
 import Modal from './Modal'
 import { User, Phone, Mail, Plus } from 'lucide-react'
 import { createStudent } from '../services/api'
+import useIsMobile from '../hooks/useIsMobile'
 
 function AddStudentModal({ onClose, onAdded }) {
+  const isMobile = useIsMobile()
   const [name, setName] = useState('')
   const [ageGroup, setAgeGroup] = useState('adults')
   const [phone, setPhone] = useState('')
@@ -46,7 +48,7 @@ function AddStudentModal({ onClose, onAdded }) {
       )}
 
       {/* Name + Age Group */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>FULL NAME</Typography>
           <Input icon={<User size={16} />} placeholder="Jordan Blake" value={name} onChange={e => setName(e.target.value)} />
@@ -67,7 +69,7 @@ function AddStudentModal({ onClose, onAdded }) {
       </div>
 
       {/* Phone + Email */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
           <Input icon={<Phone size={16} />} placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />

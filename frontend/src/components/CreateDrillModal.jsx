@@ -67,11 +67,11 @@ function CreateDrillModal({ categories: initialCategories, onClose, onCreated, o
       position: 'fixed', inset: 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
       display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 9999
+      justifyContent: 'center', zIndex: 9999, padding: spacing[4]
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         backgroundColor: 'white', borderRadius: radius['2xl'],
-        width: '560px', maxHeight: '90vh', overflowY: 'auto',
+        width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
       }}>
 
