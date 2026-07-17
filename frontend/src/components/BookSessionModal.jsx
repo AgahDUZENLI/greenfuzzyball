@@ -130,20 +130,22 @@ function BookSessionModal({
       position: 'fixed', inset: 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
       display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 9999, padding: spacing[4]
+      justifyContent: 'center', zIndex: 9999, padding: isMobile ? 0 : spacing[4]
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        backgroundColor: 'white', borderRadius: radius['2xl'],
-        width: '100%', maxWidth: '860px', maxHeight: '90vh',
-        overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        backgroundColor: 'white', borderRadius: isMobile ? 0 : radius['2xl'],
+        width: '100%', maxWidth: isMobile ? 'none' : '860px',
+        height: isMobile ? '100dvh' : 'auto', maxHeight: isMobile ? '100dvh' : '90vh',
+        overflowY: 'auto', boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
         display: 'flex', flexDirection: 'column'
       }}>
 
         {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-          padding: `${spacing[6]} ${spacing[6]} ${spacing[4]}`,
-          borderBottom: `1px solid ${colors.gray[100]}`
+          padding: `calc(${spacing[6]} + env(safe-area-inset-top)) ${spacing[6]} ${spacing[4]}`,
+          borderBottom: `1px solid ${colors.gray[100]}`,
+          flexShrink: 0
         }}>
           <div>
             <Typography variant="h3">{initialStudents.length > 0 ? 'Repeat Session' : 'Book Session'}</Typography>
@@ -280,8 +282,9 @@ function BookSessionModal({
           justifyContent: 'space-between',
           alignItems: isMobile ? 'stretch' : 'center',
           gap: isMobile ? spacing[3] : 0,
-          padding: `${spacing[4]} ${spacing[6]}`,
-          borderTop: `1px solid ${colors.gray[100]}`
+          padding: `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
+          borderTop: `1px solid ${colors.gray[100]}`,
+          flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
             {conflict ? (

@@ -1,8 +1,11 @@
 import { colors, radius, shadows, spacing } from '../styles/tokens'
 import Typography from './Typography'
 import { X } from 'lucide-react'
+import useIsMobile from '../hooks/useIsMobile'
 
 function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
+  const isMobile = useIsMobile()
+
   return (
     <div
       onClick={onClose}
@@ -14,19 +17,22 @@ function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        padding: spacing[4]
+        padding: isMobile ? 0 : spacing[4]
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
           backgroundColor: 'white',
-          borderRadius: radius['2xl'],
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          borderRadius: isMobile ? 0 : radius['2xl'],
+          boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
           width: '100%',
-          maxWidth,
-          maxHeight: '90vh',
-          overflowY: 'auto'
+          height: isMobile ? '100dvh' : 'auto',
+          maxWidth: isMobile ? 'none' : maxWidth,
+          maxHeight: isMobile ? '100dvh' : '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'hidden'
         }}
       >
         {/* Header */}
@@ -34,7 +40,8 @@ function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          padding: `${spacing[6]} ${spacing[6]} ${spacing[4]}`,
+          flexShrink: 0,
+          padding: `calc(${spacing[6]} + env(safe-area-inset-top)) ${spacing[6]} ${spacing[4]}`,
           borderBottom: `1px solid ${colors.gray[100]}`
         }}>
           <div>
@@ -50,7 +57,8 @@ function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
               border: 'none', borderRadius: radius.lg,
               backgroundColor: colors.gray[100],
               cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
             }}
           >
             <X size={16} color={colors.gray[500]} />
@@ -58,7 +66,11 @@ function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
         </div>
 
         {/* Content */}
-        <div style={{ padding: `${spacing[5]} ${spacing[6]} ${spacing[6]}` }}>
+        <div style={{
+          padding: `${spacing[5]} ${spacing[6]} calc(${spacing[6]} + env(safe-area-inset-bottom))`,
+          overflowY: 'auto',
+          flex: 1
+        }}>
           {children}
         </div>
       </div>

@@ -26,7 +26,12 @@ function Layout({ children, variant = 'app' }) {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     }}>
       {!isMobile && <Sidebar />}
-      <main style={{ flex: 1, overflow: 'auto', paddingBottom: isMobile ? '64px' : 0 }}>
+      <main style={{
+        flex: 1,
+        overflow: 'auto',
+        paddingTop: isMobile ? 'env(safe-area-inset-top)' : 0,
+        paddingBottom: isMobile ? 'calc(64px + env(safe-area-inset-bottom))' : 0
+      }}>
         {children}
       </main>
       {isMobile && <BottomTabBar />}

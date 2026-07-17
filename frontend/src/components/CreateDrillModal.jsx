@@ -5,9 +5,11 @@ import Input from './Input'
 import Button from './Button'
 import { Target, Plus, X } from 'lucide-react'
 import { createDrill, createDrillCategory, deleteDrillCategory } from '../services/api'
+import useIsMobile from '../hooks/useIsMobile'
 
 
 function CreateDrillModal({ categories: initialCategories, onClose, onCreated, onCategoryCreated }) {
+  const isMobile = useIsMobile()
   const [categories, setCategories] = useState(initialCategories)
   const [name, setName] = useState('')
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([])
@@ -67,18 +69,20 @@ function CreateDrillModal({ categories: initialCategories, onClose, onCreated, o
       position: 'fixed', inset: 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
       display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 9999, padding: spacing[4]
+      justifyContent: 'center', zIndex: 9999, padding: isMobile ? 0 : spacing[4]
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        backgroundColor: 'white', borderRadius: radius['2xl'],
-        width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+        backgroundColor: 'white', borderRadius: isMobile ? 0 : radius['2xl'],
+        width: '100%', maxWidth: isMobile ? 'none' : '560px',
+        height: isMobile ? '100dvh' : 'auto', maxHeight: isMobile ? '100dvh' : '90vh',
+        overflowY: 'auto',
+        boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)'
       }}>
 
         {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-          padding: `${spacing[6]} ${spacing[6]} ${spacing[4]}`
+          padding: `calc(${spacing[6]} + env(safe-area-inset-top)) ${spacing[6]} ${spacing[4]}`
         }}>
           <div>
             <Typography variant="h3">Create Drill</Typography>
@@ -93,7 +97,7 @@ function CreateDrillModal({ categories: initialCategories, onClose, onCreated, o
           </button>
         </div>
 
-        <div style={{ padding: `0 ${spacing[6]} ${spacing[6]}` }}>
+        <div style={{ padding: `0 ${spacing[6]} calc(${spacing[6]} + env(safe-area-inset-bottom))` }}>
 
           {error && (
             <div style={{

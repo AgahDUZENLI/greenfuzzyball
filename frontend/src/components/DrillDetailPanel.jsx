@@ -4,8 +4,10 @@ import Button from './Button'
 import { X, Target, Pencil, Trash2 } from 'lucide-react'
 import { colors, spacing, radius } from '../styles/tokens'
 import { updateDrill, deleteDrill } from '../services/api'
+import useIsMobile from '../hooks/useIsMobile'
 
 function DrillDetailPanel({ drill, onClose, onUpdated, onDeleted }) {
+  const isMobile = useIsMobile()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(drill.name)
   const [description, setDescription] = useState(drill.description || '')
@@ -39,26 +41,30 @@ function DrillDetailPanel({ drill, onClose, onUpdated, onDeleted }) {
         position: 'fixed', inset: 0,
         backgroundColor: 'rgba(0,0,0,0.5)',
         display: 'flex', alignItems: 'center',
-        justifyContent: 'center', zIndex: 9999
+        justifyContent: 'center', zIndex: 9999,
+        padding: isMobile ? 0 : spacing[4]
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
           backgroundColor: 'white',
-          borderRadius: radius['2xl'],
-          width: '520px',
-          maxHeight: '90vh',
+          borderRadius: isMobile ? 0 : radius['2xl'],
+          width: '100%',
+          maxWidth: isMobile ? 'none' : '520px',
+          height: isMobile ? '100dvh' : 'auto',
+          maxHeight: isMobile ? '100dvh' : '90vh',
           overflowY: 'auto',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
           display: 'flex', flexDirection: 'column'
         }}
       >
         {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: `${spacing[6]} ${spacing[6]} ${spacing[4]}`,
-          borderBottom: `1px solid ${colors.gray[100]}`
+          padding: `calc(${spacing[6]} + env(safe-area-inset-top)) ${spacing[6]} ${spacing[4]}`,
+          borderBottom: `1px solid ${colors.gray[100]}`,
+          flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
             <div style={{
@@ -155,9 +161,10 @@ function DrillDetailPanel({ drill, onClose, onUpdated, onDeleted }) {
 
         {/* Footer */}
         <div style={{
-          padding: `${spacing[4]} ${spacing[6]}`,
+          padding: `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
           borderTop: `1px solid ${colors.gray[100]}`,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexShrink: 0
         }}>
           <button
             onClick={handleDelete}
