@@ -6,7 +6,8 @@ function Avatar({ name, size = 'md' }) {
   const sizes = {
     sm: { width: '32px', height: '32px', fontSize: '12px' },
     md: { width: '40px', height: '40px', fontSize: '14px' },
-    lg: { width: '48px', height: '48px', fontSize: '18px' }
+    lg: { width: '48px', height: '48px', fontSize: '18px' },
+    xl: { width: '50px', height: '50px', fontSize: '26px' }
   }
 
   return (

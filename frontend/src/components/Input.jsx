@@ -19,6 +19,8 @@ function Input({
     <div style={{
       display: 'flex',
       alignItems: 'center',
+      minWidth: 0,
+      boxSizing: 'border-box',
       border: `1.5px solid ${focused ? colors.primary : colors.gray[200]}`,
       borderRadius: radius.lg,
       padding: `${spacing[3]} ${spacing[4]}`,
@@ -50,6 +52,7 @@ function Input({
           border: 'none',
           outline: 'none',
           flex: 1,
+          minWidth: 0,
           fontSize: '15px',
           backgroundColor: 'transparent',
           color: colors.black,
