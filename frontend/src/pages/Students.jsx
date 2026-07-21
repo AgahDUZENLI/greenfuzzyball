@@ -92,7 +92,7 @@ function Students() {
 
   if (loading) return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? '100dvh' : '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
       </div>
     </Layout>
@@ -100,7 +100,7 @@ function Students() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', height: isMobile ? '100dvh' : '100vh', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
         {/* ── Left panel ── */}
         {(!isMobile || !mobileShowDetail) && (

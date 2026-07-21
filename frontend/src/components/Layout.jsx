@@ -7,9 +7,8 @@ function Layout({ children, variant = 'app' }) {
 
   if (variant === 'auth') {
     return (
-      <div style={{
+      <div className="app-shell" style={{
         display: 'flex',
-        minHeight: '100vh',
         backgroundColor: '#e5e7eb',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       }}>
@@ -19,9 +18,8 @@ function Layout({ children, variant = 'app' }) {
   }
 
   return (
-    <div style={{
+    <div className="app-shell" style={{
       display: 'flex',
-      minHeight: '100vh',
       backgroundColor: '#f9fafb',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     }}>
@@ -29,8 +27,9 @@ function Layout({ children, variant = 'app' }) {
       <main style={{
         flex: 1,
         overflow: 'auto',
+        WebkitOverflowScrolling: 'touch',
         paddingTop: isMobile ? 'env(safe-area-inset-top)' : 0,
-        paddingBottom: isMobile ? 'calc(64px + env(safe-area-inset-bottom))' : 0
+        paddingBottom: isMobile ? 'calc(64px + max(16px, env(safe-area-inset-bottom)))' : 0
       }}>
         {children}
       </main>

@@ -53,6 +53,7 @@ function PublicNav() {
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: spacing[12] }}>
               <button onClick={() => goToSection('features')} style={navLinkStyle}>Features</button>
+              <button onClick={() => goToSection('why-us')} style={navLinkStyle}>Why us</button>
               <button onClick={() => goToSection('how-it-works')} style={navLinkStyle}>How it works</button>
               <button onClick={() => navigate('/login')} style={navLinkStyle}>Sign in</button>
             </div>
@@ -69,6 +70,7 @@ function PublicNav() {
           borderBottom: `1px solid ${colors.gray[200]}`
         }}>
           <button onClick={() => handleGoToSection('features')} style={{ ...navLinkStyle, textAlign: 'left', fontSize: '16px' }}>Features</button>
+          <button onClick={() => handleGoToSection('why-us')} style={{ ...navLinkStyle, textAlign: 'left', fontSize: '16px' }}>Why us</button>
           <button onClick={() => handleGoToSection('how-it-works')} style={{ ...navLinkStyle, textAlign: 'left', fontSize: '16px' }}>How it works</button>
           <button onClick={() => handleNavigate('/login')} style={{ ...navLinkStyle, textAlign: 'left', fontSize: '16px' }}>Sign in</button>
           <Button onClick={() => handleNavigate('/register')}>Start for free</Button>

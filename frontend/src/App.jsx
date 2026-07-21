@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -19,6 +20,16 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 
 
+
+function ScrollToTop() {
+  const { pathname, hash } = useLocation()
+
+  useEffect(() => {
+    if (!hash) window.scrollTo(0, 0)
+  }, [pathname])
+
+  return null
+}
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -60,6 +71,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ScrollToTop />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

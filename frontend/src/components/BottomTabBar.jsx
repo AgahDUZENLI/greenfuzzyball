@@ -29,7 +29,7 @@ function BottomTabBar() {
       backgroundColor: 'white',
       borderTop: `1px solid ${colors.gray[200]}`,
       boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
-      paddingBottom: 'env(safe-area-inset-bottom)'
+      paddingBottom: 'max(16px, env(safe-area-inset-bottom))'
     }}>
       {navItems.map(({ label, path, icon: Icon }) => {
         const active = path === '/' ? location.pathname === '/' : isActive(location.pathname, path)

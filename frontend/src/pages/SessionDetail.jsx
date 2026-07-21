@@ -20,7 +20,7 @@ function SessionDetail() {
 
   if (d.loading) return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? '100dvh' : '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
       </div>
     </Layout>
@@ -28,7 +28,7 @@ function SessionDetail() {
 
   if (!d.session) return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: isMobile ? '100dvh' : '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <Typography variant="bodySmall" color={colors.gray[400]}>Session not found</Typography>
       </div>
     </Layout>
@@ -41,7 +41,7 @@ function SessionDetail() {
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        height: isMobile ? '100dvh' : '100vh',
+        height: '100%',
         overflow: isMobile ? 'auto' : 'hidden'
       }}>
 

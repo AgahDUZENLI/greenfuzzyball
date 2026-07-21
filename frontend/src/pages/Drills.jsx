@@ -68,7 +68,7 @@ function Drills() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? '100dvh' : '100vh', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
         {/* Header */}
         <div style={{

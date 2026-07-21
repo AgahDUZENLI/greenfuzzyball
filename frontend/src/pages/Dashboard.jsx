@@ -113,7 +113,7 @@ function Dashboard() {
       <Layout>
         <div style={{
           display: 'flex', alignItems: 'center',
-          justifyContent: 'center', height: isMobile ? '100dvh' : '100vh'
+          justifyContent: 'center', height: '100%'
         }}>
           <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
         </div>
@@ -126,7 +126,7 @@ function Dashboard() {
       <div style={{
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
-        height: isMobile ? '100dvh' : '100vh',
+        height: '100%',
         overflow: isMobile ? 'auto' : 'hidden'
       }}>
 

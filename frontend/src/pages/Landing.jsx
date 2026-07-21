@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, Fragment } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Button from '../components/Button'
 import Card from '../components/Card'
@@ -12,32 +12,57 @@ import { colors, spacing, radius, shadows } from '../styles/tokens'
 import {
   Zap, FileText, CalendarX2, BrainCircuit,
   Users, Calendar, Share2, Gauge, Mail, Smartphone,
-  Map as MapIcon, ArrowRight, Home, Search, Download, ChevronRight
+  Map as MapIcon, ArrowRight, Home, Search, Download, ChevronRight,
+  MessageSquare, FolderOpen, CheckCircle2, ArrowDown,
+  X, Check, Sun, Star, Save, TrendingUp
 } from 'lucide-react'
 import useIsMobile from '../hooks/useIsMobile'
 
 const PROBLEMS = [
   {
     icon: FileText,
-    title: 'Scattered notes',
-    text: "Student info spread across notebooks, texts, and spreadsheets that never quite stay in sync."
+    title: 'Student information everywhere',
+    text: "Notes, contact info, and progress end up spread across notebooks, texts, and spreadsheets."
   },
   {
     icon: CalendarX2,
-    title: 'Double-booked courts',
+    title: 'Scheduling becomes a headache',
     text: "No single view of your day, so scheduling conflicts slip through until it's too late."
   },
   {
     icon: BrainCircuit,
-    title: 'Progress lives in your head',
-    text: "Without ratings tracked over time, neither you nor your students can see what's actually improving."
+    title: 'Progress is impossible to measure',
+    text: "Without consistent ratings, it's hard to know whether your coaching is actually working."
   }
 ]
 
+const PAIN_POINTS = [
+  { icon: FileText, text: 'Notes on paper' },
+  { icon: MessageSquare, text: 'Student messages in WhatsApp' },
+  { icon: Calendar, text: 'Schedule in Google Calendar' },
+  { icon: BrainCircuit, text: 'Progress in your head' },
+  { icon: FolderOpen, text: 'Drills in random PDFs' }
+]
+
+const COMPARISON = [
+  { without: 'Notes everywhere', with: 'Everything in one place' },
+  { without: 'Planning in your head', with: 'Plan sessions ahead' },
+  { without: 'Double bookings', with: 'Conflict detection' },
+  { without: 'No progress history', with: 'Ratings over time' },
+  { without: 'Repeating the same drills', with: 'Organized drill library' }
+]
+
+const DAY_STEPS = [
+  { icon: Sun, label: 'MORNING', text: "See today's schedule" },
+  { icon: Star, label: 'DURING LESSONS', text: 'Rate each drill' },
+  { icon: Save, label: 'AFTER PRACTICE', text: 'Session auto-saved' },
+  { icon: TrendingUp, label: 'END OF WEEK', text: 'Review progress' }
+]
+
 const FEATURES = [
-  { icon: Users, title: 'Student management & progress', text: 'Profiles, levels, and notes for every athlete — with progress tracked automatically over time.' },
-  { icon: Calendar, title: 'Smart session booking', text: 'Book any time you want — Green Fuzzy Ball flags conflicts before they become a problem.' },
-  { icon: Share2, title: 'Drill library with sharing', text: 'Build your own drills, organize them by category, and share any drill with a coach via a link.' },
+  { icon: Users, title: 'Never lose track of a student again', text: 'Profiles, levels, and notes for every athlete — with progress tracked automatically over time.' },
+  { icon: Calendar, title: 'Schedule without conflicts', text: 'Book any time you want — Green Fuzzy Ball flags conflicts before they become a problem.' },
+  { icon: Share2, title: 'Build your own coaching system', text: 'Build your own drills, organize them by category, and share any drill with a coach via a link.' },
   { icon: Gauge, title: '1–10 performance ratings', text: "Rate every student on every drill, every session — the fastest way to see who's ready for what's next." },
   { icon: Mail, title: 'Email notifications', text: 'Session confirmations and reminders sent automatically, so nobody forgets a booking.' },
   { icon: Smartphone, title: 'Works on any device', text: 'Plan from your laptop, rate drills courtside on your phone. Everything stays in sync.' }
@@ -99,11 +124,10 @@ function Landing() {
           </div>
 
           <Typography variant="h1" mb={spacing[5]}>
-            Run your coaching business, not a spreadsheet.
+            Spend less time organizing. More time coaching.
           </Typography>
           <Typography variant="body" color={colors.gray[600]} mb={spacing[8]}>
-            Manage students, book sessions without double-booking, and rate every drill 1–10 —
-            so you always know who's improving and what to coach next.
+            Green Fuzzy Ball keeps your students, schedule, drills, and progress in one place—so you can stop juggling spreadsheets, notes, and messages.
           </Typography>
 
           <div style={{ display: 'flex', gap: spacing[3], marginBottom: spacing[4] }}>
@@ -139,7 +163,7 @@ function Landing() {
                 backgroundColor: colors.white, borderRadius: radius.full,
                 padding: `${spacing[1]} ${spacing[3]}`, border: `1px solid ${colors.gray[200]}`
               }}>
-                app.greenfuzzyball.com
+                greenfuzzyball.duckdns.org
               </div>
             </div>
 
@@ -177,6 +201,39 @@ function Landing() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Why coaches need this */}
+      <div style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.white, textAlign: 'center' }}>
+        <SectionLabel>Why coaches need this</SectionLabel>
+        <Typography variant="h2" mb={spacing[10]} style={{ margin: `0 auto ${spacing[10]}` }}>
+          Coaching shouldn't look like this.
+        </Typography>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: spacing[3], marginBottom: spacing[8] }}>
+          {PAIN_POINTS.map(p => (
+            <div key={p.text} style={{
+              display: 'inline-flex', alignItems: 'center', gap: spacing[2],
+              backgroundColor: colors.gray[50], border: `1px solid ${colors.gray[200]}`,
+              borderRadius: radius.full, padding: `${spacing[3]} ${spacing[5]}`
+            }}>
+              <p.icon size={18} color={colors.warning} />
+              <Typography variant="bodySmall" style={{ fontWeight: '600', color: colors.black }}>{p.text}</Typography>
+            </div>
+          ))}
+        </div>
+
+        <ArrowDown size={20} color={colors.gray[400]} style={{ marginBottom: spacing[8] }} />
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: spacing[3],
+          maxWidth: '560px', margin: '0 auto',
+          backgroundColor: colors.black, borderRadius: radius.xl,
+          padding: `${spacing[5]} ${spacing[8]}`
+        }}>
+          <CheckCircle2 size={20} color={colors.primary} />
+          <Typography variant="h4" color={colors.white}>Green Fuzzy Ball puts everything together.</Typography>
         </div>
       </div>
 
@@ -227,6 +284,114 @@ function Landing() {
             })}
           </div>
         </Card>
+      </div>
+
+      {/* Comparison table */}
+      <div id="why-us" style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.white, textAlign: 'center' }}>
+        <SectionLabel>The difference</SectionLabel>
+        <Typography variant="h2" mb={spacing[10]} style={{ margin: `0 auto ${spacing[10]}` }}>
+          Why coaches choose Green Fuzzy Ball.
+        </Typography>
+
+        <div style={{
+          textAlign: 'left', borderRadius: radius['2xl'],
+          border: `1px solid ${colors.gray[200]}`, overflow: 'hidden'
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+            {!isMobile && (
+              <>
+                <div style={{
+                  padding: `${spacing[4]} ${spacing[6]}`, backgroundColor: colors.gray[50],
+                  borderRight: `1px solid ${colors.gray[200]}`, borderBottom: `1px solid ${colors.gray[200]}`
+                }}>
+                  <Typography variant="label">Without Green Fuzzy Ball</Typography>
+                </div>
+                <div style={{
+                  padding: `${spacing[4]} ${spacing[6]}`, backgroundColor: colors.primaryLight,
+                  borderBottom: `1px solid ${colors.gray[200]}`
+                }}>
+                  <Typography variant="label" color={colors.primaryDark}>With Green Fuzzy Ball</Typography>
+                </div>
+              </>
+            )}
+
+            {COMPARISON.map((row, i) => (
+              <Fragment key={row.without}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: spacing[3],
+                  padding: isMobile ? `${spacing[3]} ${spacing[4]}` : `${spacing[4]} ${spacing[6]}`,
+                  borderRight: isMobile ? 'none' : `1px solid ${colors.gray[200]}`,
+                  borderBottom: isMobile ? 'none' : (i < COMPARISON.length - 1 ? `1px solid ${colors.gray[200]}` : 'none')
+                }}>
+                  <X size={18} color={colors.gray[400]} />
+                  <Typography variant="bodySmall">{row.without}</Typography>
+                </div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: spacing[3],
+                  padding: isMobile ? `0 ${spacing[4]} ${spacing[3]}` : `${spacing[4]} ${spacing[6]}`,
+                  borderBottom: i < COMPARISON.length - 1 ? `1px solid ${colors.gray[200]}` : 'none'
+                }}>
+                  <Check size={18} color={colors.primary} />
+                  <Typography variant="bodySmall" style={{ fontWeight: '600', color: colors.black }}>{row.with}</Typography>
+                </div>
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Day timeline */}
+      <div style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.gray[50] }}>
+        <SectionLabel>A day with Green Fuzzy Ball</SectionLabel>
+        <Typography variant="h2" mb={spacing[10]} style={{ maxWidth: '640px' }}>
+          From morning schedule to end-of-week review.
+        </Typography>
+
+        <div style={isMobile
+          ? { display: 'flex', flexDirection: 'column' }
+          : { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing[8] }
+        }>
+          {DAY_STEPS.map((s, i) => (
+            <Fragment key={s.label}>
+              {isMobile ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: spacing[4],
+                  padding: `${spacing[4]} 0`,
+                  borderBottom: i < DAY_STEPS.length - 1 ? `1px solid ${colors.gray[200]}` : 'none'
+                }}>
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: radius.md,
+                    backgroundColor: colors.primaryLight, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                  }}>
+                    <s.icon size={18} color={colors.primary} />
+                  </div>
+                  <div>
+                    <Typography variant="caption" mb={spacing[1]} style={{ fontWeight: '600' }}>{s.label}</Typography>
+                    <Typography variant="h4">{s.text}</Typography>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minWidth: '140px' }}>
+                    <div style={{
+                      width: '48px', height: '48px', borderRadius: radius.md,
+                      backgroundColor: colors.primaryLight, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', marginBottom: spacing[3]
+                    }}>
+                      <s.icon size={20} color={colors.primary} />
+                    </div>
+                    <Typography variant="caption" mb={spacing[1]} style={{ fontWeight: '600' }}>{s.label}</Typography>
+                    <Typography variant="h4">{s.text}</Typography>
+                  </div>
+                  {i < DAY_STEPS.length - 1 && (
+                    <ArrowRight size={20} color={colors.gray[400]} style={{ marginTop: spacing[8], flexShrink: 0 }} />
+                  )}
+                </>
+              )}
+            </Fragment>
+          ))}
+        </div>
       </div>
 
       {/* How it works */}
@@ -295,17 +460,19 @@ function Landing() {
           </div>
         </div>
 
-        <div style={{ flex: '1 1 420px', minWidth: '320px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ flex: '1 1 420px', height: '530px', minWidth: '320px', display: 'flex', justifyContent: 'center' }}>
           <div style={{
-            width: '280px', backgroundColor: colors.white, borderRadius: radius['2xl'],
+            width: '280px', height: '100%', backgroundColor: colors.white, borderRadius: radius['2xl'],
             border: `1px solid ${colors.gray[200]}`, boxShadow: shadows.lg,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            display: 'flex', flexDirection: 'column'
           }}>
             <div style={{ display: 'flex', justifyContent: 'center', padding: `${spacing[3]} 0` }}>
               <div style={{ width: '80px', height: '20px', borderRadius: radius.full, backgroundColor: colors.black }} />
             </div>
 
-            <div style={{ padding: spacing[5] }}>
+
+            <div style={{ padding: spacing[5], flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[4] }}>
                 <div>
                   <Typography variant="caption" mb={spacing[1]}>Tuesday, Jul 4</Typography>
