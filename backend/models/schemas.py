@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from uuid import UUID
 from datetime import datetime, date, time
+from datetime import date as _Date  # alias to avoid shadowing in fields literally named `date` with a default
 
 # ─── AUTH ───────────────────────────────────────
 
@@ -161,7 +162,7 @@ class AddDrillToSessionRequest(BaseModel):
     drill_id: UUID
 
 class UpdateSessionRequest(BaseModel):
-    date: Optional[date] = None
+    date: Optional[_Date] = None
     start_time: Optional[time] = None
     duration_minutes: Optional[int] = None
     type: Optional[str] = None

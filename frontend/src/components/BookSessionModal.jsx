@@ -3,7 +3,7 @@ import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Button from './Button'
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react'
-import { createSession, getCoachCourts, getSessions, getStudents } from '../services/api'
+import { createSession, updateSession, getCoachCourts, getSessions, getStudents } from '../services/api'
 import { hasConflict, timeToMinutes, formatTime12 } from '../utils/timeUtils'
 import StudentCard from './StudentCard'
 import DateSelector from './DateSelector'
@@ -18,26 +18,31 @@ function BookSessionModal({
   initialCourtId = null,
   initialDuration = null,
   initialDrillIds = [],
+  session = null,
   onClose,
-  onBooked
+  onBooked,
+  onUpdated
 }) {
   const isMobile = useIsMobile()
+  const isEditMode = !!session
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const defaultDate = tomorrow.toISOString().split('T')[0]
 
-  const preStudents = initialStudents.length > 0 ? initialStudents : (initialStudent ? [initialStudent] : [])
+  const preStudents = session
+    ? (session.students || [])
+    : (initialStudents.length > 0 ? initialStudents : (initialStudent ? [initialStudent] : []))
 
   const [selectedStudents, setSelectedStudents] = useState(preStudents)
   const [allStudents, setAllStudents] = useState([])
   const [studentSearch, setStudentSearch] = useState('')
   const [courts, setCourts] = useState([])
   const [daySessions, setDaySessions] = useState([])
-  const [date, setDate] = useState(defaultDate)
-  const [timeSlot, setTimeSlot] = useState('09:00')
-  const [courtId, setCourtId] = useState(initialCourtId || '')
-  const [type, setType] = useState(preStudents.length > 1 ? 'group' : 'private')
-  const [duration, setDuration] = useState(initialDuration || 60)
+  const [date, setDate] = useState(session ? session.date : defaultDate)
+  const [timeSlot, setTimeSlot] = useState(session ? session.start_time?.slice(0, 5) : '09:00')
+  const [courtId, setCourtId] = useState(session ? (session.court_id ? String(session.court_id) : '') : (initialCourtId || ''))
+  const [type, setType] = useState(session ? session.type : (preStudents.length > 1 ? 'group' : 'private'))
+  const [duration, setDuration] = useState(session ? session.duration_minutes : (initialDuration || 60))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -49,7 +54,7 @@ function BookSessionModal({
     getCoachCourts()
       .then(res => {
         setCourts(res.data)
-        if (!initialCourtId && res.data.length > 0) setCourtId(res.data[0].court_id)
+        if (!initialCourtId && !session?.court_id && res.data.length > 0) setCourtId(res.data[0].court_id)
       })
       .catch(() => setCourts([]))
   }, [])
@@ -73,27 +78,44 @@ function BookSessionModal({
     setSelectedStudents(prev => prev.filter(s => s.user_id !== userId))
   }
 
-  const conflict = hasConflict(daySessions, timeSlot, duration)
+  const otherDaySessions = session
+    ? daySessions.filter(s => s.session_id !== session.session_id)
+    : daySessions
 
-  const handleBook = async () => {
+  const conflict = hasConflict(otherDaySessions, timeSlot, duration)
+
+  const handleSubmit = async () => {
     setError('')
     setLoading(true)
     try {
       const [h, m] = timeSlot.split(':')
       const paddedTime = `${String(h).padStart(2, '0')}:${m || '00'}`
-      const res = await createSession({
-        date,
-        start_time: paddedTime,
-        duration_minutes: duration,
-        type,
-        court_id: courtId || null,
-        student_ids: selectedStudents.map(s => s.user_id),
-        drill_ids: initialDrillIds
-      })
-      onBooked && onBooked(res.data)
-      onClose()
+      if (isEditMode) {
+        await updateSession(session.session_id, {
+          date,
+          start_time: paddedTime,
+          duration_minutes: duration,
+          type,
+          court_id: courtId || null,
+          student_ids: selectedStudents.map(s => s.user_id)
+        })
+        onUpdated && onUpdated()
+        onClose()
+      } else {
+        const res = await createSession({
+          date,
+          start_time: paddedTime,
+          duration_minutes: duration,
+          type,
+          court_id: courtId || null,
+          student_ids: selectedStudents.map(s => s.user_id),
+          drill_ids: initialDrillIds
+        })
+        onBooked && onBooked(res.data)
+        onClose()
+      }
     } catch {
-      setError('Could not book session. Please try again.')
+      setError(isEditMode ? 'Could not update session. Please try again.' : 'Could not book session. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -107,7 +129,7 @@ function BookSessionModal({
   const newSessionMins = timeToMinutes(timeSlot)
   const allSlots = []
   let cur = 8 * 60
-  const sorted = [...daySessions].sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time))
+  const sorted = [...otherDaySessions].sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time))
   sorted.forEach(s => {
     const sStart = timeToMinutes(s.start_time)
     const sEnd = sStart + (s.duration_minutes || 60)
@@ -148,7 +170,9 @@ function BookSessionModal({
           flexShrink: 0
         }}>
           <div>
-            <Typography variant="h3">{initialStudents.length > 0 ? 'Repeat Session' : 'Book Session'}</Typography>
+            <Typography variant="h3">
+              {isEditMode ? 'Edit Session' : (initialStudents.length > 0 ? 'Repeat Session' : 'Book Session')}
+            </Typography>
             {selectedStudents.length > 0 && (
               <Typography variant="bodySmall" color={colors.gray[400]}>
                 with {selectedStudents.map(s => s.name).join(', ')}
@@ -250,7 +274,7 @@ function BookSessionModal({
             />
             <TimeSelector
               timeSlot={timeSlot} onTimeChange={setTimeSlot}
-              duration={duration} daySessions={daySessions} conflict={conflict}
+              duration={duration} daySessions={otherDaySessions} conflict={conflict}
             />
             <CourtSelector courts={courts} courtId={courtId} onCourtChange={setCourtId} />
             {error && (
@@ -310,9 +334,11 @@ function BookSessionModal({
             }}>
               Cancel
             </button>
-            <Button onClick={handleBook} disabled={loading || conflict || selectedStudents.length === 0}>
+            <Button onClick={handleSubmit} disabled={loading || conflict || selectedStudents.length === 0}>
               <CalendarIcon size={16} />
-              {loading ? 'Booking...' : 'Book Session'}
+              {loading
+                ? (isEditMode ? 'Saving...' : 'Booking...')
+                : (isEditMode ? 'Save Changes' : 'Book Session')}
             </Button>
           </div>
         </div>
