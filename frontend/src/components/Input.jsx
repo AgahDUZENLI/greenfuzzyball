@@ -61,12 +61,12 @@ function Input({
       />
       {rightIcon && (
         <span
-          onMouseDown={(e) => {
+          onPointerDown={(e) => {
             e.preventDefault()
             onRightIconDown && onRightIconDown()
           }}
-          onMouseUp={() => onRightIconUp && onRightIconUp()}
-          onMouseLeave={() => onRightIconUp && onRightIconUp()}
+          onPointerUp={() => onRightIconUp && onRightIconUp()}
+          onPointerLeave={() => onRightIconUp && onRightIconUp()}
           style={{
             cursor: 'pointer',
             color: colors.gray[400],
