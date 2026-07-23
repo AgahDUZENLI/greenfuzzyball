@@ -10,45 +10,39 @@ const footerLinkStyle = {
   textDecoration: 'none'
 }
 
+const footerLinks = [
+  { label: 'Sign in', path: '/login' },
+  { label: 'About', path: '/about' },
+  { label: 'Contact', path: '/contact' },
+  { label: 'Privacy', path: '/privacy' },
+  { label: 'Terms', path: '/terms' }
+]
+
 function PublicFooter() {
-  const { navigate, goToSection } = usePublicNav()
+  const { navigate } = usePublicNav()
   const isMobile = useIsMobile()
 
   return (
     <div style={{ padding: `${spacing[8]} ${isMobile ? spacing[4] : spacing[28]} 0` }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[8], justifyContent: 'space-between' }}>
-        <div style={{ maxWidth: isMobile ? 'none' : '280px' }}>
+      <div style={{
+        display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center',
+        gap: spacing[6]
+      }}>
+        <div>
           <Logo />
           <Typography variant="bodySmall" style={{ marginTop: spacing[3] }}>
             Coaching business management for independent tennis coaches.
           </Typography>
         </div>
-        <div style={isMobile
-          ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[4], width: '100%' }
-          : { display: 'flex', flexDirection: 'row', gap: spacing[16] }
-        }>
-          <div>
-            <Typography variant="label" mb={spacing[3]}>Product</Typography>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
-              <button onClick={() => goToSection('features')} style={footerLinkStyle}>Features</button>
-              <button onClick={() => goToSection('how-it-works')} style={footerLinkStyle}>How it works</button>
-              <button onClick={() => navigate('/login')} style={footerLinkStyle}>Sign in</button>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: spacing[2] }}>
+          {footerLinks.map((link, i) => (
+            <div key={link.path} style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+              {i > 0 && <span style={{ color: colors.gray[300] }}>·</span>}
+              <button onClick={() => navigate(link.path)} style={footerLinkStyle}>{link.label}</button>
             </div>
-          </div>
-          <div>
-            <Typography variant="label" mb={spacing[3]}>Company</Typography>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
-              <button onClick={() => navigate('/about')} style={footerLinkStyle}>About</button>
-              <button onClick={() => navigate('/contact')} style={footerLinkStyle}>Contact</button>
-            </div>
-          </div>
-          <div>
-            <Typography variant="label" mb={spacing[3]}>Legal</Typography>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
-              <button onClick={() => navigate('/privacy')} style={footerLinkStyle}>Privacy</button>
-              <button onClick={() => navigate('/terms')} style={footerLinkStyle}>Terms</button>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -57,7 +51,7 @@ function PublicFooter() {
         paddingBottom: spacing[8],
         display: 'flex', flexWrap: 'wrap', gap: spacing[3], justifyContent: 'space-between'
       }}>
-        <Typography variant="caption">© {new Date().getFullYear()} Green Fuzzy Ball · hello@greenfuzzyball.com</Typography>
+        <Typography variant="caption">© {new Date().getFullYear()} Green Fuzzy Ball · greenfuzzyball.app@gmail.com</Typography>
       </div>
     </div>
   )

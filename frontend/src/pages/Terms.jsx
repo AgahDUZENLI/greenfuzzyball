@@ -1,65 +1,84 @@
 import PublicNav from '../components/PublicNav'
 import PublicFooter from '../components/PublicFooter'
-import Typography from '../components/Typography'
 import { colors, spacing } from '../styles/tokens'
 
 const SECTIONS = [
   {
-    title: '1. Acceptance of these terms',
-    body: `By creating an account or using Green Fuzzy Ball ("the Service"), you agree to these Terms of Service. If you don't agree, please don't use the Service. We may update these terms from time to time, as described below.`
+    title: '1. Acceptance',
+    body: `By creating an account or using Green Fuzzy Ball you agree to these terms. If you don't agree, please don't use the Service.`
   },
   {
-    title: '2. Accounts & eligibility',
-    body: `Green Fuzzy Ball is built for independent coaches to manage their own coaching business. You must provide accurate information when creating an account and are responsible for keeping your login credentials secure. You're responsible for all activity that happens under your account.`
+    title: '2. Accounts',
+    body: `You must provide accurate information when creating an account and are responsible for keeping your login secure. You're responsible for all activity under your account.`
   },
   {
     title: '3. Acceptable use',
-    body: `Use the Service only for lawful purposes related to running your coaching business — managing students, scheduling sessions, and tracking drills and performance. Don't attempt to disrupt the Service, access other coaches' data without authorization, or use the Service to store information you don't have the right to store (for example, sensitive information about a minor without appropriate parental consent).`
+    body: `Use the Service to manage your coaching business — students, sessions, drills, and performance tracking. Don't use it for anything unlawful or to access other coaches' data.`
   },
   {
     title: '4. Your content',
-    body: `Any data you enter — student profiles, session details, drills, ratings, and notes — belongs to you. We don't claim ownership over it. You're responsible for making sure you have the right to store and process the information you add about your students.`
+    body: `Everything you enter — student profiles, sessions, drills, ratings — belongs to you. We don't claim ownership over it.`
   },
   {
     title: '5. Service availability',
-    body: `Green Fuzzy Ball is currently offered free of charge and provided on an "as-is" and "as-available" basis. We don't guarantee uninterrupted or error-free operation, and features may change as the product evolves. We'll do our best to give notice ahead of any significant changes that affect how you use the Service.`
+    body: `Green Fuzzy Ball is currently free and provided as-is. It's a solo project and features may change over time.`
   },
   {
     title: '6. Termination',
-    body: `You may stop using the Service and close your account at any time. We may suspend or terminate accounts that violate these terms or that we reasonably believe pose a risk to the Service or other users.`
+    body: `You can close your account at any time. We may suspend accounts that violate these terms.`
   },
   {
-    title: '7. Disclaimer & limitation of liability',
-    body: `The Service is provided without warranties of any kind, express or implied. To the fullest extent permitted by law, Green Fuzzy Ball is not liable for any indirect, incidental, or consequential damages arising from your use of the Service.`
+    title: '7. Disclaimer',
+    body: `The Service is provided without warranties. We're not liable for any indirect or consequential damages from your use of the Service.`
   },
   {
-    title: '8. Changes to these terms',
-    body: `We may update these Terms of Service from time to time. If we make material changes, we'll update the "last updated" date below. Continuing to use the Service after changes take effect means you accept the revised terms.`
+    title: '8. Changes',
+    body: `We may update these terms from time to time and will update the date below when we do.`
   },
   {
     title: '9. Contact',
-    body: `Questions about these terms? Reach us at hello@greenfuzzyball.com.`
+    body: `Questions? greenfuzzyball.app@gmail.com`
   }
 ]
 
 function Terms() {
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', backgroundColor: 'white' }}>
       <PublicNav />
 
-      <div style={{
-        maxWidth: '720px', margin: '0 auto',
-        padding: `${spacing[16]} ${spacing[6]}`
-      }}>
-        <Typography variant="h1" mb={spacing[2]}>Terms of Service</Typography>
-        <Typography variant="caption" style={{ display: 'block', marginBottom: spacing[10] }}>
+      {/* Hero */}
+      <div style={{ backgroundColor: '#F5F3EE', padding: `${spacing[12]} ${spacing[6]}`, textAlign: 'center' }}>
+        <h1 style={{ fontSize: '42px', fontWeight: '800', color: '#111', margin: 0 }}>
+          Terms of Service
+        </h1>
+        <p style={{ fontSize: '14px', color: colors.gray[400], margin: `${spacing[3]} 0 0` }}>
           Last updated: July 2026
-        </Typography>
+        </p>
+      </div>
 
-        {SECTIONS.map(s => (
-          <div key={s.title} style={{ marginBottom: spacing[8] }}>
-            <Typography variant="h3" mb={spacing[3]}>{s.title}</Typography>
-            <Typography variant="body" color={colors.gray[600]}>{s.body}</Typography>
+      {/* Content */}
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: `${spacing[12]} ${spacing[6]}` }}>
+        {SECTIONS.map((s, i) => (
+          <div
+            key={s.title}
+            style={{
+              paddingBottom: spacing[8],
+              marginBottom: spacing[8],
+              borderBottom: i < SECTIONS.length - 1 ? `1px solid ${colors.gray[100]}` : 'none'
+            }}
+          >
+            <h3 style={{
+              fontSize: '17px', fontWeight: '700',
+              color: '#111', margin: `0 0 ${spacing[3]} 0`
+            }}>
+              {s.title}
+            </h3>
+            <p style={{
+              fontSize: '16px', color: colors.gray[600],
+              lineHeight: 1.8, margin: 0
+            }}>
+              {s.body}
+            </p>
           </div>
         ))}
       </div>
