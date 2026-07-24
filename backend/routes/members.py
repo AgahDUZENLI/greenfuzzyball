@@ -105,6 +105,52 @@ def get_member_profile(
         return member
 
 
+# ─── UPDATE MEMBER PROFILE ───────────────────────────────────────────────────
+
+@router.put("/me")
+def update_member_profile(
+    data: dict,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                UPDATE users SET name = %s, email = %s, phone = %s, location = %s
+                WHERE user_id = %s
+            """, (
+                data.get("name"),
+                data.get("email"),
+                data.get("phone"),
+                data.get("location"),
+                str(current_user["user_id"])
+            ))
+            cursor.execute("""
+                UPDATE members SET notes = %s
+                WHERE user_id = %s
+            """, (
+                data.get("notes"),
+                str(current_user["user_id"])
+            ))
+            conn.commit()
+
+            cursor.execute("""
+                SELECT u.user_id, u.name, u.email, u.phone, u.location,
+                       u.created_at, m.is_student, m.notes
+                FROM users u
+                JOIN members m ON u.user_id = m.user_id
+                WHERE u.user_id = %s
+            """, (str(current_user["user_id"]),))
+            return cursor.fetchone()
+    except Exception as e:
+        conn.rollback()
+        print(f"UPDATE MEMBER PROFILE ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not update profile"
+        )
+
+
 # ─── ADD CHILD ────────────────────────────────────────────────────────────────
 
 @router.post("/children", status_code=201)

@@ -10,9 +10,9 @@ import TabToggle from '../../components/TabToggle'
 import FeatureList from '../../components/FeatureList'
 import TextLink from '../../components/TextLink'
 import Divider from '../../components/Divider'
-import { User, Mail, Lock, Eye, EyeOff, Building } from 'lucide-react'
+import { User, Mail, Lock, Eye, EyeOff, MapPin } from 'lucide-react'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { register, API_URL } from '../../services/api'
+import { register, registerMember, API_URL } from '../../services/api'
 
 
 const PANELS = {
@@ -24,7 +24,7 @@ const PANELS = {
       'Free for your first 5 athletes'
     ]
   },
-  student: {
+  member: {
     heading: 'Start your journey.',
     features: [
       'See your progress over time',
@@ -52,11 +52,14 @@ function Register() {
     setError('')
     setLoading(true)
     try {
-      await register({ name, email, password, location })
-      await login(email, password)
-      navigate('/')
+      if (tab === 'coach') {
+        await register({ name, email, password, location })
+      } else {
+        await registerMember({ name, email, password, phone: null })
+      }
+      navigate('/login')
     } catch (err) {
-      setError('Could not create account. Email may already be in use.')
+      setError(err.response?.data?.detail || 'Something went wrong')
     } finally {
       setLoading(false)
     }
@@ -75,7 +78,7 @@ function Register() {
           <TabToggle
             options={[
               { value: 'coach', label: 'Coach', icon: <User size={14} /> },
-              { value: 'student', label: 'Student', icon: <User size={14} /> }
+              { value: 'member', label: 'Member', icon: <User size={14} /> }
             ]}
             active={tab}
             onChange={setTab}
@@ -84,26 +87,11 @@ function Register() {
 
         {/* Heading */}
         <Typography variant="h2" mb={spacing[1]}>
-          Create {tab === 'coach' ? 'coach' : 'student'} account
+          Create {tab === 'coach' ? 'coach' : 'member'} account
         </Typography>
         <Typography variant="bodySmall" mb={spacing[6]}>
           {tab === 'coach' ? 'Start managing your students.' : 'Join your coach\'s team.'}
         </Typography>
-
-        {/* Student notice */}
-        {tab === 'student' && (
-          <div style={{
-            backgroundColor: colors.primaryLight,
-            padding: spacing[3],
-            borderRadius: radius.md,
-            marginBottom: spacing[4],
-            textAlign: 'center'
-          }}>
-            <Typography variant="bodySmall" color={colors.primary}>
-              Student registration coming soon!
-            </Typography>
-          </div>
-        )}
 
         {/* Error */}
         {error && (
@@ -126,16 +114,14 @@ function Register() {
               value={name}
               onChange={e => setName(e.target.value)}
               required
-              disabled={tab === 'student'}
             />
             <Input
               type="email"
               icon={<Mail size={16} />}
-              placeholder="coach@email.com"
+              placeholder={tab === 'coach' ? 'coach@email.com' : 'you@email.com'}
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              disabled={tab === 'student'}
             />
             <Input
               type={showPassword ? 'text' : 'password'}
@@ -147,15 +133,15 @@ function Register() {
               onRightIconDown={() => setShowPassword(true)}
               onRightIconUp={() => setShowPassword(false)}
               required
-              disabled={tab === 'student'}
             />
-            <Input
-              icon={<Building size={16} />}
-              placeholder="Club / academy (optional)"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              disabled={tab === 'student'}
-            />
+            {tab === 'coach' && (
+              <Input
+                icon={<MapPin size={16} />}
+                placeholder="Location (optional)"
+                value={location}
+                onChange={e => setLocation(e.target.value)}
+              />
+            )}
           </div>
 
           {/* Divider */}
@@ -183,7 +169,7 @@ function Register() {
             type="submit"
             fullWidth
             size="lg"
-            disabled={loading || tab === 'student'}
+            disabled={loading}
           >
             {loading ? 'Creating account...' : 'Create account'}
           </Button>

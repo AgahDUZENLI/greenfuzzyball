@@ -21,7 +21,7 @@ from models.schemas import (
 from services.auth_service import (
     get_user_by_email,
     register_coach,
-    login_coach,
+    login_user,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -80,7 +80,7 @@ def register(data: RegisterRequest, conn=Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), conn=Depends(get_db)):
-    user = login_coach(conn=conn, email=form_data.username, password=form_data.password)
+    user = login_user(conn=conn, email=form_data.username, password=form_data.password)
 
     if not user:
         raise HTTPException(

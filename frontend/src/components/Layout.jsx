@@ -1,9 +1,14 @@
 import Sidebar from './Sidebar'
 import BottomTabBar from './BottomTabBar'
+import MemberSidebar from './MemberSidebar'
+import MemberBottomTabBar from './MemberBottomTabBar'
 import useIsMobile from '../hooks/useIsMobile'
+import { useAuth } from '../context/AuthContext'
 
 function Layout({ children, variant = 'app' }) {
   const isMobile = useIsMobile()
+  const { user } = useAuth()
+  const isMember = user?.role === 'member'
 
   if (variant === 'auth') {
     return (
@@ -23,7 +28,7 @@ function Layout({ children, variant = 'app' }) {
       backgroundColor: '#f9fafb',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     }}>
-      {!isMobile && <Sidebar />}
+      {!isMobile && (isMember ? <MemberSidebar /> : <Sidebar />)}
       <main style={{
         flex: 1,
         overflow: 'auto',
@@ -33,7 +38,7 @@ function Layout({ children, variant = 'app' }) {
       }}>
         {children}
       </main>
-      {isMobile && <BottomTabBar />}
+      {isMobile && (isMember ? <MemberBottomTabBar /> : <BottomTabBar />)}
     </div>
   )
 }

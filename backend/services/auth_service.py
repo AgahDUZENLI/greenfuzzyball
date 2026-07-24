@@ -94,7 +94,7 @@ def register_coach(conn, name: str, email: str, password: str,
         conn.commit()
         return user
 
-def login_coach(conn, email: str, password: str) -> Optional[dict]:
+def login_user(conn, email: str, password: str) -> Optional[dict]:
     user = get_user_by_email(conn, email)
 
     if not user:

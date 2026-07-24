@@ -18,6 +18,11 @@ import Terms from './pages/public/Terms'
 import Privacy from './pages/public/Privacy'
 import About from './pages/public/About'
 import Contact from './pages/public/Contact'
+import MemberDashboard from './pages/member/MemberDashboard'
+import MemberSessions from './pages/member/MemberSessions'
+import MemberProgress from './pages/member/MemberProgress'
+import MemberProfile from './pages/member/MemberProfile'
+
 
 
 
@@ -52,7 +57,7 @@ function AppRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
 
-      <Route path="/" element={user ? <Dashboard /> : <Landing />} />    
+      <Route path="/" element={user ? (user.role === 'member' ? <Navigate to="/member" /> : <Dashboard />) : <Landing />} />
       <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
       <Route path="/drills" element={<ProtectedRoute role="coach"><Drills /></ProtectedRoute>} />
       <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
@@ -62,6 +67,10 @@ function AppRoutes() {
       <Route path="/sessions/:sessionId" element={<ProtectedRoute><SessionDetail /></ProtectedRoute>} />
       <Route path="/drills/share/:token" element={<DrillShare />} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/member" element={<ProtectedRoute role="member"><MemberDashboard /></ProtectedRoute>} />
+      <Route path="/member/sessions" element={<ProtectedRoute role="member"><MemberSessions /></ProtectedRoute>} />
+      <Route path="/member/progress" element={<ProtectedRoute role="member"><MemberProgress /></ProtectedRoute>} />
+      <Route path="/member/profile" element={<ProtectedRoute role="member"><MemberProfile /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />
 
     </Routes>

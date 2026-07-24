@@ -23,7 +23,7 @@ const PANELS = {
       'Rate performance and spot trends fast'
     ]
   },
-  student: {
+  member: {
     heading: 'Train with purpose.',
     features: [
       'See your sessions and drills at a glance',
@@ -74,7 +74,7 @@ function Login() {
           <TabToggle
             options={[
               { value: 'coach', label: 'Coach', icon: <Dumbbell size={14} /> },
-              { value: 'student', label: 'Student', icon: <User size={14} /> }
+              { value: 'member', label: 'Member', icon: <User size={14} /> }
             ]}
             active={tab}
             onChange={setTab}
@@ -83,7 +83,7 @@ function Login() {
 
         {/* Heading */}
         <Typography variant="h2" mb={spacing[1]}>
-          Welcome back, {tab === 'coach' ? 'Coach' : 'Student'}
+          Welcome back, {tab === 'coach' ? 'Coach' : 'Member'}
         </Typography>
         <Typography variant="bodySmall" mb={spacing[6]}>
           {tab === 'coach' ? 'Log in to your dashboard.' : 'Log in to track your training.'}
@@ -115,32 +115,16 @@ function Login() {
           </div>
         )}
 
-        {/* Student notice */}
-        {tab === 'student' && (
-          <div style={{
-            backgroundColor: colors.primaryLight,
-            padding: spacing[3],
-            borderRadius: radius.md,
-            marginBottom: spacing[4],
-            textAlign: 'center'
-          }}>
-            <Typography variant="bodySmall" color={colors.primary}>
-              Student login coming soon!
-            </Typography>
-          </div>
-        )}
-
         {/* Form */}
         <form onSubmit={handleLogin}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3], marginBottom: spacing[4] }}>
             <Input
               type="email"
               icon={<Mail size={16} />}
-              placeholder={tab === 'coach' ? 'coach@email.com' : 'student@email.com'}
+              placeholder={tab === 'coach' ? 'coach@email.com' : 'you@email.com'}
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              disabled={tab === 'student'}
             />
             <Input
               type={showPassword ? 'text' : 'password'}
@@ -152,7 +136,6 @@ function Login() {
               onRightIconDown={() => setShowPassword(true)}
               onRightIconUp={() => setShowPassword(false)}
               required
-              disabled={tab === 'student'}
             />
           </div>
 
@@ -180,7 +163,7 @@ function Login() {
             </TextLink>
           </div>
 
-          <Button type="submit" fullWidth size="lg" disabled={loading || tab === 'student'}>
+          <Button type="submit" fullWidth size="lg" disabled={loading}>
             {loading ? 'Logging in...' : 'Log in'}
           </Button>
         </form>
@@ -204,7 +187,7 @@ function Login() {
             New here?{' '}
           </Typography>
           <TextLink onClick={() => navigate('/register')}>
-            {tab === 'coach' ? 'Create an account' : 'Join with a coach code'}
+            Create an account
           </TextLink>
         </div>
 
