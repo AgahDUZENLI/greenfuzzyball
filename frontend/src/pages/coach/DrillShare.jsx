@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import Typography from '../components/Typography'
-import Button from '../components/Button'
-import { getSharedDrill, importSharedDrill } from '../services/api'
-import { colors, spacing, radius } from '../styles/tokens'
+import Typography from '../../components/Typography'
+import Button from '../../components/Button'
+import { getSharedDrill, importSharedDrill } from '../../services/api'
+import { colors, spacing, radius } from '../../styles/tokens'
 import { Target, CheckCircle } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 function DrillShare() {
   const { token } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isCoach = user?.role === 'coach'
   const [drill, setDrill] = useState(null)
   const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState(false)
@@ -146,7 +149,7 @@ function DrillShare() {
               Go to Drills →
             </button>
           </div>
-        ) : (
+        ) : isCoach ? (
           <div style={{ display: 'flex', gap: spacing[3] }}>
             <Button onClick={() => handleImport()} disabled={importing} style={{ flex: 1 }}>
               {importing ? 'Adding...' : '+ Add to my library'}
@@ -162,6 +165,12 @@ function DrillShare() {
               Cancel
             </button>
           </div>
+        ) : (
+          <Typography variant="bodySmall" color={colors.gray[400]}>
+            {user
+              ? 'Only coaches can add drills to their library.'
+              : 'Log in as a coach to add this drill to your library.'}
+          </Typography>
         )}
       </div>
     </div>

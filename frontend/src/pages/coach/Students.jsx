@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react'
-import Layout from '../components/Layout'
-import Card from '../components/Card'
-import Avatar from '../components/Avatar'
-import Button from '../components/Button'
-import Typography from '../components/Typography'
-import Input from '../components/Input'
-import { getStudents, getStudentProgress, getSessions } from '../services/api'
-import { colors, spacing, radius } from '../styles/tokens'
-import { Search, Plus, Pencil, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react'
+import Layout from '../../components/Layout'
+import Card from '../../components/Card'
+import Avatar from '../../components/Avatar'
+import Button from '../../components/Button'
+import Typography from '../../components/Typography'
+import Input from '../../components/Input'
+import { getStudents, getStudentProgress, getSessions, getCoachJoinRequests, respondToJoinRequest } from '../../services/api'
+import { colors, spacing, radius } from '../../styles/tokens'
+import { Search, Plus, Pencil, ChevronRight, ChevronLeft, CheckCircle, Check, X } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import AddStudentModal from '../components/AddStudentModal'
-import EditStudentModal from '../components/EditStudentModal'
-import BookSessionModal from '../components/BookSessionModal'
+import AddStudentModal from '../../components/AddStudentModal'
+import EditStudentModal from '../../components/EditStudentModal'
+import BookSessionModal from '../../components/BookSessionModal'
 import { useNavigate } from 'react-router-dom'
-import useIsMobile from '../hooks/useIsMobile'
+import useIsMobile from '../../hooks/useIsMobile'
 
 
 
@@ -45,7 +45,25 @@ function Students() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showBookModal, setShowBookModal] = useState(false)
+  const [joinRequests, setJoinRequests] = useState([])
+  const [respondingId, setRespondingId] = useState(null)
 
+  const handleRespond = async (requestId, status) => {
+    setRespondingId(requestId)
+    try {
+      await respondToJoinRequest(requestId, status)
+      setJoinRequests(prev => prev.filter(r => r.request_id !== requestId))
+    } catch {
+    } finally {
+      setRespondingId(null)
+    }
+  }
+
+  useEffect(() => {
+    getCoachJoinRequests()
+      .then(res => setJoinRequests(res.data))
+      .catch(() => setJoinRequests([]))
+  }, [])
 
   useEffect(() => {
     getStudents()
@@ -100,7 +118,59 @@ function Students() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+        {joinRequests.length > 0 && (
+          <Card style={{ margin: spacing[4], marginBottom: 0, padding: 0, flexShrink: 0 }}>
+            <div style={{ padding: `${spacing[4]} ${spacing[4]} ${spacing[3]}`, borderBottom: `1px solid ${colors.gray[100]}` }}>
+              <Typography variant="h4">Join Requests</Typography>
+            </div>
+            {joinRequests.map((req, i) => (
+              <div
+                key={req.request_id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: spacing[3],
+                  padding: `${spacing[3]} ${spacing[4]}`,
+                  borderBottom: i < joinRequests.length - 1 ? `1px solid ${colors.gray[100]}` : 'none'
+                }}
+              >
+                <Avatar name={req.member_name} size="sm" />
+                <div style={{ flex: 1 }}>
+                  <Typography variant="bodySmall" style={{ fontWeight: '600' }}>{req.member_name}</Typography>
+                  <Typography variant="caption" color={colors.gray[400]}>
+                    {req.member_email}{req.notes ? ` · ${req.notes}` : ''}
+                  </Typography>
+                </div>
+                <button
+                  onClick={() => handleRespond(req.request_id, 'approved')}
+                  disabled={respondingId === req.request_id}
+                  style={{
+                    width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                    backgroundColor: colors.primaryLight, color: colors.primary,
+                    cursor: respondingId === req.request_id ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  onClick={() => handleRespond(req.request_id, 'rejected')}
+                  disabled={respondingId === req.request_id}
+                  style={{
+                    width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                    backgroundColor: colors.errorLight, color: colors.error,
+                    cursor: respondingId === req.request_id ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+          </Card>
+        )}
+
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* ── Left panel ── */}
         {(!isMobile || !mobileShowDetail) && (
@@ -393,6 +463,7 @@ function Students() {
           </div>
         ))}
 
+      </div>
       </div>
       {/* Modal — outside everything so it covers full screen */}
       {showAddModal && (

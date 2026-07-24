@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import Layout from '../components/Layout'
-import Typography from '../components/Typography'
-import Button from '../components/Button'
-import Input from '../components/Input'
-import Avatar from '../components/Avatar'
-import { getCoachProfile, updateCoachProfile, changePassword } from '../services/api'
-import { colors, spacing, radius } from '../styles/tokens'
+import { useAuth } from '../../context/AuthContext'
+import Layout from '../../components/Layout'
+import Typography from '../../components/Typography'
+import Button from '../../components/Button'
+import Input from '../../components/Input'
+import Avatar from '../../components/Avatar'
+import { getCoachProfile, updateCoachProfile, changePassword } from '../../services/api'
+import { colors, spacing, radius } from '../../styles/tokens'
 import {
   User, Mail, Phone, MapPin, Clock,
   Bell, Shield, LogOut, ChevronRight, Save
 } from 'lucide-react'
-import useIsMobile from '../hooks/useIsMobile'
+import useIsMobile from '../../hooks/useIsMobile'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },

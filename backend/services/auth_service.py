@@ -94,7 +94,7 @@ def register_coach(conn, name: str, email: str, password: str,
         conn.commit()
         return user
 
-def login_coach(conn, email: str, password: str) -> Optional[dict]:
+def login_user(conn, email: str, password: str) -> Optional[dict]:
     user = get_user_by_email(conn, email)
 
     if not user:
@@ -103,7 +103,7 @@ def login_coach(conn, email: str, password: str) -> Optional[dict]:
     if not verify_password(password, user["hashed_password"]):
         return None
 
-    if user["role"] != "coach":
+    if user["role"] == "student":
         return None
 
     return user

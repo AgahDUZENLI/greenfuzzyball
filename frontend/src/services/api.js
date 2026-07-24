@@ -21,6 +21,7 @@ api.interceptors.request.use((config) => {
 
 // Auth
 export const register = (data) => api.post('/auth/register', data)
+export const registerMember = (data) => api.post('/members/register', data)
 export const login = (data) => {
   const formData = new FormData()
   formData.append('username', data.email)
@@ -83,3 +84,17 @@ export const resetPassword = (token, newPassword) =>
 // Coach
 export const getCoachProfile = () => api.get('/coaches/profile')
 export const updateCoachProfile = (data) => api.put('/coaches/profile', data)
+
+// Members
+export const getMemberSessions = (studentId) => api.get(`/members/sessions${studentId ? `?student_id=${studentId}` : ''}`)
+export const getMemberProgress = (studentId) => api.get(`/members/progress${studentId ? `?student_id=${studentId}` : ''}`)
+export const getMemberProfile = () => api.get('/members/me')
+export const updateMemberProfile = (data) => api.put('/members/me', data)
+export const getChildren = () => api.get('/members/children')
+export const requestJoinCoach = (data) => api.post('/members/join-request', data)
+export const getMyJoinRequests = () => api.get('/members/join-requests')
+
+// Coaches (browse + join requests)
+export const getCoaches = (search) => api.get(`/coaches/${search ? `?search=${encodeURIComponent(search)}` : ''}`)
+export const getCoachJoinRequests = () => api.get('/coaches/join-requests')
+export const respondToJoinRequest = (requestId, status) => api.patch(`/coaches/join-requests/${requestId}`, { status })

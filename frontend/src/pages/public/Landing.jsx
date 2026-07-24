@@ -1,14 +1,14 @@
 import { useEffect, Fragment } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import Button from '../components/Button'
-import Card from '../components/Card'
-import Badge from '../components/Badge'
-import Typography from '../components/Typography'
-import StatCard from '../components/StatCard'
-import PublicNav from '../components/PublicNav'
-import PublicFooter from '../components/PublicFooter'
-import InstallButton from '../components/InstallButton'
-import { colors, spacing, radius, shadows } from '../styles/tokens'
+import Button from '../../components/Button'
+import Card from '../../components/Card'
+import Badge from '../../components/Badge'
+import Typography from '../../components/Typography'
+import StatCard from '../../components/StatCard'
+import PublicNav from '../../components/PublicNav'
+import PublicFooter from '../../components/PublicFooter'
+import InstallButton from '../../components/InstallButton'
+import { colors, spacing, radius, shadows } from '../../styles/tokens'
 import {
   Zap, FileText, CalendarX2, BrainCircuit,
   Users, Calendar, Share2, Gauge, Mail, Smartphone,
@@ -16,7 +16,7 @@ import {
   MessageSquare, FolderOpen, CheckCircle2, ArrowDown,
   X, Check, Sun, Star, Save, TrendingUp
 } from 'lucide-react'
-import useIsMobile from '../hooks/useIsMobile'
+import useIsMobile from '../../hooks/useIsMobile'
 
 const PROBLEMS = [
   {
