@@ -6,15 +6,23 @@ import Typography from '../../components/Typography'
 import Button from '../../components/Button'
 import Input from '../../components/Input'
 import Avatar from '../../components/Avatar'
-import { getMemberProfile, updateMemberProfile, changePassword } from '../../services/api'
+import Card from '../../components/Card'
+import {
+  getMemberProfile, updateMemberProfile, changePassword,
+  getChildren, getCoaches, getMyJoinRequests, requestJoinCoach
+} from '../../services/api'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, Search } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
+  { id: 'kids', label: 'My Kids', icon: Users },
+  { id: 'coaches', label: 'Coaches', icon: Search },
   { id: 'security', label: 'Security', icon: Shield }
 ]
+
+const capitalize = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
 
 function MemberProfile() {
   const { logout } = useAuth()
@@ -41,6 +49,17 @@ function MemberProfile() {
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
 
+  // Kids state
+  const [children, setChildren] = useState([])
+  const [childrenLoading, setChildrenLoading] = useState(true)
+
+  // Coaches state
+  const [coaches, setCoaches] = useState([])
+  const [coachSearch, setCoachSearch] = useState('')
+  const [myRequests, setMyRequests] = useState([])
+  const [coachesLoading, setCoachesLoading] = useState(true)
+  const [requestingCoachId, setRequestingCoachId] = useState(null)
+
   useEffect(() => {
     getMemberProfile()
       .then(res => {
@@ -52,7 +71,37 @@ function MemberProfile() {
         setNotes(p.notes || '')
       })
       .finally(() => setLoading(false))
+
+    getChildren()
+      .then(res => setChildren(res.data))
+      .catch(() => setChildren([]))
+      .finally(() => setChildrenLoading(false))
+
+    refreshCoaches()
+    getMyJoinRequests()
+      .then(res => setMyRequests(res.data))
+      .catch(() => setMyRequests([]))
   }, [])
+
+  const refreshCoaches = (search) => {
+    setCoachesLoading(true)
+    getCoaches(search)
+      .then(res => setCoaches(res.data))
+      .catch(() => setCoaches([]))
+      .finally(() => setCoachesLoading(false))
+  }
+
+  const handleRequestJoin = async (coachId) => {
+    setRequestingCoachId(coachId)
+    try {
+      await requestJoinCoach({ coach_id: coachId })
+      const res = await getMyJoinRequests()
+      setMyRequests(res.data)
+    } catch {
+    } finally {
+      setRequestingCoachId(null)
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -252,6 +301,119 @@ function MemberProfile() {
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ── KIDS TAB ── */}
+            {activeTab === 'kids' && (
+              <div style={{ maxWidth: '760px' }}>
+                <Typography variant="h4" mb={spacing[4]}>My Kids</Typography>
+
+                {childrenLoading ? (
+                  <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
+                ) : children.length === 0 ? (
+                  <Card style={{ padding: spacing[6], textAlign: 'center' }}>
+                    <Typography variant="bodySmall" color={colors.gray[400]}>
+                      No kids linked yet
+                    </Typography>
+                  </Card>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
+                    {children.map(child => (
+                      <div
+                        key={child.user_id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: spacing[4],
+                          padding: spacing[4], borderRadius: radius.xl,
+                          backgroundColor: 'white', border: `1px solid ${colors.gray[200]}`
+                        }}
+                      >
+                        <Avatar name={child.name} size="md" />
+                        <div style={{ flex: 1 }}>
+                          <Typography variant="body" style={{ fontWeight: '600' }}>{child.name}</Typography>
+                          <Typography variant="bodySmall" color={colors.gray[500]}>
+                            {capitalize(child.age_group)} · {capitalize(child.level)}
+                            {child.phone ? ` · ${child.phone}` : ''}
+                          </Typography>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── COACHES TAB ── */}
+            {activeTab === 'coaches' && (
+              <div style={{ maxWidth: '760px' }}>
+                <Typography variant="h4" mb={spacing[4]}>Find a Coach</Typography>
+
+                <div style={{ marginBottom: spacing[5] }}>
+                  <Input
+                    icon={<Search size={16} />}
+                    placeholder="Search by name or location"
+                    value={coachSearch}
+                    onChange={e => {
+                      setCoachSearch(e.target.value)
+                      refreshCoaches(e.target.value)
+                    }}
+                  />
+                </div>
+
+                {coachesLoading ? (
+                  <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
+                ) : coaches.length === 0 ? (
+                  <Card style={{ padding: spacing[6], textAlign: 'center' }}>
+                    <Typography variant="bodySmall" color={colors.gray[400]}>
+                      No coaches found
+                    </Typography>
+                  </Card>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
+                    {coaches.map(coach => {
+                      const existingRequest = myRequests.find(r => r.coach_id === coach.user_id)
+                      return (
+                        <div
+                          key={coach.user_id}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: spacing[4],
+                            padding: spacing[4], borderRadius: radius.xl,
+                            backgroundColor: 'white', border: `1px solid ${colors.gray[200]}`
+                          }}
+                        >
+                          <Avatar name={coach.name} size="md" />
+                          <div style={{ flex: 1 }}>
+                            <Typography variant="body" style={{ fontWeight: '600' }}>{coach.name}</Typography>
+                            <Typography variant="bodySmall" color={colors.gray[500]}>
+                              {coach.location || 'Location not set'}
+                            </Typography>
+                          </div>
+                          {existingRequest ? (
+                            <div style={{
+                              padding: `${spacing[1]} ${spacing[3]}`,
+                              borderRadius: radius.full,
+                              backgroundColor: existingRequest.status === 'approved' ? colors.primaryLight
+                                : existingRequest.status === 'rejected' ? colors.errorLight : colors.gray[100],
+                              color: existingRequest.status === 'approved' ? colors.primary
+                                : existingRequest.status === 'rejected' ? colors.error : colors.gray[500],
+                              fontSize: '13px', fontWeight: '600'
+                            }}>
+                              {capitalize(existingRequest.status)}
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleRequestJoin(coach.user_id)}
+                              disabled={requestingCoachId === coach.user_id}
+                            >
+                              {requestingCoachId === coach.user_id ? 'Sending...' : 'Request to join'}
+                            </Button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

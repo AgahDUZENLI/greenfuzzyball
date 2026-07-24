@@ -90,3 +90,11 @@ export const getMemberSessions = (studentId) => api.get(`/members/sessions${stud
 export const getMemberProgress = (studentId) => api.get(`/members/progress${studentId ? `?student_id=${studentId}` : ''}`)
 export const getMemberProfile = () => api.get('/members/me')
 export const updateMemberProfile = (data) => api.put('/members/me', data)
+export const getChildren = () => api.get('/members/children')
+export const requestJoinCoach = (data) => api.post('/members/join-request', data)
+export const getMyJoinRequests = () => api.get('/members/join-requests')
+
+// Coaches (browse + join requests)
+export const getCoaches = (search) => api.get(`/coaches/${search ? `?search=${encodeURIComponent(search)}` : ''}`)
+export const getCoachJoinRequests = () => api.get('/coaches/join-requests')
+export const respondToJoinRequest = (requestId, status) => api.patch(`/coaches/join-requests/${requestId}`, { status })

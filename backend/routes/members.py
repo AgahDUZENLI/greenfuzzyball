@@ -268,6 +268,25 @@ def request_join_coach(
         )
 
 
+# ─── GET MY JOIN REQUESTS ────────────────────────────────────────────────────
+
+@router.get("/join-requests")
+def get_my_join_requests(
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute("""
+            SELECT r.request_id, r.member_id, r.coach_id, r.status, r.notes, r.created_at,
+                   u.name as coach_name
+            FROM coach_join_requests r
+            JOIN users u ON r.coach_id = u.user_id
+            WHERE r.member_id = %s
+            ORDER BY r.created_at DESC
+        """, (str(current_user["user_id"]),))
+        return cursor.fetchall()
+
+
 # ─── REQUEST A SESSION ────────────────────────────────────────────────────────
 
 @router.post("/session-requests", status_code=201)
