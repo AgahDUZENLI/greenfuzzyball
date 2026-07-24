@@ -103,7 +103,7 @@ def login_coach(conn, email: str, password: str) -> Optional[dict]:
     if not verify_password(password, user["hashed_password"]):
         return None
 
-    if user["role"] != "coach":
+    if user["role"] == "student":
         return None
 
     return user
