@@ -24,7 +24,7 @@ function Sidebar() {
   return (
     <div style={{
       width: '220px',
-      minHeight: '100vh',
+      height: '100%',
       backgroundColor: 'white',
       borderRight: `1px solid ${colors.gray[200]}`,
       display: 'flex',
