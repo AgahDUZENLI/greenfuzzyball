@@ -43,7 +43,72 @@ class ChangePasswordRequest(BaseModel):
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
     
+# ─── MEMBERS ────────────────────────────────────
 
+class RegisterMemberRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone: Optional[str] = None
+    # Member type
+    is_student: bool = False      # true if member also takes lessons themselves
+    # If is_student, their own student profile
+    age_group: Optional[str] = None
+    level: Optional[str] = None
+
+class MemberResponse(BaseModel):
+    user_id: UUID
+    name: str
+    email: Optional[str]
+    phone: Optional[str]
+    role: str
+    is_student: bool
+    created_at: datetime
+
+class AddChildRequest(BaseModel):
+    name: str
+    phone: Optional[str] = None
+    age_group: str
+    level: str
+    notes: Optional[str] = None
+
+class ChildResponse(BaseModel):
+    user_id: UUID
+    name: str
+    age_group: str
+    level: str
+    phone: Optional[str] = None
+    notes: Optional[str] = None
+
+class JoinRequestCreate(BaseModel):
+    coach_id: UUID
+    notes: Optional[str] = None
+
+class JoinRequestResponse(BaseModel):
+    request_id: UUID
+    coach_id: UUID
+    member_id: UUID
+    status: str
+    notes: Optional[str]
+    created_at: datetime
+
+class SessionRequestCreate(BaseModel):
+    coach_id: UUID
+    student_id: UUID        # which student (themselves or a kid)
+    requested_date: date
+    requested_time: Optional[time] = None
+    notes: Optional[str] = None
+
+class SessionRequestResponse(BaseModel):
+    request_id: UUID
+    coach_id: UUID
+    member_id: UUID
+    student_id: UUID
+    requested_date: date
+    requested_time: Optional[time]
+    status: str
+    notes: Optional[str]
+    created_at: datetime
 
 # ─── COACHES ────────────────────────────────────
 
