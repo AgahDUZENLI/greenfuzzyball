@@ -1,23 +1,23 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Students from './pages/Students'
-import Drills from './pages/Drills'
-import Sessions from './pages/Sessions'
-import Register from './pages/Register'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
-import AuthCallback from './pages/AuthCallback'
-import SessionDetail from './pages/SessionDetail'
-import DrillShare from './pages/DrillShare'
-import Settings from './pages/Settings'
-import Landing from './pages/Landing'
-import Terms from './pages/Terms'
-import Privacy from './pages/Privacy'
-import About from './pages/About'
-import Contact from './pages/Contact'
+import Login from './pages/auth/Login'
+import Dashboard from './pages/coach/Dashboard'
+import Students from './pages/coach/Students'
+import Drills from './pages/coach/Drills'
+import Sessions from './pages/coach/Sessions'
+import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
+import AuthCallback from './pages/auth/AuthCallback'
+import SessionDetail from './pages/coach/SessionDetail'
+import DrillShare from './pages/coach/DrillShare'
+import Settings from './pages/coach/Settings'
+import Landing from './pages/public/Landing'
+import Terms from './pages/public/Terms'
+import Privacy from './pages/public/Privacy'
+import About from './pages/public/About'
+import Contact from './pages/public/Contact'
 
 
 
@@ -31,11 +31,12 @@ function ScrollToTop() {
   return null
 }
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth()
 
   if (loading) return <div>Loading...</div>
   if (!user) return <Navigate to="/login" />
+  if (role && user.role !== role) return <Navigate to="/" />
   return children
 }
 
@@ -53,7 +54,7 @@ function AppRoutes() {
 
       <Route path="/" element={user ? <Dashboard /> : <Landing />} />    
       <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
-      <Route path="/drills" element={<ProtectedRoute><Drills /></ProtectedRoute>} />
+      <Route path="/drills" element={<ProtectedRoute role="coach"><Drills /></ProtectedRoute>} />
       <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />

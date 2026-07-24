@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import Layout from '../components/Layout'
-import Button from '../components/Button'
-import Typography from '../components/Typography'
-import { getStudents, getSessions } from '../services/api'
-import { colors, spacing, radius } from '../styles/tokens'
+import Layout from '../../components/Layout'
+import Button from '../../components/Button'
+import Typography from '../../components/Typography'
+import { getStudents, getSessions } from '../../services/api'
+import { colors, spacing, radius } from '../../styles/tokens'
 import { ChevronLeft, ChevronRight, Plus, Clock, CheckCircle, Calendar as CalendarIcon } from 'lucide-react'
-import BookSessionModal from '../components/BookSessionModal'
+import BookSessionModal from '../../components/BookSessionModal'
 import { useNavigate } from 'react-router-dom'
-import useIsMobile from '../hooks/useIsMobile'
+import useIsMobile from '../../hooks/useIsMobile'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']

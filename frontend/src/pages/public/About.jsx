@@ -1,6 +1,6 @@
-import PublicNav from '../components/PublicNav'
-import PublicFooter from '../components/PublicFooter'
-import { colors, spacing, radius } from '../styles/tokens'
+import PublicNav from '../../components/PublicNav'
+import PublicFooter from '../../components/PublicFooter'
+import { colors, spacing, radius } from '../../styles/tokens'
 
 function About() {
   return (
