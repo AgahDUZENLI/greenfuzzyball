@@ -50,9 +50,7 @@ class RegisterMemberRequest(BaseModel):
     email: EmailStr
     password: str
     phone: Optional[str] = None
-    # Member type
-    is_student: bool = False      # true if member also takes lessons themselves
-    # If is_student, their own student profile
+    is_student: bool = False  
     age_group: Optional[str] = None
     level: Optional[str] = None
 
@@ -94,7 +92,7 @@ class JoinRequestResponse(BaseModel):
 
 class SessionRequestCreate(BaseModel):
     coach_id: UUID
-    student_id: UUID        # which student (themselves or a kid)
+    student_id: UUID    
     requested_date: date
     requested_time: Optional[time] = None
     notes: Optional[str] = None
