@@ -26,6 +26,7 @@ export const login = (data) => {
   const formData = new FormData()
   formData.append('username', data.email)
   formData.append('password', data.password)
+  formData.append('role', data.role)
   return axios.post(`${API_URL}/auth/login`, formData)
 }
 export const getMe = () => api.get('/auth/me')
@@ -96,6 +97,7 @@ export const updateChild = (childId, data) => api.put(`/members/children/${child
 export const deleteChild = (childId) => api.delete(`/members/children/${childId}`)
 export const getMyJoinRequests = () => api.get('/members/join-requests')
 export const joinCoachByCode = (code) => api.post('/members/join-by-code', { code })
+export const removeCoach = (requestId) => api.delete(`/members/join-requests/${requestId}`)
 
 // Coaches (join requests)
 export const getCoachJoinRequests = () => api.get('/coaches/join-requests')

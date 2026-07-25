@@ -50,7 +50,6 @@ class RegisterMemberRequest(BaseModel):
     email: EmailStr
     password: str
     phone: Optional[str] = None
-    is_student: bool = False
     level: Optional[str] = None
 
 class MemberResponse(BaseModel):
@@ -59,7 +58,6 @@ class MemberResponse(BaseModel):
     email: Optional[str]
     phone: Optional[str]
     role: str
-    is_student: bool
     created_at: datetime
 
 class AddChildRequest(BaseModel):
@@ -82,10 +80,6 @@ class UpdateChildRequest(BaseModel):
     phone: Optional[str] = None
     age: Optional[int] = None
     level: Optional[str] = None
-    notes: Optional[str] = None
-
-class JoinRequestCreate(BaseModel):
-    coach_id: UUID
     notes: Optional[str] = None
 
 class JoinByCodeRequest(BaseModel):

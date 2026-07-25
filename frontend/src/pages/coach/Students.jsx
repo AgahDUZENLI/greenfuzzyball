@@ -60,6 +60,10 @@ function Students() {
     try {
       await respondToJoinRequest(requestId, status)
       setJoinRequests(prev => prev.filter(r => r.request_id !== requestId))
+      if (status === 'approved') {
+        const res = await getStudents()
+        setStudents(res.data)
+      }
     } catch {
     } finally {
       setRespondingId(null)

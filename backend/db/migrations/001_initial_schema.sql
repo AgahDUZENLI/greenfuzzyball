@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE users (
     user_id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name                      VARCHAR NOT NULL,
-    email                     VARCHAR UNIQUE,
+    email                     VARCHAR,
     phone                     VARCHAR,
     hashed_password           VARCHAR,
     role                      VARCHAR NOT NULL CHECK (role IN ('coach', 'student', 'member')),
@@ -14,7 +14,8 @@ CREATE TABLE users (
     age                       INTEGER,
     password_reset_token      VARCHAR,
     password_reset_expires_at TIMESTAMP,
-    created_at                TIMESTAMP DEFAULT NOW()
+    created_at                TIMESTAMP DEFAULT NOW(),
+    UNIQUE (email, role)
 );
 
 -- ─── COACHES ─────────────────────────────────────────────────────────────────
@@ -34,7 +35,6 @@ CREATE TABLE coaches (
 
 CREATE TABLE members (
     user_id    UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    is_student BOOLEAN DEFAULT false,  -- true if member also takes lessons
     notes      TEXT
 );
 

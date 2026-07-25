@@ -9,7 +9,6 @@ from models.schemas import (
     AddChildRequest,
     ChildResponse,
     UpdateChildRequest,
-    JoinRequestCreate,
     JoinRequestResponse,
     JoinByCodeRequest,
     SessionRequestCreate,
@@ -28,8 +27,8 @@ def register_member(data: RegisterMemberRequest, conn=Depends(get_db)):
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
-            # Check email not taken
-            cursor.execute("SELECT 1 FROM users WHERE email = %s", (data.email,))
+            # Check email not taken by another member account
+            cursor.execute("SELECT 1 FROM users WHERE email = %s AND role = 'member'", (data.email,))
             if cursor.fetchone():
                 raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -47,21 +46,15 @@ def register_member(data: RegisterMemberRequest, conn=Depends(get_db)):
 
             # Create member profile
             cursor.execute("""
-                INSERT INTO members (user_id, is_student)
-                VALUES (%s, %s)
-            """, (user_id, data.is_student))
+                INSERT INTO members (user_id)
+                VALUES (%s)
+            """, (user_id,))
 
-            # If member also takes lessons → create student record
-            if data.is_student:
-                if not data.level:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="level is required if is_student is true"
-                    )
-                cursor.execute("""
-                    INSERT INTO students (user_id, level)
-                    VALUES (%s, %s)
-                """, (user_id, data.level))
+            # Every member is also a coachable student record
+            cursor.execute("""
+                INSERT INTO students (user_id, level)
+                VALUES (%s, %s)
+            """, (user_id, data.level))
 
             conn.commit()
             return {
@@ -70,7 +63,6 @@ def register_member(data: RegisterMemberRequest, conn=Depends(get_db)):
                 "email": user["email"],
                 "phone": user["phone"],
                 "role": user["role"],
-                "is_student": data.is_student,
                 "created_at": user["created_at"]
             }
 
@@ -95,7 +87,7 @@ def get_member_profile(
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
             SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                   u.created_at, m.is_student, m.notes
+                   u.created_at, m.notes
             FROM users u
             JOIN members m ON u.user_id = m.user_id
             WHERE u.user_id = %s
@@ -138,7 +130,7 @@ def update_member_profile(
 
             cursor.execute("""
                 SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                       u.created_at, m.is_student, m.notes
+                       u.created_at, m.notes
                 FROM users u
                 JOIN members m ON u.user_id = m.user_id
                 WHERE u.user_id = %s
@@ -345,48 +337,6 @@ def delete_child(
         )
 
 
-# ─── REQUEST TO JOIN COACH ───────────────────────────────────────────────────
-
-@router.post("/join-request", status_code=201)
-def request_join_coach(
-    data: JoinRequestCreate,
-    conn=Depends(get_db),
-    current_user=Depends(get_current_user)
-):
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-
-            # Check not already requested
-            cursor.execute("""
-                SELECT 1 FROM coach_join_requests
-                WHERE member_id = %s AND coach_id = %s AND status = 'pending'
-            """, (str(current_user["user_id"]), str(data.coach_id)))
-
-            if cursor.fetchone():
-                raise HTTPException(
-                    status_code=400,
-                    detail="You already have a pending request with this coach"
-                )
-
-            cursor.execute("""
-                INSERT INTO coach_join_requests (member_id, coach_id, notes)
-                VALUES (%s, %s, %s)
-                RETURNING request_id, member_id, coach_id, status, notes, created_at
-            """, (str(current_user["user_id"]), str(data.coach_id), data.notes or None))
-
-            conn.commit()
-            return cursor.fetchone()
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not send join request"
-        )
-
-
 # ─── ADD COACH BY CODE ───────────────────────────────────────────────────────
 
 @router.post("/join-by-code", status_code=201)
@@ -407,36 +357,27 @@ def join_coach_by_code(
 
             coach_id = str(coach["user_id"])
 
-            # Already connected?
+            # Already connected or already waiting on approval?
             cursor.execute("""
-                SELECT 1 FROM coach_join_requests
-                WHERE member_id = %s AND coach_id = %s AND status = 'approved'
+                SELECT status FROM coach_join_requests
+                WHERE member_id = %s AND coach_id = %s AND status IN ('approved', 'pending')
             """, (str(current_user["user_id"]), coach_id))
-            if cursor.fetchone():
-                raise HTTPException(
-                    status_code=400,
-                    detail="You're already connected with this coach"
+            existing = cursor.fetchone()
+            if existing:
+                detail = (
+                    "You're already connected with this coach"
+                    if existing["status"] == "approved"
+                    else "You already have a pending request with this coach"
                 )
+                raise HTTPException(status_code=400, detail=detail)
 
-            # Sharing the code is the coach's consent — link immediately, no approval needed
+            # Entering the code sends a join request — the coach still approves it
             cursor.execute("""
-                INSERT INTO coach_join_requests (member_id, coach_id, status)
-                VALUES (%s, %s, 'approved')
+                INSERT INTO coach_join_requests (member_id, coach_id)
+                VALUES (%s, %s)
                 RETURNING request_id, member_id, coach_id, status, notes, created_at
             """, (str(current_user["user_id"]), coach_id))
             request = cursor.fetchone()
-
-            # If the member is also a student, add them to the coach's roster
-            cursor.execute("""
-                SELECT is_student FROM members WHERE user_id = %s
-            """, (str(current_user["user_id"]),))
-            member = cursor.fetchone()
-            if member and member["is_student"]:
-                cursor.execute("""
-                    INSERT INTO coach_students (coach_id, student_id)
-                    VALUES (%s, %s)
-                    ON CONFLICT DO NOTHING
-                """, (coach_id, str(current_user["user_id"])))
 
             cursor.execute("SELECT name FROM users WHERE user_id = %s", (coach_id,))
             coach_user = cursor.fetchone()
@@ -472,6 +413,47 @@ def get_my_join_requests(
             ORDER BY r.created_at DESC
         """, (str(current_user["user_id"]),))
         return cursor.fetchall()
+
+
+# ─── REMOVE A COACH LINK ──────────────────────────────────────────────────────
+
+@router.delete("/join-requests/{request_id}", status_code=204)
+def remove_coach(
+    request_id: str,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+            cursor.execute("""
+                SELECT coach_id FROM coach_join_requests
+                WHERE request_id = %s AND member_id = %s
+            """, (request_id, str(current_user["user_id"])))
+
+            request = cursor.fetchone()
+            if not request:
+                raise HTTPException(status_code=404, detail="Join request not found")
+
+            cursor.execute("""
+                DELETE FROM coach_students WHERE coach_id = %s AND student_id = %s
+            """, (str(request["coach_id"]), str(current_user["user_id"])))
+
+            cursor.execute("""
+                DELETE FROM coach_join_requests WHERE request_id = %s
+            """, (request_id,))
+
+            conn.commit()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"REMOVE COACH ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not remove coach"
+        )
 
 
 # ─── REQUEST A SESSION ────────────────────────────────────────────────────────

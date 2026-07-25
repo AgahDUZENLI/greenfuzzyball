@@ -151,7 +151,7 @@ function Register() {
           <div style={{ display: 'flex', gap: spacing[3], marginBottom: spacing[6] }}>
             <Button 
               variant="outline" fullWidth 
-              onClick={() => window.location.href = `${API_URL}/auth/google`}
+              onClick={() => window.location.href = `${API_URL}/auth/google?role=${tab}`}
               >
               Google
             </Button>

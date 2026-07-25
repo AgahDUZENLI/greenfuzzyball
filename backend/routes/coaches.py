@@ -2,37 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import psycopg2.extras
 
 from db.connection import get_db
-from middleware.auth_middleware import get_current_coach, get_current_user
+from middleware.auth_middleware import get_current_coach
 from models.schemas import CoachResponse
 
 router = APIRouter()
-
-
-# ─── BROWSE COACHES ───────────────────────────────────────────────────────────
-
-@router.get("/")
-def list_coaches(
-    search: str = None,
-    conn=Depends(get_db),
-    current_user=Depends(get_current_user)
-):
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-        if search:
-            cursor.execute("""
-                SELECT u.user_id, u.name, u.location, c.notes
-                FROM users u
-                JOIN coaches c ON u.user_id = c.user_id
-                WHERE u.name ILIKE %s OR u.location ILIKE %s
-                ORDER BY u.name
-            """, (f"%{search}%", f"%{search}%"))
-        else:
-            cursor.execute("""
-                SELECT u.user_id, u.name, u.location, c.notes
-                FROM users u
-                JOIN coaches c ON u.user_id = c.user_id
-                ORDER BY u.name
-            """)
-        return cursor.fetchall()
 
 
 # ─── GET INCOMING JOIN REQUESTS ──────────────────────────────────────────────
@@ -85,15 +58,10 @@ def respond_to_join_request(
 
             if new_status == "approved":
                 cursor.execute("""
-                    SELECT is_student FROM members WHERE user_id = %s
-                """, (str(request["member_id"]),))
-                member = cursor.fetchone()
-                if member and member["is_student"]:
-                    cursor.execute("""
-                        INSERT INTO coach_students (coach_id, student_id)
-                        VALUES (%s, %s)
-                        ON CONFLICT DO NOTHING
-                    """, (str(coach["user_id"]), str(request["member_id"])))
+                    INSERT INTO coach_students (coach_id, student_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (str(coach["user_id"]), str(request["member_id"])))
 
             conn.commit()
             return {"request_id": request_id, "status": new_status}

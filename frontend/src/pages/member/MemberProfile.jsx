@@ -11,10 +11,10 @@ import AddChildModal from '../../components/AddChildModal'
 import EditChildModal from '../../components/EditChildModal'
 import {
   getMemberProfile, updateMemberProfile, changePassword,
-  getChildren, getMyJoinRequests, joinCoachByCode
+  getChildren, getMyJoinRequests, joinCoachByCode, removeCoach
 } from '../../services/api'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, UserPlus, Plus, Pencil, KeyRound } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, UserPlus, Plus, Pencil, KeyRound, Trash2 } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
 const TABS = [
@@ -80,12 +80,16 @@ function MemberProfile() {
       .then(res => setChildren(res.data))
       .catch(() => setChildren([]))
       .finally(() => setChildrenLoading(false))
+  }, [])
 
+  useEffect(() => {
+    if (activeTab !== 'coaches') return
+    setCoachesLoading(true)
     getMyJoinRequests()
       .then(res => setMyRequests(res.data))
       .catch(() => setMyRequests([]))
       .finally(() => setCoachesLoading(false))
-  }, [])
+  }, [activeTab])
 
   const handleJoinByCode = async () => {
     if (!coachCode.trim()) return setCoachError('Enter a coach code')
@@ -100,6 +104,14 @@ function MemberProfile() {
     } finally {
       setJoiningCoach(false)
     }
+  }
+
+  const handleRemoveCoach = async (request) => {
+    if (!window.confirm(`Remove ${request.coach_name}? This cannot be undone.`)) return
+    try {
+      await removeCoach(request.request_id)
+      setMyRequests(prev => prev.filter(r => r.request_id !== request.request_id))
+    } catch {}
   }
 
   const handleSave = async () => {
@@ -437,6 +449,16 @@ function MemberProfile() {
                         }}>
                           {capitalize(request.status)}
                         </div>
+                        <button
+                          onClick={() => handleRemoveCoach(request)}
+                          style={{
+                            width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                            backgroundColor: colors.errorLight, color: colors.error,
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     ))}
                   </div>
