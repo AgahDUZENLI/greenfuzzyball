@@ -1,11 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 import psycopg2.extras
-from passlib.context import CryptContext
 
 from db.connection import get_db
 from models.schemas import (
-    RegisterMemberRequest,
-    MemberResponse,
     AddChildRequest,
     ChildResponse,
     UpdateChildRequest,
@@ -17,64 +14,6 @@ from models.schemas import (
 from middleware.auth_middleware import get_current_user
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-# ─── REGISTER MEMBER ─────────────────────────────────────────────────────────
-
-@router.post("/register", status_code=201)
-def register_member(data: RegisterMemberRequest, conn=Depends(get_db)):
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-
-            # Check email not taken by another member account
-            cursor.execute("SELECT 1 FROM users WHERE email = %s AND role = 'member'", (data.email,))
-            if cursor.fetchone():
-                raise HTTPException(status_code=400, detail="Email already registered")
-
-            hashed = pwd_context.hash(data.password)
-
-            # Create user
-            cursor.execute("""
-                INSERT INTO users (name, email, phone, hashed_password, role)
-                VALUES (%s, %s, %s, %s, 'member')
-                RETURNING user_id, name, email, phone, role, created_at
-            """, (data.name, data.email, data.phone or None, hashed))
-
-            user = cursor.fetchone()
-            user_id = str(user["user_id"])
-
-            # Create member profile
-            cursor.execute("""
-                INSERT INTO members (user_id)
-                VALUES (%s)
-            """, (user_id,))
-
-            # Every member is also a coachable student record
-            cursor.execute("""
-                INSERT INTO students (user_id, level)
-                VALUES (%s, %s)
-            """, (user_id, data.level))
-
-            conn.commit()
-            return {
-                "user_id": user["user_id"],
-                "name": user["name"],
-                "email": user["email"],
-                "phone": user["phone"],
-                "role": user["role"],
-                "created_at": user["created_at"]
-            }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        conn.rollback()
-        print(f"REGISTER MEMBER ERROR: {type(e).__name__}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not register member"
-        )
 
 
 # ─── GET MEMBER PROFILE ───────────────────────────────────────────────────────
@@ -86,7 +25,7 @@ def get_member_profile(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT u.user_id, u.name, u.email, u.phone, u.location,
+            SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
                    u.created_at, m.notes
             FROM users u
             JOIN members m ON u.user_id = m.user_id
@@ -110,13 +49,14 @@ def update_member_profile(
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             cursor.execute("""
-                UPDATE users SET name = %s, email = %s, phone = %s, location = %s
+                UPDATE users SET name = %s, email = %s, phone = %s, location = %s, age = %s
                 WHERE user_id = %s
             """, (
                 data.get("name"),
                 data.get("email"),
                 data.get("phone"),
                 data.get("location"),
+                data.get("age"),
                 str(current_user["user_id"])
             ))
             cursor.execute("""

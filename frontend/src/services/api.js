@@ -21,7 +21,6 @@ api.interceptors.request.use((config) => {
 
 // Auth
 export const register = (data) => api.post('/auth/register', data)
-export const registerMember = (data) => api.post('/members/register', data)
 export const login = (data) => {
   const formData = new FormData()
   formData.append('username', data.email)

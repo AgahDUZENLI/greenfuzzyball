@@ -22,6 +22,7 @@ from services.auth_service import (
     get_user_by_email,
     any_user_with_email,
     register_coach,
+    register_member,
     login_user,
     create_access_token,
     create_refresh_token,
@@ -42,23 +43,36 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(data: RegisterRequest, conn=Depends(get_db)):
-    try:
-        user = register_coach(
-            conn=conn,
-            name=data.name,
-            email=data.email,
-            password=data.password,
-            phone=data.phone,
-            location=data.location
-        )
+    if data.role not in ("coach", "member"):
+        raise HTTPException(status_code=400, detail="role must be 'coach' or 'member'")
 
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO coach_drills (coach_id, drill_id)
-                SELECT %s, drill_id FROM drills
-                WHERE coach_id IS NULL
-            """, (str(user["user_id"]),))
-            conn.commit()
+    try:
+        if data.role == "coach":
+            user = register_coach(
+                conn=conn,
+                name=data.name,
+                email=data.email,
+                password=data.password,
+                phone=data.phone,
+                location=data.location
+            )
+
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO coach_drills (coach_id, drill_id)
+                    SELECT %s, drill_id FROM drills
+                    WHERE coach_id IS NULL
+                """, (str(user["user_id"]),))
+                conn.commit()
+        else:
+            user = register_member(
+                conn=conn,
+                name=data.name,
+                email=data.email,
+                password=data.password,
+                phone=data.phone,
+                level=data.level
+            )
 
         return user
 

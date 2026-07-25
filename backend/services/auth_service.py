@@ -99,6 +99,35 @@ def register_coach(conn, name: str, email: str, password: str,
         conn.commit()
         return user
 
+def register_member(conn, name: str, email: str, password: str,
+                    phone: Optional[str], level: Optional[str]) -> dict:
+    hashed = hash_password(password)
+
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        # Step 1 — insert into users
+        cursor.execute("""
+            INSERT INTO users (name, email, hashed_password, role, phone)
+            VALUES (%s, %s, %s, 'member', %s)
+            RETURNING user_id, name, email, role, created_at
+        """, (name, email, hashed, phone))
+
+        user = cursor.fetchone()
+
+        # Step 2 — insert into members
+        cursor.execute("""
+            INSERT INTO members (user_id)
+            VALUES (%s)
+        """, (str(user["user_id"]),))
+
+        # Step 3 — every member is also a coachable student record
+        cursor.execute("""
+            INSERT INTO students (user_id, level)
+            VALUES (%s, %s)
+        """, (str(user["user_id"]), level))
+
+        conn.commit()
+        return user
+
 def login_user(conn, email: str, password: str, role: str) -> Optional[dict]:
     user = get_user_by_email(conn, email, role)
 

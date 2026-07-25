@@ -12,6 +12,8 @@ class RegisterRequest(BaseModel):
     password: str
     phone: Optional[str] = None
     location: Optional[str] = None
+    level: Optional[str] = None
+    role: str = "coach"
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -42,23 +44,8 @@ class ChangePasswordRequest(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
-    
+
 # ─── MEMBERS ────────────────────────────────────
-
-class RegisterMemberRequest(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
-    phone: Optional[str] = None
-    level: Optional[str] = None
-
-class MemberResponse(BaseModel):
-    user_id: UUID
-    name: str
-    email: Optional[str]
-    phone: Optional[str]
-    role: str
-    created_at: datetime
 
 class AddChildRequest(BaseModel):
     name: str
@@ -155,7 +142,7 @@ class StudentResponse(BaseModel):
     user_id: UUID
     name: str
     age: Optional[int] = None
-    level: str
+    level: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     location: Optional[str] = None

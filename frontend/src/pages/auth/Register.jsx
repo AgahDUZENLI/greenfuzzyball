@@ -12,7 +12,7 @@ import TextLink from '../../components/TextLink'
 import Divider from '../../components/Divider'
 import { User, Mail, Lock, Eye, EyeOff, MapPin } from 'lucide-react'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { register, registerMember, API_URL } from '../../services/api'
+import { register, API_URL } from '../../services/api'
 
 
 const PANELS = {
@@ -52,11 +52,7 @@ function Register() {
     setError('')
     setLoading(true)
     try {
-      if (tab === 'coach') {
-        await register({ name, email, password, location })
-      } else {
-        await registerMember({ name, email, password, phone: null })
-      }
+      await register({ name, email, password, role: tab, location: tab === 'coach' ? location : null })
       navigate('/login')
     } catch (err) {
       setError(err.response?.data?.detail || 'Something went wrong')

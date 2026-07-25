@@ -40,6 +40,7 @@ function MemberProfile() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [location, setLocation] = useState('')
+  const [age, setAge] = useState('')
   const [notes, setNotes] = useState('')
 
   // Change password state
@@ -72,6 +73,7 @@ function MemberProfile() {
         setEmail(p.email || '')
         setPhone(p.phone || '')
         setLocation(p.location || '')
+        setAge(p.age ?? '')
         setNotes(p.notes || '')
       })
       .finally(() => setLoading(false))
@@ -117,7 +119,7 @@ function MemberProfile() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await updateMemberProfile({ name, email, phone, location, notes })
+      await updateMemberProfile({ name, email, phone, location, age: age ? parseInt(age) : null, notes })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -291,6 +293,27 @@ function MemberProfile() {
                     <div>
                       <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
                       <Input icon={<Phone size={16} />} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone number" />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+                    <div>
+                      <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE</Typography>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        placeholder="Your age"
+                        value={age}
+                        onChange={e => setAge(e.target.value)}
+                        style={{
+                          width: '100%', padding: '12px 16px',
+                          border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
+                          fontSize: '15px', fontFamily: 'inherit', color: colors.black,
+                          outline: 'none', boxSizing: 'border-box'
+                        }}
+                        onFocus={e => e.target.style.borderColor = colors.primary}
+                        onBlur={e => e.target.style.borderColor = colors.gray[200]}
+                      />
                     </div>
                   </div>
                   <div>
