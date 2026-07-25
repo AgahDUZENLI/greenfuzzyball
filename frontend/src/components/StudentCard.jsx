@@ -19,7 +19,7 @@ function StudentCard({ students, type, onTypeChange, onRemove }) {
             <div style={{ flex: 1 }}>
               <Typography variant="bodySmall" style={{ fontWeight: '600' }}>{student.name}</Typography>
               <Typography variant="caption" color={colors.gray[500]}>
-                {capitalize(student.age_group)} · {capitalize(student.level)}
+                {capitalize(student.level)}
               </Typography>
             </div>
             <button onClick={() => onRemove(student.user_id)} style={{

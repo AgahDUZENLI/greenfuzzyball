@@ -25,19 +25,19 @@ def create_student(
 
             # Step 1 — create user
             cursor.execute("""
-                INSERT INTO users (name, email, phone, location, role)
-                VALUES (%s, %s, %s, %s, 'student')
+                INSERT INTO users (name, email, phone, location, age, role)
+                VALUES (%s, %s, %s, %s, %s, 'student')
                 RETURNING user_id
-            """, (data.name, data.email or None, data.phone or None, data.location or None))
+            """, (data.name, data.email or None, data.phone or None, data.location or None, data.age))
 
             user = cursor.fetchone()
             user_id = user["user_id"]
 
             # Step 2 — create student profile
             cursor.execute("""
-                INSERT INTO students (user_id, age_group, level, notes)
-                VALUES (%s, %s, %s, %s)
-            """, (str(user_id), data.age_group, data.level, data.notes))
+                INSERT INTO students (user_id, level, notes)
+                VALUES (%s, %s, %s)
+            """, (str(user_id), data.level, data.notes))
 
             # Step 3 — link student to coach
             cursor.execute("""
@@ -47,8 +47,8 @@ def create_student(
 
             # Step 4 — return full student data
             cursor.execute("""
-                SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                       s.age_group, s.level, s.notes
+                SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                       s.level, s.notes
                 FROM users u
                 JOIN students s ON u.user_id = s.user_id
                 WHERE u.user_id = %s
@@ -75,8 +75,8 @@ def get_students(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                   s.age_group, s.level, s.notes
+            SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                   s.level, s.notes
             FROM users u
             JOIN students s ON u.user_id = s.user_id
             JOIN coach_students cs ON s.user_id = cs.student_id
@@ -97,8 +97,8 @@ def get_student(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                   s.age_group, s.level, s.notes
+            SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                   s.level, s.notes
             FROM users u
             JOIN students s ON u.user_id = s.user_id
             JOIN coach_students cs ON s.user_id = cs.student_id
@@ -141,30 +141,30 @@ def update_student(
                 )
 
             # Update users table
-            if any([data.name, data.email, data.phone, data.location]):
+            if any([data.name, data.email, data.phone, data.location, data.age is not None]):
                 cursor.execute("""
                     UPDATE users SET
                         name = COALESCE(%s, name),
                         email = COALESCE(%s, email),
                         phone = COALESCE(%s, phone),
-                        location = COALESCE(%s, location)
+                        location = COALESCE(%s, location),
+                        age = COALESCE(%s, age)
                     WHERE user_id = %s
-                """, (data.name, data.email, data.phone, data.location, student_id))
+                """, (data.name, data.email, data.phone, data.location, data.age, student_id))
 
             # Update students table
-            if any([data.age_group, data.level, data.notes]):
+            if any([data.level, data.notes]):
                 cursor.execute("""
                     UPDATE students SET
-                        age_group = COALESCE(%s, age_group),
                         level = COALESCE(%s, level),
                         notes = COALESCE(%s, notes)
                     WHERE user_id = %s
-                """, (data.age_group, data.level, data.notes, student_id))
+                """, (data.level, data.notes, student_id))
 
             # Return updated student
             cursor.execute("""
-                SELECT u.user_id, u.name, u.email, u.phone, u.location,
-                       s.age_group, s.level, s.notes
+                SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                       s.level, s.notes
                 FROM users u
                 JOIN students s ON u.user_id = s.user_id
                 WHERE u.user_id = %s

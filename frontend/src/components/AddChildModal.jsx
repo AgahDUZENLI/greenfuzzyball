@@ -4,16 +4,15 @@ import Typography from './Typography'
 import Input from './Input'
 import Button from './Button'
 import Modal from './Modal'
-import { User, Phone, Mail, Plus } from 'lucide-react'
-import { createStudent } from '../services/api'
+import { User, Phone, Plus } from 'lucide-react'
+import { addChild } from '../services/api'
 import useIsMobile from '../hooks/useIsMobile'
 
-function AddStudentModal({ onClose, onAdded }) {
+function AddChildModal({ onClose, onAdded }) {
   const isMobile = useIsMobile()
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
   const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
   const [level, setLevel] = useState('beginner')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,21 +20,22 @@ function AddStudentModal({ onClose, onAdded }) {
 
   const handleSubmit = async () => {
     if (!name.trim()) return setError('Name is required')
+    if (!age) return setError('Age is required')
     setError('')
     setLoading(true)
     try {
-      const res = await createStudent({ name, age: age ? parseInt(age) : null, phone, email, level, notes })
+      const res = await addChild({ name, age: age ? parseInt(age) : null, phone, level, notes })
       onAdded(res.data)
       onClose()
     } catch {
-      setError('Could not add student. Please try again.')
+      setError('Could not add kid. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Modal title="Add Student" subtitle="Create a new athlete profile" onClose={onClose} maxWidth="520px">
+    <Modal title="Add Kid" subtitle="Link a child to your account" onClose={onClose} maxWidth="520px">
 
       {error && (
         <div style={{
@@ -54,12 +54,12 @@ function AddStudentModal({ onClose, onAdded }) {
           <Input icon={<User size={16} />} placeholder="Jordan Blake" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE (OPTIONAL)</Typography>
+          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE</Typography>
           <input
             type="number"
             min="1"
             max="120"
-            placeholder="e.g. 34"
+            placeholder="e.g. 6"
             value={age}
             onChange={e => setAge(e.target.value)}
             style={{
@@ -74,16 +74,10 @@ function AddStudentModal({ onClose, onAdded }) {
         </div>
       </div>
 
-      {/* Phone + Email */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
-        <div>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
-          <Input icon={<Phone size={16} />} placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />
-        </div>
-        <div>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>EMAIL</Typography>
-          <Input type="email" icon={<Mail size={16} />} placeholder="athlete@email.com" value={email} onChange={e => setEmail(e.target.value)} />
-        </div>
+      {/* Phone */}
+      <div style={{ marginBottom: spacing[4] }}>
+        <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
+        <Input icon={<Phone size={16} />} placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />
       </div>
 
       {/* Level */}
@@ -135,7 +129,7 @@ function AddStudentModal({ onClose, onAdded }) {
         </button>
         <Button onClick={handleSubmit} disabled={loading}>
           <Plus size={16} />
-          {loading ? 'Adding...' : 'Add Student'}
+          {loading ? 'Adding...' : 'Add Kid'}
         </Button>
       </div>
 
@@ -143,4 +137,4 @@ function AddStudentModal({ onClose, onAdded }) {
   )
 }
 
-export default AddStudentModal
+export default AddChildModal

@@ -8,8 +8,10 @@ from models.schemas import (
     MemberResponse,
     AddChildRequest,
     ChildResponse,
+    UpdateChildRequest,
     JoinRequestCreate,
     JoinRequestResponse,
+    JoinByCodeRequest,
     SessionRequestCreate,
     SessionRequestResponse
 )
@@ -51,15 +53,15 @@ def register_member(data: RegisterMemberRequest, conn=Depends(get_db)):
 
             # If member also takes lessons → create student record
             if data.is_student:
-                if not data.age_group or not data.level:
+                if not data.level:
                     raise HTTPException(
                         status_code=400,
-                        detail="age_group and level required if is_student is true"
+                        detail="level is required if is_student is true"
                     )
                 cursor.execute("""
-                    INSERT INTO students (user_id, age_group, level)
-                    VALUES (%s, %s, %s)
-                """, (user_id, data.age_group, data.level))
+                    INSERT INTO students (user_id, level)
+                    VALUES (%s, %s)
+                """, (user_id, data.level))
 
             conn.commit()
             return {
@@ -164,19 +166,18 @@ def add_child(
 
             # Create student user record for child (no login)
             cursor.execute("""
-                INSERT INTO users (name, phone, role)
-                VALUES (%s, %s, 'student')
+                INSERT INTO users (name, phone, age, role)
+                VALUES (%s, %s, %s, 'student')
                 RETURNING user_id
-            """, (data.name, data.phone or None))
+            """, (data.name, data.phone or None, data.age))
 
             child_user = cursor.fetchone()
             child_id = str(child_user["user_id"])
 
-            # Create student profile
             cursor.execute("""
-                INSERT INTO students (user_id, age_group, level, notes)
-                VALUES (%s, %s, %s, %s)
-            """, (child_id, data.age_group, data.level, data.notes or None))
+                INSERT INTO students (user_id, level, notes)
+                VALUES (%s, %s, %s)
+            """, (child_id, data.level, data.notes or None))
 
             # Link child to member
             cursor.execute("""
@@ -187,8 +188,8 @@ def add_child(
             conn.commit()
 
             cursor.execute("""
-                SELECT u.user_id, u.name, u.phone,
-                       s.age_group, s.level, s.notes
+                SELECT u.user_id, u.name, u.phone, u.age,
+                       s.level, s.notes
                 FROM users u
                 JOIN students s ON u.user_id = s.user_id
                 WHERE u.user_id = %s
@@ -216,14 +217,132 @@ def get_children(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT u.user_id, u.name, u.phone,
-                   s.age_group, s.level, s.notes
+            SELECT u.user_id, u.name, u.phone, u.age,
+                   s.level, s.notes
             FROM users u
             JOIN students s ON u.user_id = s.user_id
             JOIN member_children mc ON s.user_id = mc.student_id
             WHERE mc.member_id = %s
         """, (str(current_user["user_id"]),))
         return cursor.fetchall()
+
+
+# ─── UPDATE CHILD ─────────────────────────────────────────────────────────────
+
+@router.put("/children/{child_id}")
+def update_child(
+    child_id: str,
+    data: UpdateChildRequest,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+            # Verify child belongs to this member
+            cursor.execute("""
+                SELECT 1 FROM member_children
+                WHERE member_id = %s AND student_id = %s
+            """, (str(current_user["user_id"]), child_id))
+
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Child not found")
+
+            if any([data.name, data.phone, data.age is not None]):
+                cursor.execute("""
+                    UPDATE users SET
+                        name = COALESCE(%s, name),
+                        phone = COALESCE(%s, phone),
+                        age = COALESCE(%s, age)
+                    WHERE user_id = %s
+                """, (data.name, data.phone, data.age, child_id))
+
+            if any([data.level, data.notes]):
+                cursor.execute("""
+                    UPDATE students SET
+                        level = COALESCE(%s, level),
+                        notes = COALESCE(%s, notes)
+                    WHERE user_id = %s
+                """, (data.level, data.notes, child_id))
+
+            cursor.execute("""
+                SELECT u.user_id, u.name, u.phone, u.age,
+                       s.level, s.notes
+                FROM users u
+                JOIN students s ON u.user_id = s.user_id
+                WHERE u.user_id = %s
+            """, (child_id,))
+
+            conn.commit()
+            return cursor.fetchone()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"UPDATE CHILD ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not update child"
+        )
+
+
+# ─── DELETE CHILD ─────────────────────────────────────────────────────────────
+
+@router.delete("/children/{child_id}", status_code=204)
+def delete_child(
+    child_id: str,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        with conn.cursor() as cursor:
+
+            # Verify child belongs to this member
+            cursor.execute("""
+                SELECT 1 FROM member_children
+                WHERE member_id = %s AND student_id = %s
+            """, (str(current_user["user_id"]), child_id))
+
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Child not found")
+
+            # Find sessions where this child is the only participant
+            cursor.execute("""
+                SELECT ss.session_id
+                FROM session_students ss
+                WHERE ss.student_id = %s
+                  AND NOT EXISTS (
+                      SELECT 1 FROM session_students ss2
+                      WHERE ss2.session_id = ss.session_id AND ss2.student_id != %s
+                  )
+            """, (child_id, child_id))
+
+            solo_session_ids = [row[0] for row in cursor.fetchall()]
+
+            # Delete those sessions entirely (cascades to session_students,
+            # session_drills, session_drill_ratings)
+            if solo_session_ids:
+                cursor.execute("""
+                    DELETE FROM sessions WHERE session_id = ANY(%s::uuid[])
+                """, (solo_session_ids,))
+
+            # Delete user (cascades to students and member_children)
+            cursor.execute("""
+                DELETE FROM users WHERE user_id = %s
+            """, (child_id,))
+
+            conn.commit()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"DELETE CHILD ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not delete child"
+        )
 
 
 # ─── REQUEST TO JOIN COACH ───────────────────────────────────────────────────
@@ -265,6 +384,74 @@ def request_join_coach(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not send join request"
+        )
+
+
+# ─── ADD COACH BY CODE ───────────────────────────────────────────────────────
+
+@router.post("/join-by-code", status_code=201)
+def join_coach_by_code(
+    data: JoinByCodeRequest,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+            cursor.execute("""
+                SELECT user_id FROM coaches WHERE code = %s
+            """, (data.code.strip(),))
+            coach = cursor.fetchone()
+            if not coach:
+                raise HTTPException(status_code=404, detail="Invalid coach code")
+
+            coach_id = str(coach["user_id"])
+
+            # Already connected?
+            cursor.execute("""
+                SELECT 1 FROM coach_join_requests
+                WHERE member_id = %s AND coach_id = %s AND status = 'approved'
+            """, (str(current_user["user_id"]), coach_id))
+            if cursor.fetchone():
+                raise HTTPException(
+                    status_code=400,
+                    detail="You're already connected with this coach"
+                )
+
+            # Sharing the code is the coach's consent — link immediately, no approval needed
+            cursor.execute("""
+                INSERT INTO coach_join_requests (member_id, coach_id, status)
+                VALUES (%s, %s, 'approved')
+                RETURNING request_id, member_id, coach_id, status, notes, created_at
+            """, (str(current_user["user_id"]), coach_id))
+            request = cursor.fetchone()
+
+            # If the member is also a student, add them to the coach's roster
+            cursor.execute("""
+                SELECT is_student FROM members WHERE user_id = %s
+            """, (str(current_user["user_id"]),))
+            member = cursor.fetchone()
+            if member and member["is_student"]:
+                cursor.execute("""
+                    INSERT INTO coach_students (coach_id, student_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (coach_id, str(current_user["user_id"])))
+
+            cursor.execute("SELECT name FROM users WHERE user_id = %s", (coach_id,))
+            coach_user = cursor.fetchone()
+
+            conn.commit()
+            return {**request, "coach_name": coach_user["name"]}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"JOIN BY CODE ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not add coach"
         )
 
 

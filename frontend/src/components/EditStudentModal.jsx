@@ -12,7 +12,7 @@ import useIsMobile from '../hooks/useIsMobile'
 function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
   const isMobile = useIsMobile()
   const [name, setName] = useState(student.name || '')
-  const [ageGroup, setAgeGroup] = useState(student.age_group || 'adults')
+  const [age, setAge] = useState(student.age ?? '')
   const [phone, setPhone] = useState(student.phone || '')
   const [email, setEmail] = useState(student.email || '')
   const [level, setLevel] = useState(student.level || 'beginner')
@@ -26,7 +26,7 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
     setError('')
     setLoading(true)
     try {
-      const res = await updateStudent(student.user_id, { name, age_group: ageGroup, phone, email, level, notes })
+      const res = await updateStudent(student.user_id, { name, age: age ? parseInt(age) : null, phone, email, level, notes })
       onUpdated(res.data)
       onClose()
     } catch {
@@ -75,24 +75,30 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
         </div>
       )}
 
-      {/* Name + Age Group */}
+      {/* Name + Age */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>FULL NAME</Typography>
           <Input icon={<User size={16} />} placeholder="Full name" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE GROUP</Typography>
-          <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} style={{
-            width: '100%', padding: '12px 16px',
-            border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
-            fontSize: '15px', fontFamily: 'inherit', color: colors.black,
-            backgroundColor: 'white', cursor: 'pointer', outline: 'none', boxSizing: 'border-box'
-          }}>
-            <option value="kids">Kids</option>
-            <option value="adults">Adult</option>
-            <option value="veterans">Veteran</option>
-          </select>
+          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE (OPTIONAL)</Typography>
+          <input
+            type="number"
+            min="1"
+            max="120"
+            placeholder="e.g. 34"
+            value={age}
+            onChange={e => setAge(e.target.value)}
+            style={{
+              width: '100%', padding: '12px 16px',
+              border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
+              fontSize: '15px', fontFamily: 'inherit', color: colors.black,
+              outline: 'none', boxSizing: 'border-box'
+            }}
+            onFocus={e => e.target.style.borderColor = colors.primary}
+            onBlur={e => e.target.style.borderColor = colors.gray[200]}
+          />
         </div>
       </div>
 

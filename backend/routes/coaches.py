@@ -117,9 +117,9 @@ def get_profile(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT 
-                u.user_id, u.name, u.email, u.phone, u.location,
-                u.created_at, c.notes,
+            SELECT
+                u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                u.created_at, c.code, c.notes,
                 c.availability_start, c.availability_end,
                 c.session_duration, c.coaching_days,
                 c.notification_preferences
@@ -143,13 +143,14 @@ def update_profile(
         import json
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             cursor.execute("""
-                UPDATE users SET name = %s, email = %s, phone = %s, location = %s
+                UPDATE users SET name = %s, email = %s, phone = %s, location = %s, age = %s
                 WHERE user_id = %s
             """, (
                 data.get("name"),
                 data.get("email"),
                 data.get("phone"),
                 data.get("location"),
+                data.get("age"),
                 str(coach["user_id"])
             ))
             cursor.execute("""

@@ -26,6 +26,13 @@ const FILTERS = [
 
 const CHART_COLORS = [colors.primary, '#9ca3af', '#3b82f6', '#f59e0b']
 
+const ageBucket = age => {
+  if (age == null) return null
+  if (age < 18) return 'kids'
+  if (age < 60) return 'adults'
+  return 'veterans'
+}
+
 const levelColor = level =>
   level === 'advanced' ? colors.error
   : level === 'intermediate' ? colors.warning
@@ -85,7 +92,7 @@ function Students() {
   }, [selected])
 
   const filtered = students.filter(s =>
-    (filter === 'all' || s.age_group === filter) &&
+    (filter === 'all' || ageBucket(s.age) === filter) &&
     s.name.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -256,7 +263,7 @@ function Students() {
                       {student.name}
                     </Typography>
                     <Typography variant="caption" color={colors.gray[400]}>
-                      {capitalize(student.age_group)}
+                      {capitalize(ageBucket(student.age)) || 'Age not set'}
                     </Typography>
                   </div>
                   <span style={{
@@ -306,7 +313,8 @@ function Students() {
                 <div>
                   <Typography variant="h2" mb={spacing[1]}>{selected.name}</Typography>
                   <Typography variant="bodySmall" color={colors.gray[500]}>
-                    {capitalize(selected.age_group)} · {capitalize(selected.level)}
+                    {capitalize(selected.level)}
+                    {selected.age ? ` · Age ${selected.age}` : ''}
                   </Typography>
                 </div>
               </div>

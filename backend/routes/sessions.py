@@ -210,7 +210,7 @@ def get_session(
             )
 
         cursor.execute("""
-            SELECT u.user_id, u.name, s.level, s.age_group
+            SELECT u.user_id, u.name, s.level
             FROM users u
             JOIN students s ON u.user_id = s.user_id
             JOIN session_students ss ON u.user_id = ss.student_id

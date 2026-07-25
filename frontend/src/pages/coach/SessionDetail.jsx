@@ -198,8 +198,6 @@ function SessionDetail() {
                 <div style={{ flex: 1 }}>
                   <Typography variant="body" style={{ fontWeight: '600' }}>{student.name}</Typography>
                   <Typography variant="caption" color={colors.gray[400]}>
-                    {student.age_group?.charAt(0).toUpperCase() + student.age_group?.slice(1)}
-                    {' · '}
                     {student.level?.charAt(0).toUpperCase() + student.level?.slice(1)}
                   </Typography>
                 </div>

@@ -50,8 +50,7 @@ class RegisterMemberRequest(BaseModel):
     email: EmailStr
     password: str
     phone: Optional[str] = None
-    is_student: bool = False  
-    age_group: Optional[str] = None
+    is_student: bool = False
     level: Optional[str] = None
 
 class MemberResponse(BaseModel):
@@ -66,21 +65,31 @@ class MemberResponse(BaseModel):
 class AddChildRequest(BaseModel):
     name: str
     phone: Optional[str] = None
-    age_group: str
+    age: int
     level: str
     notes: Optional[str] = None
 
 class ChildResponse(BaseModel):
     user_id: UUID
     name: str
-    age_group: str
+    age: Optional[int] = None
     level: str
     phone: Optional[str] = None
+    notes: Optional[str] = None
+
+class UpdateChildRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    age: Optional[int] = None
+    level: Optional[str] = None
     notes: Optional[str] = None
 
 class JoinRequestCreate(BaseModel):
     coach_id: UUID
     notes: Optional[str] = None
+
+class JoinByCodeRequest(BaseModel):
+    code: str
 
 class JoinRequestResponse(BaseModel):
     request_id: UUID
@@ -116,6 +125,8 @@ class CoachResponse(BaseModel):
     email: Optional[str]
     phone: Optional[str]
     location: Optional[str]
+    age: Optional[int] = None
+    code: Optional[str] = None
     notes: Optional[str]
     created_at: datetime
     availability_start: Optional[time]
@@ -132,8 +143,8 @@ class CreateStudentRequest(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     location: Optional[str] = None
+    age: Optional[int] = None
     # from students table
-    age_group: str
     level: str
     notes: Optional[str] = None
 
@@ -142,14 +153,14 @@ class UpdateStudentRequest(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     location: Optional[str] = None
-    age_group: Optional[str] = None
+    age: Optional[int] = None
     level: Optional[str] = None
     notes: Optional[str] = None
 
 class StudentResponse(BaseModel):
     user_id: UUID
     name: str
-    age_group: str
+    age: Optional[int] = None
     level: str
     phone: Optional[str] = None
     email: Optional[str] = None

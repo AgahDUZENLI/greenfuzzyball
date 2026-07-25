@@ -11,6 +11,7 @@ CREATE TABLE users (
     hashed_password           VARCHAR,
     role                      VARCHAR NOT NULL CHECK (role IN ('coach', 'student', 'member')),
     location                  VARCHAR,
+    age                       INTEGER,
     password_reset_token      VARCHAR,
     password_reset_expires_at TIMESTAMP,
     created_at                TIMESTAMP DEFAULT NOW()
@@ -20,6 +21,7 @@ CREATE TABLE users (
 
 CREATE TABLE coaches (
     user_id            UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    code               VARCHAR UNIQUE DEFAULT encode(gen_random_bytes(4), 'hex'),
     notes              TEXT,
     availability_start TIME DEFAULT '00:00',
     availability_end   TIME DEFAULT '23:59',
@@ -40,7 +42,6 @@ CREATE TABLE members (
 
 CREATE TABLE students (
     user_id   UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    age_group VARCHAR CHECK (age_group IN ('kids', 'adults', 'veterans')),
     level     VARCHAR CHECK (level IN ('beginner', 'intermediate', 'advanced')),
     notes     TEXT
 );
