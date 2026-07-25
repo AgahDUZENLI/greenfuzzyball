@@ -96,6 +96,18 @@ def add_child(
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
+            # If a coach was picked, make sure the member is actually connected to them
+            if data.coach_id:
+                cursor.execute("""
+                    SELECT 1 FROM coach_join_requests
+                    WHERE member_id = %s AND coach_id = %s AND status = 'approved'
+                """, (str(current_user["user_id"]), str(data.coach_id)))
+                if not cursor.fetchone():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="You're not connected with this coach"
+                    )
+
             # Create student user record for child (no login)
             cursor.execute("""
                 INSERT INTO users (name, phone, age, role)
@@ -116,6 +128,14 @@ def add_child(
                 INSERT INTO member_children (member_id, student_id)
                 VALUES (%s, %s)
             """, (str(current_user["user_id"]), child_id))
+
+            # Link child to the picked coach's roster
+            if data.coach_id:
+                cursor.execute("""
+                    INSERT INTO coach_students (coach_id, student_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (str(data.coach_id), child_id))
 
             conn.commit()
 
@@ -150,7 +170,10 @@ def get_children(
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
             SELECT u.user_id, u.name, u.phone, u.age,
-                   s.level, s.notes
+                   s.level, s.notes,
+                   (SELECT coach_id FROM coach_students WHERE student_id = s.user_id LIMIT 1) AS coach_id,
+                   (SELECT u2.name FROM coach_students cs JOIN users u2 ON u2.user_id = cs.coach_id
+                    WHERE cs.student_id = s.user_id LIMIT 1) AS coach_name
             FROM users u
             JOIN students s ON u.user_id = s.user_id
             JOIN member_children mc ON s.user_id = mc.student_id
@@ -197,9 +220,37 @@ def update_child(
                     WHERE user_id = %s
                 """, (data.level, data.notes, child_id))
 
+            # Reconcile the kid's coach link to whatever was picked — a child
+            # is linked to at most one coach at a time, same as when added
+            if data.coach_id:
+                cursor.execute("""
+                    SELECT 1 FROM coach_join_requests
+                    WHERE member_id = %s AND coach_id = %s AND status = 'approved'
+                """, (str(current_user["user_id"]), str(data.coach_id)))
+                if not cursor.fetchone():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="You're not connected with this coach"
+                    )
+                cursor.execute("""
+                    DELETE FROM coach_students WHERE student_id = %s AND coach_id != %s
+                """, (child_id, str(data.coach_id)))
+                cursor.execute("""
+                    INSERT INTO coach_students (coach_id, student_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (str(data.coach_id), child_id))
+            else:
+                cursor.execute("""
+                    DELETE FROM coach_students WHERE student_id = %s
+                """, (child_id,))
+
             cursor.execute("""
                 SELECT u.user_id, u.name, u.phone, u.age,
-                       s.level, s.notes
+                       s.level, s.notes,
+                       (SELECT coach_id FROM coach_students WHERE student_id = s.user_id LIMIT 1) AS coach_id,
+                       (SELECT u2.name FROM coach_students cs JOIN users u2 ON u2.user_id = cs.coach_id
+                        WHERE cs.student_id = s.user_id LIMIT 1) AS coach_name
                 FROM users u
                 JOIN students s ON u.user_id = s.user_id
                 WHERE u.user_id = %s

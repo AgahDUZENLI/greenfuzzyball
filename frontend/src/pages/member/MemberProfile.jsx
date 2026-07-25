@@ -377,7 +377,18 @@ function MemberProfile() {
                       >
                         <Avatar name={child.name} size="md" />
                         <div style={{ flex: 1 }}>
-                          <Typography variant="body" style={{ fontWeight: '600' }}>{child.name}</Typography>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+                            <Typography variant="body" style={{ fontWeight: '600' }}>{child.name}</Typography>
+                            <span style={{
+                              padding: `2px ${spacing[2]}`,
+                              borderRadius: radius.full,
+                              backgroundColor: child.coach_name ? colors.primaryLight : colors.gray[100],
+                              color: child.coach_name ? colors.primary : colors.gray[500],
+                              fontSize: '11px', fontWeight: '600'
+                            }}>
+                              {child.coach_name || 'No coach'}
+                            </span>
+                          </div>
                           <Typography variant="bodySmall" color={colors.gray[500]}>
                             {child.age ? `Age ${child.age}` : 'Age not set'} · {capitalize(child.level)}
                             {child.phone ? ` · ${child.phone}` : ''}

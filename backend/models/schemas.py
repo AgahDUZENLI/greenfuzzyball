@@ -53,6 +53,7 @@ class AddChildRequest(BaseModel):
     age: int
     level: str
     notes: Optional[str] = None
+    coach_id: Optional[UUID] = None
 
 class ChildResponse(BaseModel):
     user_id: UUID
@@ -68,6 +69,7 @@ class UpdateChildRequest(BaseModel):
     age: Optional[int] = None
     level: Optional[str] = None
     notes: Optional[str] = None
+    coach_id: Optional[UUID] = None
 
 class JoinByCodeRequest(BaseModel):
     code: str
@@ -147,6 +149,9 @@ class StudentResponse(BaseModel):
     email: Optional[str] = None
     location: Optional[str] = None
     notes: Optional[str] = None
+    is_member: bool = False
+    parent_member_id: Optional[UUID] = None
+    parent_member_name: Optional[str] = None
 
 class AddStudentToCoachRequest(BaseModel):
     student_id: UUID

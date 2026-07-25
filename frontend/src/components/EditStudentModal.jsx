@@ -11,6 +11,7 @@ import useIsMobile from '../hooks/useIsMobile'
 
 function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
   const isMobile = useIsMobile()
+  const isMember = !!student.is_member
   const [name, setName] = useState(student.name || '')
   const [age, setAge] = useState(student.age ?? '')
   const [phone, setPhone] = useState(student.phone || '')
@@ -22,7 +23,7 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
   const [error, setError] = useState('')
 
   const handleSave = async () => {
-    if (!name.trim()) return setError('Name is required')
+    if (!isMember && !name.trim()) return setError('Name is required')
     setError('')
     setLoading(true)
     try {
@@ -37,17 +38,28 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete ${student.name}? This cannot be undone.`)) return
+    const confirmMsg = isMember
+      ? `Remove ${student.name} from your roster? They'll keep their account — you can just no longer see or book them.`
+      : `Delete ${student.name}? This cannot be undone.`
+    if (!window.confirm(confirmMsg)) return
     setDeleting(true)
     try {
       await deleteStudent(student.user_id)
       onDeleted(student.user_id)
       onClose()
     } catch {
-      setError('Could not delete student.')
+      setError(isMember ? 'Could not remove this member from your roster.' : 'Could not delete student.')
     } finally {
       setDeleting(false)
     }
+  }
+
+  const lockedInputStyle = {
+    width: '100%', padding: '12px 16px',
+    border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
+    fontSize: '15px', fontFamily: 'inherit', color: colors.gray[400],
+    outline: 'none', boxSizing: 'border-box', backgroundColor: colors.gray[50],
+    cursor: 'not-allowed'
   }
 
   return (
@@ -75,11 +87,21 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
         </div>
       )}
 
+      {isMember && (
+        <div style={{
+          backgroundColor: colors.gray[50], color: colors.gray[500],
+          padding: spacing[3], borderRadius: radius.md,
+          marginBottom: spacing[4], fontSize: '13px'
+        }}>
+          Name, email, and age were entered by the member who linked this person to you and can't be changed here.
+        </div>
+      )}
+
       {/* Name + Age */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>FULL NAME</Typography>
-          <Input icon={<User size={16} />} placeholder="Full name" value={name} onChange={e => setName(e.target.value)} />
+          <Input icon={<User size={16} />} placeholder="Full name" value={name} onChange={e => setName(e.target.value)} disabled={isMember} />
         </div>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE (OPTIONAL)</Typography>
@@ -90,7 +112,8 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
             placeholder="e.g. 34"
             value={age}
             onChange={e => setAge(e.target.value)}
-            style={{
+            disabled={isMember}
+            style={isMember ? lockedInputStyle : {
               width: '100%', padding: '12px 16px',
               border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
               fontSize: '15px', fontFamily: 'inherit', color: colors.black,
@@ -110,7 +133,7 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
         </div>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>EMAIL</Typography>
-          <Input type="email" icon={<Mail size={16} />} placeholder="athlete@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+          <Input type="email" icon={<Mail size={16} />} placeholder="athlete@email.com" value={email} onChange={e => setEmail(e.target.value)} disabled={isMember} />
         </div>
       </div>
 
@@ -161,7 +184,9 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
           fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: spacing[2]
         }}>
           <Trash2 size={14} />
-          {deleting ? 'Deleting...' : 'Delete'}
+          {isMember
+            ? (deleting ? 'Removing...' : 'Remove from roster')
+            : (deleting ? 'Deleting...' : 'Delete')}
         </button>
         <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
           <button onClick={onClose} style={{
