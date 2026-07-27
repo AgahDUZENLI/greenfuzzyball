@@ -1,26 +1,61 @@
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { useAuth } from '../../context/AuthContext'
 import Layout from '../../components/Layout'
 import Card from '../../components/Card'
 import Typography from '../../components/Typography'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { getMemberProgress } from '../../services/api'
+import { getMemberProgress, getChildren } from '../../services/api'
 import useIsMobile from '../../hooks/useIsMobile'
+import PersonSwitcher from '../../components/PersonSwitcher'
 
 const CHART_COLORS = [colors.primary, '#9ca3af', '#3b82f6', '#f59e0b']
 
+function firstName(name) {
+  return name ? name.split(' ')[0] : ''
+}
+
 function MemberProgress() {
+  const { user } = useAuth()
   const isMobile = useIsMobile()
 
-  const [progress, setProgress] = useState([])
+  const [children, setChildren] = useState([])
+  const [progressByPerson, setProgressByPerson] = useState({})
   const [loading, setLoading] = useState(true)
+  const [selectedPersonId, setSelectedPersonId] = useState('self')
 
   useEffect(() => {
-    getMemberProgress()
-      .then(res => setProgress(res.data))
-      .catch(err => console.error('Member progress fetch error:', err))
-      .finally(() => setLoading(false))
+    const fetchAll = async () => {
+      try {
+        const [childrenRes, selfProgressRes] = await Promise.all([
+          getChildren(),
+          getMemberProgress()
+        ])
+
+        const kids = childrenRes.data
+        setChildren(kids)
+
+        const byP = { self: selfProgressRes.data }
+        if (kids.length > 0) {
+          const results = await Promise.all(kids.map(k => getMemberProgress(k.user_id)))
+          kids.forEach((k, i) => { byP[k.user_id] = results[i].data })
+        }
+        setProgressByPerson(byP)
+      } catch (err) {
+        console.error('Member progress fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAll()
   }, [])
+
+  const people = [
+    ...(user ? [{ id: 'self', label: `${firstName(user.name)} (Me)` }] : []),
+    ...children.map(c => ({ id: c.user_id, label: firstName(c.name) }))
+  ]
+
+  const progress = progressByPerson[selectedPersonId] || []
 
   const drillNames = [...new Set(progress.map(p => p.drill_name))]
   const chartData = Object.values(
@@ -52,6 +87,12 @@ function MemberProgress() {
         height: '100%'
       }}>
         <Typography variant="h2" mb={spacing[6]}>Progress</Typography>
+
+        {children.length > 0 && (
+          <div style={{ marginBottom: spacing[6] }}>
+            <PersonSwitcher people={people} selectedId={selectedPersonId} onSelect={setSelectedPersonId} />
+          </div>
+        )}
 
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[5] }}>

@@ -53,7 +53,6 @@ class AddChildRequest(BaseModel):
     age: int
     level: str
     notes: Optional[str] = None
-    coach_id: Optional[UUID] = None
 
 class ChildResponse(BaseModel):
     user_id: UUID
@@ -69,7 +68,6 @@ class UpdateChildRequest(BaseModel):
     age: Optional[int] = None
     level: Optional[str] = None
     notes: Optional[str] = None
-    coach_id: Optional[UUID] = None
 
 class JoinByCodeRequest(BaseModel):
     code: str
@@ -215,6 +213,14 @@ class SessionResponse(BaseModel):
     court_area: Optional[str] = None
     student_names: list[str] = []
     unrated: bool = False
+    status: str = "scheduled"
+    cancellation_reason: Optional[str] = None
+
+class CancelSessionRequest(BaseModel):
+    reason: Optional[str] = None
+
+class CoachCancelSessionRequest(BaseModel):
+    note: Optional[str] = None
 
 # ─── SESSION UPDATES ────────────────────────────
 

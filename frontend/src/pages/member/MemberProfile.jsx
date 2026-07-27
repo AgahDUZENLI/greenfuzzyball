@@ -386,7 +386,6 @@ function MemberProfile() {
                               color: child.coach_name ? colors.primary : colors.gray[500],
                               fontSize: '11px', fontWeight: '600'
                             }}>
-                              {child.coach_name || 'No coach'}
                             </span>
                           </div>
                           <Typography variant="bodySmall" color={colors.gray[500]}>

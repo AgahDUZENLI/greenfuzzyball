@@ -91,6 +91,17 @@ CREATE TABLE session_requests (
     created_at     TIMESTAMP DEFAULT NOW()
 );
 
+-- ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+
+CREATE TABLE notifications (
+    notification_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    message         TEXT NOT NULL,
+    link            TEXT,
+    read_at         TIMESTAMP,
+    created_at      TIMESTAMP DEFAULT NOW()
+);
+
 -- ─── DRILL CATEGORIES ────────────────────────────────────────────────────────
 
 CREATE TABLE drill_categories (
@@ -148,15 +159,18 @@ CREATE TABLE coach_courts (
 -- ─── SESSIONS ────────────────────────────────────────────────────────────────
 
 CREATE TABLE sessions (
-    session_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    coach_id         UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
-    court_id         UUID REFERENCES courts(court_id) ON DELETE SET NULL,
-    date             DATE NOT NULL,
-    start_time       TIME,
-    duration_minutes INTEGER,
-    type             VARCHAR CHECK (type IN ('private', 'group')),
-    notes            TEXT,
-    created_at       TIMESTAMP DEFAULT NOW()
+    session_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    coach_id            UUID REFERENCES coaches(user_id) ON DELETE CASCADE,
+    court_id            UUID REFERENCES courts(court_id) ON DELETE SET NULL,
+    date                DATE NOT NULL,
+    start_time          TIME,
+    duration_minutes    INTEGER,
+    type                VARCHAR CHECK (type IN ('private', 'group')),
+    notes               TEXT,
+    status              VARCHAR NOT NULL DEFAULT 'scheduled'
+                        CHECK (status IN ('scheduled', 'cancellation_pending', 'cancelled')),
+    cancellation_reason TEXT,
+    created_at          TIMESTAMP DEFAULT NOW()
 );
 
 -- ─── SESSION STUDENTS ────────────────────────────────────────────────────────
@@ -203,3 +217,5 @@ CREATE INDEX idx_drills_share_token    ON drills(share_token);
 CREATE INDEX idx_join_requests_coach   ON coach_join_requests(coach_id);
 CREATE INDEX idx_join_requests_member  ON coach_join_requests(member_id);
 CREATE INDEX idx_session_requests      ON session_requests(coach_id, member_id);
+CREATE INDEX idx_sessions_coach_status ON sessions(coach_id, status);
+CREATE INDEX idx_notifications_user_unread ON notifications(user_id, read_at);

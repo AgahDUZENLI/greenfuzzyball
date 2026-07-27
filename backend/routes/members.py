@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date as _date, datetime, time as _time
 import psycopg2.extras
 
 from db.connection import get_db
@@ -9,9 +10,11 @@ from models.schemas import (
     JoinRequestResponse,
     JoinByCodeRequest,
     SessionRequestCreate,
-    SessionRequestResponse
+    SessionRequestResponse,
+    CancelSessionRequest
 )
 from middleware.auth_middleware import get_current_user
+from services.notification_service import create_notification
 
 router = APIRouter()
 
@@ -96,18 +99,6 @@ def add_child(
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
-            # If a coach was picked, make sure the member is actually connected to them
-            if data.coach_id:
-                cursor.execute("""
-                    SELECT 1 FROM coach_join_requests
-                    WHERE member_id = %s AND coach_id = %s AND status = 'approved'
-                """, (str(current_user["user_id"]), str(data.coach_id)))
-                if not cursor.fetchone():
-                    raise HTTPException(
-                        status_code=400,
-                        detail="You're not connected with this coach"
-                    )
-
             # Create student user record for child (no login)
             cursor.execute("""
                 INSERT INTO users (name, phone, age, role)
@@ -128,14 +119,6 @@ def add_child(
                 INSERT INTO member_children (member_id, student_id)
                 VALUES (%s, %s)
             """, (str(current_user["user_id"]), child_id))
-
-            # Link child to the picked coach's roster
-            if data.coach_id:
-                cursor.execute("""
-                    INSERT INTO coach_students (coach_id, student_id)
-                    VALUES (%s, %s)
-                    ON CONFLICT DO NOTHING
-                """, (str(data.coach_id), child_id))
 
             conn.commit()
 
@@ -219,31 +202,6 @@ def update_child(
                         notes = COALESCE(%s, notes)
                     WHERE user_id = %s
                 """, (data.level, data.notes, child_id))
-
-            # Reconcile the kid's coach link to whatever was picked — a child
-            # is linked to at most one coach at a time, same as when added
-            if data.coach_id:
-                cursor.execute("""
-                    SELECT 1 FROM coach_join_requests
-                    WHERE member_id = %s AND coach_id = %s AND status = 'approved'
-                """, (str(current_user["user_id"]), str(data.coach_id)))
-                if not cursor.fetchone():
-                    raise HTTPException(
-                        status_code=400,
-                        detail="You're not connected with this coach"
-                    )
-                cursor.execute("""
-                    DELETE FROM coach_students WHERE student_id = %s AND coach_id != %s
-                """, (child_id, str(data.coach_id)))
-                cursor.execute("""
-                    INSERT INTO coach_students (coach_id, student_id)
-                    VALUES (%s, %s)
-                    ON CONFLICT DO NOTHING
-                """, (str(data.coach_id), child_id))
-            else:
-                cursor.execute("""
-                    DELETE FROM coach_students WHERE student_id = %s
-                """, (child_id,))
 
             cursor.execute("""
                 SELECT u.user_id, u.name, u.phone, u.age,
@@ -373,6 +331,11 @@ def join_coach_by_code(
             cursor.execute("SELECT name FROM users WHERE user_id = %s", (coach_id,))
             coach_user = cursor.fetchone()
 
+            create_notification(
+                cursor, coach_id,
+                f"{current_user['name']} wants to join as a client"
+            )
+
             conn.commit()
             return {**request, "coach_name": coach_user["name"]}
 
@@ -472,8 +435,15 @@ def request_session(
                 data.notes or None
             ))
 
+            request = cursor.fetchone()
+
+            create_notification(
+                cursor, data.coach_id,
+                f"{current_user['name']} requested a session on {data.requested_date}"
+            )
+
             conn.commit()
-            return cursor.fetchone()
+            return request
 
     except Exception as e:
         conn.rollback()
@@ -481,6 +451,27 @@ def request_session(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not request session"
         )
+
+
+# ─── GET MY SESSION REQUESTS ──────────────────────────────────────────────────
+
+@router.get("/session-requests")
+def get_my_session_requests(
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute("""
+            SELECT sr.request_id, sr.coach_id, sr.member_id, sr.student_id,
+                   sr.requested_date, sr.requested_time, sr.status, sr.notes, sr.created_at,
+                   cu.name AS coach_name, su.name AS student_name
+            FROM session_requests sr
+            JOIN users cu ON sr.coach_id = cu.user_id
+            JOIN users su ON sr.student_id = su.user_id
+            WHERE sr.member_id = %s
+            ORDER BY sr.created_at DESC
+        """, (str(current_user["user_id"]),))
+        return cursor.fetchall()
 
 
 # ─── GET MY SESSIONS ─────────────────────────────────────────────────────────
@@ -499,7 +490,7 @@ def get_member_sessions(
         cursor.execute("""
             SELECT
                 s.session_id, s.date, s.start_time, s.duration_minutes,
-                s.type, s.notes, s.created_at,
+                s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                 c.name as court_name, c.area as court_area,
                 u.name as coach_name,
                 COALESCE(
@@ -528,6 +519,183 @@ def get_member_sessions(
         """, (sid, sid))
 
         return cursor.fetchall()
+
+
+# ─── GET ONE SESSION (detail + drills + ratings, read-only) ─────────────────
+
+@router.get("/sessions/{session_id}")
+def get_member_session_detail(
+    session_id: str,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute("""
+            SELECT
+                s.session_id, s.date, s.start_time, s.duration_minutes,
+                s.type, s.created_at, s.status, s.cancellation_reason,
+                c.court_id, c.name as court_name, c.area as court_area,
+                u.name as coach_name
+            FROM sessions s
+            JOIN session_students ss ON s.session_id = ss.session_id
+            LEFT JOIN courts c ON s.court_id = c.court_id
+            LEFT JOIN users u ON s.coach_id = u.user_id
+            WHERE s.session_id = %s
+              AND (
+                    ss.student_id = %s
+                    OR ss.student_id IN (
+                        SELECT student_id FROM member_children WHERE member_id = %s
+                    )
+                  )
+            LIMIT 1
+        """, (session_id, str(current_user["user_id"]), str(current_user["user_id"])))
+
+        session = cursor.fetchone()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        cursor.execute("""
+            SELECT u.user_id, u.name, s.level
+            FROM users u
+            JOIN students s ON u.user_id = s.user_id
+            JOIN session_students ss ON u.user_id = ss.student_id
+            WHERE ss.session_id = %s
+        """, (session_id,))
+        students = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT d.drill_id, d.name, d.description
+            FROM drills d
+            JOIN session_drills sd ON d.drill_id = sd.drill_id
+            WHERE sd.session_id = %s
+        """, (session_id,))
+        drills = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT sdr.student_id, sdr.drill_id, sdr.rating, sdr.notes,
+                   u.name as student_name, d.name as drill_name
+            FROM session_drill_ratings sdr
+            JOIN users u ON sdr.student_id = u.user_id
+            JOIN drills d ON sdr.drill_id = d.drill_id
+            WHERE sdr.session_id = %s
+        """, (session_id,))
+        ratings = cursor.fetchall()
+
+        session_dict = dict(session)
+        session_dict["students"] = students
+        session_dict["drills"] = drills
+        session_dict["ratings"] = ratings
+
+        return session_dict
+
+
+# ─── DELETE A PENDING SESSION REQUEST ────────────────────────────────────────
+
+@router.delete("/session-requests/{request_id}", status_code=204)
+def delete_session_request(
+    request_id: str,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT status FROM session_requests
+                WHERE request_id = %s AND member_id = %s
+            """, (request_id, str(current_user["user_id"])))
+            request = cursor.fetchone()
+            if not request:
+                raise HTTPException(status_code=404, detail="Session request not found")
+            if request["status"] != "pending":
+                raise HTTPException(status_code=400, detail="Only pending requests can be deleted")
+
+            cursor.execute("DELETE FROM session_requests WHERE request_id = %s", (request_id,))
+            conn.commit()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"DELETE SESSION REQUEST ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not delete session request"
+        )
+
+
+# ─── CANCEL A SESSION ────────────────────────────────────────────────────────
+
+@router.post("/sessions/{session_id}/cancel")
+def cancel_session(
+    session_id: str,
+    data: CancelSessionRequest,
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT s.session_id, s.coach_id, s.date, s.start_time, s.status
+                FROM sessions s
+                JOIN session_students ss ON ss.session_id = s.session_id
+                WHERE s.session_id = %s
+                  AND (
+                        ss.student_id = %s
+                        OR ss.student_id IN (
+                            SELECT student_id FROM member_children WHERE member_id = %s
+                        )
+                      )
+                LIMIT 1
+            """, (session_id, str(current_user["user_id"]), str(current_user["user_id"])))
+            session = cursor.fetchone()
+            if not session:
+                raise HTTPException(status_code=404, detail="Session not found")
+
+            if session["status"] in ("cancelled", "cancellation_pending"):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Session is already {session['status'].replace('_', ' ')}"
+                )
+
+            today = _date.today()
+            now = datetime.now()
+
+            if session["start_time"] is not None:
+                session_dt = datetime.combine(session["date"], session["start_time"])
+                if session_dt <= now:
+                    raise HTTPException(status_code=400, detail="Cannot cancel a session that has already started")
+                hours_until = (session_dt - now).total_seconds() / 3600
+            else:
+                if session["date"] < today:
+                    raise HTTPException(status_code=400, detail="Cannot cancel a session that has already started")
+                hours_until = (datetime.combine(session["date"], _time(0, 0)) - now).total_seconds() / 3600
+
+            reason_suffix = f' — "{data.reason}"' if data.reason else ""
+
+            if hours_until > 24:
+                new_status = "cancelled"
+                message = f"{current_user['name']} cancelled their session on {session['date']}{reason_suffix}"
+            else:
+                new_status = "cancellation_pending"
+                message = f"{current_user['name']} requested to cancel their session on {session['date']} — approval needed{reason_suffix}"
+
+            cursor.execute(
+                "UPDATE sessions SET status = %s, cancellation_reason = %s WHERE session_id = %s",
+                (new_status, data.reason, session_id)
+            )
+            create_notification(cursor, session["coach_id"], message)
+            conn.commit()
+            return {"session_id": session_id, "status": new_status}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"CANCEL SESSION ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not cancel session"
+        )
 
 
 # ─── GET MY PROGRESS ─────────────────────────────────────────────────────────

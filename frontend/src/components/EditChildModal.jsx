@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Input from './Input'
@@ -6,7 +6,7 @@ import Button from './Button'
 import Avatar from './Avatar'
 import Modal from './Modal'
 import { User, Phone, Trash2 } from 'lucide-react'
-import { updateChild, deleteChild, getMyJoinRequests } from '../services/api'
+import { updateChild, deleteChild } from '../services/api'
 import useIsMobile from '../hooks/useIsMobile'
 
 function EditChildModal({ child, onClose, onUpdated, onDeleted }) {
@@ -18,22 +18,14 @@ function EditChildModal({ child, onClose, onUpdated, onDeleted }) {
   const [notes, setNotes] = useState(child.notes || '')
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [coachId, setCoachId] = useState(child.coach_id || '')
-  const [myCoaches, setMyCoaches] = useState([])
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    getMyJoinRequests()
-      .then(res => setMyCoaches(res.data.filter(r => r.status === 'approved')))
-      .catch(() => setMyCoaches([]))
-  }, [])
 
   const handleSave = async () => {
     if (!name.trim()) return setError('Name is required')
     setError('')
     setLoading(true)
     try {
-      const res = await updateChild(child.user_id, { name, age: age ? parseInt(age) : null, phone, level, notes, coach_id: coachId || null })
+      const res = await updateChild(child.user_id, { name, age: age ? parseInt(age) : null, phone, level, notes })
       onUpdated(res.data)
       onClose()
     } catch {
@@ -114,28 +106,6 @@ function EditChildModal({ child, onClose, onUpdated, onDeleted }) {
         <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
         <Input icon={<Phone size={16} />} placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />
       </div>
-
-      {/* Coach */}
-      {myCoaches.length > 0 && (
-        <div style={{ marginBottom: spacing[4] }}>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>COACH (OPTIONAL)</Typography>
-          <select
-            value={coachId}
-            onChange={e => setCoachId(e.target.value)}
-            style={{
-              width: '100%', padding: '12px 16px',
-              border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
-              fontSize: '15px', fontFamily: 'inherit', color: colors.black,
-              outline: 'none', boxSizing: 'border-box', backgroundColor: 'white'
-            }}
-          >
-            <option value="">No coach yet</option>
-            {myCoaches.map(c => (
-              <option key={c.coach_id} value={c.coach_id}>{c.coach_name}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {/* Level */}
       <div style={{ marginBottom: spacing[4] }}>
