@@ -6,8 +6,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from config import settings
 from db.connection import init_db, close_db
-from routes import auth, coaches, students, drills, sessions, courts
-from routes import auth, coaches, students, drills, sessions, courts, members
+from routes import auth, coaches, students, drills, sessions, courts, members, notifications
 
 
 @asynccontextmanager
@@ -54,6 +53,7 @@ app.include_router(drills.router, prefix="/drills", tags=["drills"])
 app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
 app.include_router(courts.router, prefix="/courts", tags=["courts"])
 app.include_router(members.router, prefix="/members", tags=["members"])
+app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 
 @app.get("/")
 def health_check():

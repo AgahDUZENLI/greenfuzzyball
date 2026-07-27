@@ -3,39 +3,66 @@ import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Input from './Input'
 import Button from './Button'
+import Avatar from './Avatar'
 import Modal from './Modal'
-import { User, Phone, Mail, Plus } from 'lucide-react'
-import { createStudent } from '../services/api'
+import { User, Phone, Trash2 } from 'lucide-react'
+import { updateChild, deleteChild } from '../services/api'
 import useIsMobile from '../hooks/useIsMobile'
 
-function AddStudentModal({ onClose, onAdded }) {
+function EditChildModal({ child, onClose, onUpdated, onDeleted }) {
   const isMobile = useIsMobile()
-  const [name, setName] = useState('')
-  const [age, setAge] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [level, setLevel] = useState('beginner')
-  const [notes, setNotes] = useState('')
+  const [name, setName] = useState(child.name || '')
+  const [age, setAge] = useState(child.age ?? '')
+  const [phone, setPhone] = useState(child.phone || '')
+  const [level, setLevel] = useState(child.level || 'beginner')
+  const [notes, setNotes] = useState(child.notes || '')
   const [loading, setLoading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async () => {
+  const handleSave = async () => {
     if (!name.trim()) return setError('Name is required')
     setError('')
     setLoading(true)
     try {
-      const res = await createStudent({ name, age: age ? parseInt(age) : null, phone, email, level, notes })
-      onAdded(res.data)
+      const res = await updateChild(child.user_id, { name, age: age ? parseInt(age) : null, phone, level, notes })
+      onUpdated(res.data)
       onClose()
     } catch {
-      setError('Could not add student. Please try again.')
+      setError('Could not update kid. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete ${child.name}? This cannot be undone.`)) return
+    setDeleting(true)
+    try {
+      await deleteChild(child.user_id)
+      onDeleted(child.user_id)
+      onClose()
+    } catch {
+      setError('Could not delete kid.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
-    <Modal title="Add Student" subtitle="Create a new athlete profile" onClose={onClose} maxWidth="520px">
+    <Modal title="Edit Kid" subtitle={`Update ${child.name}'s profile`} onClose={onClose} maxWidth="520px">
+
+      {/* Avatar preview */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: spacing[4],
+        padding: spacing[4], backgroundColor: colors.gray[50],
+        borderRadius: radius.xl, marginBottom: spacing[5]
+      }}>
+        <Avatar name={name || child.name} size="lg" />
+        <Typography variant="body" style={{ fontWeight: '600' }}>
+          {name || child.name}
+        </Typography>
+      </div>
 
       {error && (
         <div style={{
@@ -51,15 +78,15 @@ function AddStudentModal({ onClose, onAdded }) {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
         <div>
           <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>FULL NAME</Typography>
-          <Input icon={<User size={16} />} placeholder="Jordan Blake" value={name} onChange={e => setName(e.target.value)} />
+          <Input icon={<User size={16} />} placeholder="Full name" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE (OPTIONAL)</Typography>
+          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE</Typography>
           <input
             type="number"
             min="1"
             max="120"
-            placeholder="e.g. 34"
+            placeholder="e.g. 6"
             value={age}
             onChange={e => setAge(e.target.value)}
             style={{
@@ -74,16 +101,10 @@ function AddStudentModal({ onClose, onAdded }) {
         </div>
       </div>
 
-      {/* Phone + Email */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
-        <div>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
-          <Input icon={<Phone size={16} />} placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />
-        </div>
-        <div>
-          <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>EMAIL</Typography>
-          <Input type="email" icon={<Mail size={16} />} placeholder="athlete@email.com" value={email} onChange={e => setEmail(e.target.value)} />
-        </div>
+      {/* Phone */}
+      <div style={{ marginBottom: spacing[4] }}>
+        <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
+        <Input icon={<Phone size={16} />} placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />
       </div>
 
       {/* Level */}
@@ -127,20 +148,29 @@ function AddStudentModal({ onClose, onAdded }) {
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: colors.gray[500],
-          fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+        <button onClick={handleDelete} disabled={deleting} style={{
+          background: 'none', border: 'none', color: colors.error,
+          fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+          fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: spacing[2]
         }}>
-          Cancel
+          <Trash2 size={14} />
+          {deleting ? 'Deleting...' : 'Delete'}
         </button>
-        <Button onClick={handleSubmit} disabled={loading}>
-          <Plus size={16} />
-          {loading ? 'Adding...' : 'Add Student'}
-        </Button>
+        <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', color: colors.gray[500],
+            fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+          }}>
+            Cancel
+          </button>
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? 'Saving...' : 'Save changes'}
+          </Button>
+        </div>
       </div>
 
     </Modal>
   )
 }
 
-export default AddStudentModal
+export default EditChildModal

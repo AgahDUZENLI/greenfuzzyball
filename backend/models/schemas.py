@@ -12,6 +12,8 @@ class RegisterRequest(BaseModel):
     password: str
     phone: Optional[str] = None
     location: Optional[str] = None
+    level: Optional[str] = None
+    role: str = "coach"
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -42,45 +44,33 @@ class ChangePasswordRequest(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
-    
+
 # ─── MEMBERS ────────────────────────────────────
-
-class RegisterMemberRequest(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
-    phone: Optional[str] = None
-    is_student: bool = False  
-    age_group: Optional[str] = None
-    level: Optional[str] = None
-
-class MemberResponse(BaseModel):
-    user_id: UUID
-    name: str
-    email: Optional[str]
-    phone: Optional[str]
-    role: str
-    is_student: bool
-    created_at: datetime
 
 class AddChildRequest(BaseModel):
     name: str
     phone: Optional[str] = None
-    age_group: str
+    age: int
     level: str
     notes: Optional[str] = None
 
 class ChildResponse(BaseModel):
     user_id: UUID
     name: str
-    age_group: str
+    age: Optional[int] = None
     level: str
     phone: Optional[str] = None
     notes: Optional[str] = None
 
-class JoinRequestCreate(BaseModel):
-    coach_id: UUID
+class UpdateChildRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    age: Optional[int] = None
+    level: Optional[str] = None
     notes: Optional[str] = None
+
+class JoinByCodeRequest(BaseModel):
+    code: str
 
 class JoinRequestResponse(BaseModel):
     request_id: UUID
@@ -116,6 +106,8 @@ class CoachResponse(BaseModel):
     email: Optional[str]
     phone: Optional[str]
     location: Optional[str]
+    age: Optional[int] = None
+    code: Optional[str] = None
     notes: Optional[str]
     created_at: datetime
     availability_start: Optional[time]
@@ -132,8 +124,8 @@ class CreateStudentRequest(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     location: Optional[str] = None
+    age: Optional[int] = None
     # from students table
-    age_group: str
     level: str
     notes: Optional[str] = None
 
@@ -142,19 +134,22 @@ class UpdateStudentRequest(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     location: Optional[str] = None
-    age_group: Optional[str] = None
+    age: Optional[int] = None
     level: Optional[str] = None
     notes: Optional[str] = None
 
 class StudentResponse(BaseModel):
     user_id: UUID
     name: str
-    age_group: str
-    level: str
+    age: Optional[int] = None
+    level: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     location: Optional[str] = None
     notes: Optional[str] = None
+    is_member: bool = False
+    parent_member_id: Optional[UUID] = None
+    parent_member_name: Optional[str] = None
 
 class AddStudentToCoachRequest(BaseModel):
     student_id: UUID
@@ -218,6 +213,14 @@ class SessionResponse(BaseModel):
     court_area: Optional[str] = None
     student_names: list[str] = []
     unrated: bool = False
+    status: str = "scheduled"
+    cancellation_reason: Optional[str] = None
+
+class CancelSessionRequest(BaseModel):
+    reason: Optional[str] = None
+
+class CoachCancelSessionRequest(BaseModel):
+    note: Optional[str] = None
 
 # ─── SESSION UPDATES ────────────────────────────
 

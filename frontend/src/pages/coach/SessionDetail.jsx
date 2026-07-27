@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import Avatar from '../../components/Avatar'
@@ -7,9 +8,10 @@ import DrillsSection from '../../components/DrillsSection'
 import PerformanceSection from '../../components/PerformanceSection'
 import EditSessionModal from '../../components/EditSessionModal'
 import BookSessionModal from '../../components/BookSessionModal'
+import CoachCancelSessionModal from '../../components/CoachCancelSessionModal'
 import { useSessionDetail } from '../../hooks/useSessionDetail'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { ArrowLeft, ChevronRight, FileText, Check, Pencil, RefreshCw } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check, Pencil, RefreshCw, XCircle } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
 function SessionDetail() {
@@ -17,6 +19,7 @@ function SessionDetail() {
   const navigate = useNavigate()
   const d = useSessionDetail(sessionId)
   const isMobile = useIsMobile()
+  const [showCancelModal, setShowCancelModal] = useState(false)
 
   if (d.loading) return (
     <Layout>
@@ -77,9 +80,16 @@ function SessionDetail() {
             <Button variant="outline" onClick={() => d.setShowRepeatModal(true)}>
               <RefreshCw size={14} /> Repeat
             </Button>
-            <Button variant="outline" onClick={() => d.setShowEditModal(true)}>
-              <Pencil size={14} /> Edit
-            </Button>
+            {s.status === 'scheduled' && (
+              <>
+                <Button variant="outline" onClick={() => d.setShowEditModal(true)}>
+                  <Pencil size={14} /> Edit
+                </Button>
+                <Button variant="danger" onClick={() => setShowCancelModal(true)}>
+                  <XCircle size={14} /> Cancel Session
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -198,8 +208,6 @@ function SessionDetail() {
                 <div style={{ flex: 1 }}>
                   <Typography variant="body" style={{ fontWeight: '600' }}>{student.name}</Typography>
                   <Typography variant="caption" color={colors.gray[400]}>
-                    {student.age_group?.charAt(0).toUpperCase() + student.age_group?.slice(1)}
-                    {' · '}
                     {student.level?.charAt(0).toUpperCase() + student.level?.slice(1)}
                   </Typography>
                 </div>
@@ -268,6 +276,14 @@ function SessionDetail() {
           initialDrillIds={(s.drills || []).map(drill => drill.drill_id)}
           onClose={() => d.setShowRepeatModal(false)}
           onBooked={() => d.setShowRepeatModal(false)}
+        />
+      )}
+
+      {showCancelModal && (
+        <CoachCancelSessionModal
+          session={s}
+          onClose={() => setShowCancelModal(false)}
+          onCancelled={d.handleSessionUpdated}
         />
       )}
     </Layout>

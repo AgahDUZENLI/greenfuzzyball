@@ -253,7 +253,7 @@ function BookSessionModal({
                     <div>
                       <Typography variant="bodySmall" style={{ fontWeight: '600' }}>{s.name}</Typography>
                       <Typography variant="caption" color={colors.gray[400]}>
-                        {s.age_group} · {s.level}
+                        {s.level}
                       </Typography>
                     </div>
                   </div>

@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 
-function Calendar({ sessions = [], selectedDate, onDayClick }) {
+function Calendar({ sessions = [], selectedDate, onDayClick, dotsByDate, legend }) {
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const today = new Date()
@@ -121,7 +121,8 @@ function Calendar({ sessions = [], selectedDate, onDayClick }) {
           if (!day) return <div key={i} />
 
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-          const hasSession = !!sessionsByDate[dateStr]
+          const dots = dotsByDate ? (dotsByDate[dateStr] || []) : null
+          const hasSession = dots ? dots.length > 0 : !!sessionsByDate[dateStr]
           const sessionCount = sessionsByDate[dateStr] || 0
           const isToday = dateStr === todayStr
           const isSelected = dateStr === selectedDate
@@ -175,22 +176,50 @@ function Calendar({ sessions = [], selectedDate, onDayClick }) {
                   gap: '3px',
                   marginTop: '3px'
                 }}>
-                  {[...Array(Math.min(sessionCount, 3))].map((_, j) => (
-                    <div
-                      key={j}
-                      style={{
-                        width: '5px', height: '5px',
-                        borderRadius: '50%',
-                        backgroundColor: dotColor
-                      }}
-                    />
-                  ))}
+                  {dots
+                    ? dots.slice(0, 3).map((c, j) => (
+                        <div
+                          key={j}
+                          style={{
+                            width: '5px', height: '5px',
+                            borderRadius: '50%',
+                            backgroundColor: c
+                          }}
+                        />
+                      ))
+                    : [...Array(Math.min(sessionCount, 3))].map((_, j) => (
+                        <div
+                          key={j}
+                          style={{
+                            width: '5px', height: '5px',
+                            borderRadius: '50%',
+                            backgroundColor: dotColor
+                          }}
+                        />
+                      ))
+                  }
                 </div>
               )}
             </div>
           )
         })}
       </div>
+
+      {legend && legend.length > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: spacing[4],
+          marginTop: spacing[4],
+          flexWrap: 'wrap'
+        }}>
+          {legend.map(({ color, label }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }} />
+              <Typography variant="caption" color={colors.gray[500]}>{label}</Typography>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

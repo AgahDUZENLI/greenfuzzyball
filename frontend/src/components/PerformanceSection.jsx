@@ -17,6 +17,7 @@ function PerformanceSection({
   onEnterEditMode,
   onCancelEdit,
   onSaveRatings,
+  readOnly = false,
 }) {
   return (
     <>
@@ -26,7 +27,7 @@ function PerformanceSection({
       }}>
         <Typography variant="h4">Performance</Typography>
 
-        {editMode ? (
+        {!readOnly && (editMode ? (
           <div style={{ display: 'flex', gap: spacing[2] }}>
             <Button variant="outline" onClick={onCancelEdit} disabled={savingRatings}>
               Cancel
@@ -39,7 +40,7 @@ function PerformanceSection({
           <Button variant="outline" onClick={onEnterEditMode}>
             {ratingsSaved ? <><Check size={14} /> Saved</> : 'Edit Ratings'}
           </Button>
-        )}
+        ))}
       </div>
 
       {drills?.length === 0 ? (

@@ -7,18 +7,20 @@ import Button from '../../components/Button'
 import Input from '../../components/Input'
 import Avatar from '../../components/Avatar'
 import Card from '../../components/Card'
+import AddChildModal from '../../components/AddChildModal'
+import EditChildModal from '../../components/EditChildModal'
 import {
   getMemberProfile, updateMemberProfile, changePassword,
-  getChildren, getCoaches, getMyJoinRequests, requestJoinCoach
+  getChildren, getMyJoinRequests, joinCoachByCode, removeCoach
 } from '../../services/api'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, Search } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, UserPlus, Plus, Pencil, KeyRound, Trash2 } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'kids', label: 'My Kids', icon: Users },
-  { id: 'coaches', label: 'Coaches', icon: Search },
+  { id: 'coaches', label: 'Coaches', icon: UserPlus },
   { id: 'security', label: 'Security', icon: Shield }
 ]
 
@@ -38,6 +40,7 @@ function MemberProfile() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [location, setLocation] = useState('')
+  const [age, setAge] = useState('')
   const [notes, setNotes] = useState('')
 
   // Change password state
@@ -52,13 +55,15 @@ function MemberProfile() {
   // Kids state
   const [children, setChildren] = useState([])
   const [childrenLoading, setChildrenLoading] = useState(true)
+  const [showAddChildModal, setShowAddChildModal] = useState(false)
+  const [editingChild, setEditingChild] = useState(null)
 
   // Coaches state
-  const [coaches, setCoaches] = useState([])
-  const [coachSearch, setCoachSearch] = useState('')
   const [myRequests, setMyRequests] = useState([])
   const [coachesLoading, setCoachesLoading] = useState(true)
-  const [requestingCoachId, setRequestingCoachId] = useState(null)
+  const [coachCode, setCoachCode] = useState('')
+  const [joiningCoach, setJoiningCoach] = useState(false)
+  const [coachError, setCoachError] = useState('')
 
   useEffect(() => {
     getMemberProfile()
@@ -68,6 +73,7 @@ function MemberProfile() {
         setEmail(p.email || '')
         setPhone(p.phone || '')
         setLocation(p.location || '')
+        setAge(p.age ?? '')
         setNotes(p.notes || '')
       })
       .finally(() => setLoading(false))
@@ -76,37 +82,44 @@ function MemberProfile() {
       .then(res => setChildren(res.data))
       .catch(() => setChildren([]))
       .finally(() => setChildrenLoading(false))
+  }, [])
 
-    refreshCoaches()
+  useEffect(() => {
+    if (activeTab !== 'coaches') return
+    setCoachesLoading(true)
     getMyJoinRequests()
       .then(res => setMyRequests(res.data))
       .catch(() => setMyRequests([]))
-  }, [])
-
-  const refreshCoaches = (search) => {
-    setCoachesLoading(true)
-    getCoaches(search)
-      .then(res => setCoaches(res.data))
-      .catch(() => setCoaches([]))
       .finally(() => setCoachesLoading(false))
+  }, [activeTab])
+
+  const handleJoinByCode = async () => {
+    if (!coachCode.trim()) return setCoachError('Enter a coach code')
+    setCoachError('')
+    setJoiningCoach(true)
+    try {
+      const res = await joinCoachByCode(coachCode.trim())
+      setMyRequests(prev => [res.data, ...prev])
+      setCoachCode('')
+    } catch (err) {
+      setCoachError(err.response?.data?.detail || 'Could not add coach')
+    } finally {
+      setJoiningCoach(false)
+    }
   }
 
-  const handleRequestJoin = async (coachId) => {
-    setRequestingCoachId(coachId)
+  const handleRemoveCoach = async (request) => {
+    if (!window.confirm(`Remove ${request.coach_name}? This cannot be undone.`)) return
     try {
-      await requestJoinCoach({ coach_id: coachId })
-      const res = await getMyJoinRequests()
-      setMyRequests(res.data)
-    } catch {
-    } finally {
-      setRequestingCoachId(null)
-    }
+      await removeCoach(request.request_id)
+      setMyRequests(prev => prev.filter(r => r.request_id !== request.request_id))
+    } catch {}
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      await updateMemberProfile({ name, email, phone, location, notes })
+      await updateMemberProfile({ name, email, phone, location, age: age ? parseInt(age) : null, notes })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -282,6 +295,27 @@ function MemberProfile() {
                       <Input icon={<Phone size={16} />} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone number" />
                     </div>
                   </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+                    <div>
+                      <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE</Typography>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        placeholder="Your age"
+                        value={age}
+                        onChange={e => setAge(e.target.value)}
+                        style={{
+                          width: '100%', padding: '12px 16px',
+                          border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
+                          fontSize: '15px', fontFamily: 'inherit', color: colors.black,
+                          outline: 'none', boxSizing: 'border-box'
+                        }}
+                        onFocus={e => e.target.style.borderColor = colors.primary}
+                        onBlur={e => e.target.style.borderColor = colors.gray[200]}
+                      />
+                    </div>
+                  </div>
                   <div>
                     <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>NOTES</Typography>
                     <textarea
@@ -307,7 +341,20 @@ function MemberProfile() {
             {/* ── KIDS TAB ── */}
             {activeTab === 'kids' && (
               <div style={{ maxWidth: '760px' }}>
-                <Typography variant="h4" mb={spacing[4]}>My Kids</Typography>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[4] }}>
+                  <Typography variant="h4">My Kids</Typography>
+                  <button
+                    onClick={() => setShowAddChildModal(true)}
+                    style={{
+                      width: '32px', height: '32px',
+                      backgroundColor: colors.primary, border: 'none',
+                      borderRadius: radius.lg, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <Plus size={16} color="white" />
+                  </button>
+                </div>
 
                 {childrenLoading ? (
                   <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
@@ -330,12 +377,32 @@ function MemberProfile() {
                       >
                         <Avatar name={child.name} size="md" />
                         <div style={{ flex: 1 }}>
-                          <Typography variant="body" style={{ fontWeight: '600' }}>{child.name}</Typography>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+                            <Typography variant="body" style={{ fontWeight: '600' }}>{child.name}</Typography>
+                            <span style={{
+                              padding: `2px ${spacing[2]}`,
+                              borderRadius: radius.full,
+                              backgroundColor: child.coach_name ? colors.primaryLight : colors.gray[100],
+                              color: child.coach_name ? colors.primary : colors.gray[500],
+                              fontSize: '11px', fontWeight: '600'
+                            }}>
+                            </span>
+                          </div>
                           <Typography variant="bodySmall" color={colors.gray[500]}>
-                            {capitalize(child.age_group)} · {capitalize(child.level)}
+                            {child.age ? `Age ${child.age}` : 'Age not set'} · {capitalize(child.level)}
                             {child.phone ? ` · ${child.phone}` : ''}
                           </Typography>
                         </div>
+                        <button
+                          onClick={() => setEditingChild(child)}
+                          style={{
+                            width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                            backgroundColor: colors.gray[100], color: colors.gray[600],
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}
+                        >
+                          <Pencil size={14} />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -346,72 +413,87 @@ function MemberProfile() {
             {/* ── COACHES TAB ── */}
             {activeTab === 'coaches' && (
               <div style={{ maxWidth: '760px' }}>
-                <Typography variant="h4" mb={spacing[4]}>Find a Coach</Typography>
+                <Typography variant="h4" mb={spacing[2]}>Add a Coach</Typography>
+                <Typography variant="bodySmall" color={colors.gray[400]} mb={spacing[4]} style={{ display: 'block' }}>
+                  Ask your coach for their code and enter it below to connect instantly.
+                </Typography>
 
-                <div style={{ marginBottom: spacing[5] }}>
-                  <Input
-                    icon={<Search size={16} />}
-                    placeholder="Search by name or location"
-                    value={coachSearch}
-                    onChange={e => {
-                      setCoachSearch(e.target.value)
-                      refreshCoaches(e.target.value)
-                    }}
-                  />
+                <div style={{
+                  backgroundColor: 'white', borderRadius: radius.xl,
+                  border: `1px solid ${colors.gray[200]}`,
+                  padding: spacing[6], marginBottom: spacing[6]
+                }}>
+                  {coachError && (
+                    <div style={{
+                      backgroundColor: colors.errorLight, color: colors.error,
+                      padding: spacing[3], borderRadius: radius.md,
+                      marginBottom: spacing[4], fontSize: '13px'
+                    }}>
+                      {coachError}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: spacing[3] }}>
+                    <div style={{ flex: 1 }}>
+                      <Input
+                        icon={<KeyRound size={16} />}
+                        placeholder="Enter coach code"
+                        value={coachCode}
+                        onChange={e => setCoachCode(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={handleJoinByCode} disabled={joiningCoach}>
+                      {joiningCoach ? 'Adding...' : 'Add Coach'}
+                    </Button>
+                  </div>
                 </div>
 
+                <Typography variant="h4" mb={spacing[4]}>My Coaches</Typography>
                 {coachesLoading ? (
                   <Typography variant="bodySmall" color={colors.gray[400]}>Loading...</Typography>
-                ) : coaches.length === 0 ? (
+                ) : myRequests.length === 0 ? (
                   <Card style={{ padding: spacing[6], textAlign: 'center' }}>
                     <Typography variant="bodySmall" color={colors.gray[400]}>
-                      No coaches found
+                      No coaches added yet
                     </Typography>
                   </Card>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
-                    {coaches.map(coach => {
-                      const existingRequest = myRequests.find(r => r.coach_id === coach.user_id)
-                      return (
-                        <div
-                          key={coach.user_id}
+                    {myRequests.map(request => (
+                      <div
+                        key={request.request_id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: spacing[4],
+                          padding: spacing[4], borderRadius: radius.xl,
+                          backgroundColor: 'white', border: `1px solid ${colors.gray[200]}`
+                        }}
+                      >
+                        <Avatar name={request.coach_name} size="md" />
+                        <div style={{ flex: 1 }}>
+                          <Typography variant="body" style={{ fontWeight: '600' }}>{request.coach_name}</Typography>
+                        </div>
+                        <div style={{
+                          padding: `${spacing[1]} ${spacing[3]}`,
+                          borderRadius: radius.full,
+                          backgroundColor: request.status === 'approved' ? colors.primaryLight
+                            : request.status === 'rejected' ? colors.errorLight : colors.gray[100],
+                          color: request.status === 'approved' ? colors.primary
+                            : request.status === 'rejected' ? colors.error : colors.gray[500],
+                          fontSize: '13px', fontWeight: '600'
+                        }}>
+                          {capitalize(request.status)}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveCoach(request)}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: spacing[4],
-                            padding: spacing[4], borderRadius: radius.xl,
-                            backgroundColor: 'white', border: `1px solid ${colors.gray[200]}`
+                            width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                            backgroundColor: colors.errorLight, color: colors.error,
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                           }}
                         >
-                          <Avatar name={coach.name} size="md" />
-                          <div style={{ flex: 1 }}>
-                            <Typography variant="body" style={{ fontWeight: '600' }}>{coach.name}</Typography>
-                            <Typography variant="bodySmall" color={colors.gray[500]}>
-                              {coach.location || 'Location not set'}
-                            </Typography>
-                          </div>
-                          {existingRequest ? (
-                            <div style={{
-                              padding: `${spacing[1]} ${spacing[3]}`,
-                              borderRadius: radius.full,
-                              backgroundColor: existingRequest.status === 'approved' ? colors.primaryLight
-                                : existingRequest.status === 'rejected' ? colors.errorLight : colors.gray[100],
-                              color: existingRequest.status === 'approved' ? colors.primary
-                                : existingRequest.status === 'rejected' ? colors.error : colors.gray[500],
-                              fontSize: '13px', fontWeight: '600'
-                            }}>
-                              {capitalize(existingRequest.status)}
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => handleRequestJoin(coach.user_id)}
-                              disabled={requestingCoachId === coach.user_id}
-                            >
-                              {requestingCoachId === coach.user_id ? 'Sending...' : 'Request to join'}
-                            </Button>
-                          )}
-                        </div>
-                      )
-                    })}
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -531,6 +613,22 @@ function MemberProfile() {
           </div>
         </div>
       </div>
+
+      {showAddChildModal && (
+        <AddChildModal
+          onClose={() => setShowAddChildModal(false)}
+          onAdded={child => setChildren(prev => [...prev, child])}
+        />
+      )}
+
+      {editingChild && (
+        <EditChildModal
+          child={editingChild}
+          onClose={() => setEditingChild(null)}
+          onUpdated={updated => setChildren(prev => prev.map(c => c.user_id === updated.user_id ? updated : c))}
+          onDeleted={id => setChildren(prev => prev.filter(c => c.user_id !== id))}
+        />
+      )}
     </Layout>
   )
 }

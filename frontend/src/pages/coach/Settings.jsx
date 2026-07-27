@@ -10,7 +10,7 @@ import { getCoachProfile, updateCoachProfile, changePassword } from '../../servi
 import { colors, spacing, radius } from '../../styles/tokens'
 import {
   User, Mail, Phone, MapPin, Clock,
-  Bell, Shield, LogOut, ChevronRight, Save
+  Bell, Shield, LogOut, ChevronRight, Save, Copy, KeyRound
 } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
@@ -37,6 +37,9 @@ function Settings() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [location, setLocation] = useState('')
+  const [age, setAge] = useState('')
+  const [code, setCode] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
   const [notes, setNotes] = useState('')
   const [availStart, setAvailStart] = useState('00:00')
   const [availEnd, setAvailEnd] = useState('23:59')
@@ -66,6 +69,8 @@ function Settings() {
         setEmail(p.email || '')
         setPhone(p.phone || '')
         setLocation(p.location || '')
+        setAge(p.age ?? '')
+        setCode(p.code || '')
         setNotes(p.notes || '')
         setAvailStart(p.availability_start?.slice(0, 5) || '00:00')
         setAvailEnd(p.availability_end?.slice(0, 5) || '23:59')
@@ -85,6 +90,7 @@ function Settings() {
     try {
       await updateCoachProfile({
         name, email, phone, location, notes,
+        age: age ? parseInt(age) : null,
         availability_start: availStart,
         availability_end: availEnd,
         session_duration: sessionDuration,
@@ -250,6 +256,44 @@ function Settings() {
                   </div>
                 </div>
 
+                <Typography variant="h4" mb={spacing[4]}>Your Coach Code</Typography>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: spacing[4],
+                  backgroundColor: 'white', borderRadius: radius.xl,
+                  border: `1px solid ${colors.gray[200]}`,
+                  padding: spacing[5], marginBottom: spacing[6]
+                }}>
+                  <div style={{
+                    width: '40px', height: '40px',
+                    backgroundColor: colors.primaryLight,
+                    borderRadius: radius.md,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <KeyRound size={18} color={colors.primary} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Typography variant="body" style={{ fontWeight: '700', letterSpacing: '0.05em' }}>
+                      {code || '—'}
+                    </Typography>
+                    <Typography variant="caption" color={colors.gray[400]}>
+                      Share this with members so they can add you as their coach
+                    </Typography>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(code)
+                      setCodeCopied(true)
+                      setTimeout(() => setCodeCopied(false), 2000)
+                    }}
+                    disabled={!code}
+                  >
+                    <Copy size={14} />
+                    {codeCopied ? 'Copied!' : 'Copy'}
+                  </Button>
+                </div>
+
                 <Typography variant="h4" mb={spacing[4]}>Personal info</Typography>
                 <div style={{
                   backgroundColor: 'white', borderRadius: radius.xl,
@@ -282,7 +326,7 @@ function Settings() {
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
                     <div>
                       <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>EMAIL</Typography>
                       <Input icon={<Mail size={16} />} value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" />
@@ -290,6 +334,25 @@ function Settings() {
                     <div>
                       <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>PHONE</Typography>
                       <Input icon={<Phone size={16} />} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone number" />
+                    </div>
+                    <div>
+                      <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>AGE (OPTIONAL)</Typography>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        placeholder="Your age"
+                        value={age}
+                        onChange={e => setAge(e.target.value)}
+                        style={{
+                          width: '100%', padding: '12px 16px',
+                          border: `1.5px solid ${colors.gray[200]}`, borderRadius: radius.lg,
+                          fontSize: '15px', fontFamily: 'inherit', color: colors.black,
+                          outline: 'none', boxSizing: 'border-box'
+                        }}
+                        onFocus={e => e.target.style.borderColor = colors.primary}
+                        onBlur={e => e.target.style.borderColor = colors.gray[200]}
+                      />
                     </div>
                   </div>
                   <div>

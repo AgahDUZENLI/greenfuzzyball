@@ -21,11 +21,11 @@ api.interceptors.request.use((config) => {
 
 // Auth
 export const register = (data) => api.post('/auth/register', data)
-export const registerMember = (data) => api.post('/members/register', data)
 export const login = (data) => {
   const formData = new FormData()
   formData.append('username', data.email)
   formData.append('password', data.password)
+  formData.append('role', data.role)
   return axios.post(`${API_URL}/auth/login`, formData)
 }
 export const getMe = () => api.get('/auth/me')
@@ -63,6 +63,7 @@ export const getSessions = (date, studentId) => {
 export const getSession = (id) => api.get(`/sessions/${id}`)
 export const createSession = (data) => api.post('/sessions/', data)
 export const deleteSession = (id) => api.delete(`/sessions/${id}`)
+export const cancelSessionAsCoach = (sessionId, note) => api.post(`/sessions/${sessionId}/cancel`, { note: note || null })
 export const addRating = (sessionId, data) => api.post(`/sessions/${sessionId}/ratings`, data)
 export const getStudentProgress = (studentId) => api.get(`/sessions/progress/${studentId}`)
 export const getSessionByDate = (date) => api.get(`/sessions/?date=${date}`)
@@ -91,10 +92,30 @@ export const getMemberProgress = (studentId) => api.get(`/members/progress${stud
 export const getMemberProfile = () => api.get('/members/me')
 export const updateMemberProfile = (data) => api.put('/members/me', data)
 export const getChildren = () => api.get('/members/children')
-export const requestJoinCoach = (data) => api.post('/members/join-request', data)
+export const addChild = (data) => api.post('/members/children', data)
+export const updateChild = (childId, data) => api.put(`/members/children/${childId}`, data)
+export const deleteChild = (childId) => api.delete(`/members/children/${childId}`)
 export const getMyJoinRequests = () => api.get('/members/join-requests')
+export const joinCoachByCode = (code) => api.post('/members/join-by-code', { code })
+export const removeCoach = (requestId) => api.delete(`/members/join-requests/${requestId}`)
+export const requestSession = (data) => api.post('/members/session-requests', data)
+export const getMySessionRequests = () => api.get('/members/session-requests')
+export const deleteSessionRequest = (requestId) => api.delete(`/members/session-requests/${requestId}`)
+export const cancelSession = (sessionId, reason) => api.post(`/members/sessions/${sessionId}/cancel`, { reason: reason || null })
+export const getMemberSessionDetail = (sessionId) => api.get(`/members/sessions/${sessionId}`)
 
-// Coaches (browse + join requests)
-export const getCoaches = (search) => api.get(`/coaches/${search ? `?search=${encodeURIComponent(search)}` : ''}`)
+// Coaches (join requests)
 export const getCoachJoinRequests = () => api.get('/coaches/join-requests')
 export const respondToJoinRequest = (requestId, status) => api.patch(`/coaches/join-requests/${requestId}`, { status })
+
+// Coaches (session requests)
+export const getCoachSessionRequests = () => api.get('/coaches/session-requests')
+export const respondToSessionRequest = (requestId, status) => api.patch(`/coaches/session-requests/${requestId}`, { status })
+
+// Coaches (cancellation requests)
+export const getCoachCancellationRequests = () => api.get('/coaches/session-cancellations')
+export const respondToCancellation = (sessionId, status) => api.patch(`/coaches/session-cancellations/${sessionId}`, { status })
+
+// Notifications
+export const getNotifications = () => api.get('/notifications/')
+export const markAllNotificationsRead = () => api.patch('/notifications/read-all')

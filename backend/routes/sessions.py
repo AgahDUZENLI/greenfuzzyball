@@ -10,7 +10,9 @@ from models.schemas import (
     RatingResponse,
     AddDrillToSessionRequest,
     UpdateSessionRequest,
+    CoachCancelSessionRequest,
 )
+from services.notification_service import create_notification
 
 router = APIRouter()
 
@@ -97,9 +99,9 @@ def create_session(
 
             # Return session
             cursor.execute("""
-                SELECT 
+                SELECT
                     s.session_id, s.date, s.start_time, s.duration_minutes,
-                    s.type, s.notes, s.created_at,
+                    s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                     c.court_id, c.name as court_name, c.area as court_area
                 FROM sessions s
                 LEFT JOIN courts c ON s.court_id = c.court_id
@@ -143,7 +145,7 @@ def get_sessions(
             cursor.execute(f"""
                 SELECT
                     s.session_id, s.date, s.start_time, s.duration_minutes,
-                    s.type, s.notes, s.created_at,
+                    s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                     c.court_id, c.name as court_name, c.area as court_area,
                     COALESCE(
                         array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
@@ -163,7 +165,7 @@ def get_sessions(
             cursor.execute(f"""
                 SELECT
                     s.session_id, s.date, s.start_time, s.duration_minutes,
-                    s.type, s.notes, s.created_at,
+                    s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                     c.court_id, c.name as court_name, c.area as court_area,
                     COALESCE(
                         array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
@@ -193,9 +195,9 @@ def get_session(
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
         cursor.execute("""
-            SELECT 
+            SELECT
                 s.session_id, s.date, s.start_time, s.duration_minutes,
-                s.type, s.notes, s.created_at,
+                s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                 c.court_id, c.name as court_name, c.area as court_area
             FROM sessions s
             LEFT JOIN courts c ON s.court_id = c.court_id
@@ -210,7 +212,7 @@ def get_session(
             )
 
         cursor.execute("""
-            SELECT u.user_id, u.name, s.level, s.age_group
+            SELECT u.user_id, u.name, s.level
             FROM users u
             JOIN students s ON u.user_id = s.user_id
             JOIN session_students ss ON u.user_id = ss.student_id
@@ -276,6 +278,62 @@ def delete_session(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not delete session"
+        )
+
+
+# ─── COACH CANCEL SESSION ──────────────────────────────────────────────────────
+
+@router.post("/{session_id}/cancel")
+def cancel_session_as_coach(
+    session_id: str,
+    data: CoachCancelSessionRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT session_id, date, status FROM sessions
+                WHERE session_id = %s AND coach_id = %s
+            """, (session_id, str(coach["user_id"])))
+            session = cursor.fetchone()
+            if not session:
+                raise HTTPException(status_code=404, detail="Session not found")
+            if session["status"] != "scheduled":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Session is {session['status'].replace('_', ' ')} — cannot cancel directly"
+                )
+
+            cursor.execute(
+                "UPDATE sessions SET status = 'cancelled', cancellation_reason = %s WHERE session_id = %s",
+                (data.note, session_id)
+            )
+
+            cursor.execute("""
+                SELECT DISTINCT COALESCE(mc.member_id, ss.student_id) as member_id
+                FROM session_students ss
+                LEFT JOIN member_children mc ON mc.student_id = ss.student_id
+                WHERE ss.session_id = %s
+            """, (session_id,))
+            recipients = cursor.fetchall()
+
+            note_suffix = f' — "{data.note}"' if data.note else ""
+            message = f"{coach['name']} cancelled your session on {session['date']}{note_suffix}"
+            for r in recipients:
+                create_notification(cursor, r["member_id"], message)
+
+            conn.commit()
+            return {"session_id": session_id, "status": "cancelled"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"COACH CANCEL SESSION ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not cancel session"
         )
 
 
@@ -451,10 +509,16 @@ def update_session(
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             cursor.execute("""
-                SELECT 1 FROM sessions WHERE session_id = %s AND coach_id = %s
+                SELECT status FROM sessions WHERE session_id = %s AND coach_id = %s
             """, (session_id, str(coach["user_id"])))
-            if not cursor.fetchone():
+            existing = cursor.fetchone()
+            if not existing:
                 raise HTTPException(status_code=404, detail="Session not found")
+            if existing["status"] in ("cancellation_pending", "cancelled"):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot edit a session that is {existing['status'].replace('_', ' ')}"
+                )
 
             # Build dynamic SET clause for session fields
             set_parts = []

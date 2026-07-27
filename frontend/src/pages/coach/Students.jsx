@@ -26,6 +26,13 @@ const FILTERS = [
 
 const CHART_COLORS = [colors.primary, '#9ca3af', '#3b82f6', '#f59e0b']
 
+const ageBucket = age => {
+  if (age == null) return null
+  if (age < 18) return 'kids'
+  if (age < 60) return 'adults'
+  return 'veterans'
+}
+
 const levelColor = level =>
   level === 'advanced' ? colors.error
   : level === 'intermediate' ? colors.warning
@@ -53,6 +60,10 @@ function Students() {
     try {
       await respondToJoinRequest(requestId, status)
       setJoinRequests(prev => prev.filter(r => r.request_id !== requestId))
+      if (status === 'approved') {
+        const res = await getStudents()
+        setStudents(res.data)
+      }
     } catch {
     } finally {
       setRespondingId(null)
@@ -85,9 +96,22 @@ function Students() {
   }, [selected])
 
   const filtered = students.filter(s =>
-    (filter === 'all' || s.age_group === filter) &&
+    (filter === 'all' || ageBucket(s.age) === filter) &&
     s.name.toLowerCase().includes(search.toLowerCase())
   )
+
+  // Nest each child directly under its parent member (when the parent is
+  // also visible in the current filter/search) so the coach can see at a
+  // glance which kid belongs to which member
+  const filteredIds = new Set(filtered.map(s => s.user_id))
+  const rosterRows = []
+  filtered.forEach(s => {
+    if (s.parent_member_id && filteredIds.has(s.parent_member_id)) return
+    rosterRows.push({ ...s, indent: false })
+    filtered
+      .filter(c => c.parent_member_id === s.user_id)
+      .forEach(c => rosterRows.push({ ...c, indent: true }))
+  })
 
   // Build chart data
   const drillNames = [...new Set(progress.map(p => p.drill_name))]
@@ -232,7 +256,7 @@ function Students() {
 
           {/* List */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {filtered.map(student => {
+            {rosterRows.map(student => {
               const isSelected = selected?.user_id === student.user_id
               return (
                 <div
@@ -240,14 +264,15 @@ function Students() {
                   onClick={() => { setSelected(student); setMobileShowDetail(true) }}
                   style={{
                     display: 'flex', alignItems: 'center',
-                    gap: spacing[3], padding: `${spacing[3]} ${spacing[5]}`,
+                    gap: spacing[3],
+                    padding: `${spacing[3]} ${spacing[5]} ${spacing[3]} ${student.indent ? spacing[10] : spacing[5]}`,
                     cursor: 'pointer',
                     backgroundColor: isSelected ? colors.primaryLight : 'transparent',
                     borderLeft: `3px solid ${isSelected ? colors.primary : 'transparent'}`,
                     transition: 'all 0.15s'
                   }}
                 >
-                  <Avatar name={student.name} size="md" />
+                  <Avatar name={student.name} size={student.indent ? 'sm' : 'md'} />
                   <div style={{ flex: 1 }}>
                     <Typography variant="body" style={{
                       fontWeight: isSelected ? '600' : '500',
@@ -256,7 +281,9 @@ function Students() {
                       {student.name}
                     </Typography>
                     <Typography variant="caption" color={colors.gray[400]}>
-                      {capitalize(student.age_group)}
+                      {student.indent
+                        ? `${student.parent_member_name}'s kid`
+                        : (capitalize(ageBucket(student.age)) || 'Age not set')}
                     </Typography>
                   </div>
                   <span style={{
@@ -306,7 +333,8 @@ function Students() {
                 <div>
                   <Typography variant="h2" mb={spacing[1]}>{selected.name}</Typography>
                   <Typography variant="bodySmall" color={colors.gray[500]}>
-                    {capitalize(selected.age_group)} · {capitalize(selected.level)}
+                    {capitalize(selected.level)}
+                    {selected.age ? ` · Age ${selected.age}` : ''}
                   </Typography>
                 </div>
               </div>

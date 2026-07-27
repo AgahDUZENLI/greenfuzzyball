@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Form, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
@@ -20,7 +20,9 @@ from models.schemas import (
 )
 from services.auth_service import (
     get_user_by_email,
+    any_user_with_email,
     register_coach,
+    register_member,
     login_user,
     create_access_token,
     create_refresh_token,
@@ -28,8 +30,7 @@ from services.auth_service import (
     get_user_by_id,
     generate_password_reset_token,
     store_reset_token,
-    verify_reset_token,
-    reset_user_password,
+    reset_password_by_token,
     send_reset_email
 )
 from middleware.auth_middleware import get_current_user, get_current_coach
@@ -42,23 +43,36 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(data: RegisterRequest, conn=Depends(get_db)):
-    try:
-        user = register_coach(
-            conn=conn,
-            name=data.name,
-            email=data.email,
-            password=data.password,
-            phone=data.phone,
-            location=data.location
-        )
+    if data.role not in ("coach", "member"):
+        raise HTTPException(status_code=400, detail="role must be 'coach' or 'member'")
 
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO coach_drills (coach_id, drill_id)
-                SELECT %s, drill_id FROM drills
-                WHERE coach_id IS NULL
-            """, (str(user["user_id"]),))
-            conn.commit()
+    try:
+        if data.role == "coach":
+            user = register_coach(
+                conn=conn,
+                name=data.name,
+                email=data.email,
+                password=data.password,
+                phone=data.phone,
+                location=data.location
+            )
+
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO coach_drills (coach_id, drill_id)
+                    SELECT %s, drill_id FROM drills
+                    WHERE coach_id IS NULL
+                """, (str(user["user_id"]),))
+                conn.commit()
+        else:
+            user = register_member(
+                conn=conn,
+                name=data.name,
+                email=data.email,
+                password=data.password,
+                phone=data.phone,
+                level=data.level
+            )
 
         return user
 
@@ -79,8 +93,15 @@ def register(data: RegisterRequest, conn=Depends(get_db)):
 # ─── LOGIN ───────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), conn=Depends(get_db)):
-    user = login_user(conn=conn, email=form_data.username, password=form_data.password)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    role: str = Form(...),
+    conn=Depends(get_db)
+):
+    if role not in ("coach", "member"):
+        raise HTTPException(status_code=400, detail="role must be 'coach' or 'member'")
+
+    user = login_user(conn=conn, email=form_data.username, password=form_data.password, role=role)
 
     if not user:
         raise HTTPException(
@@ -134,9 +155,7 @@ def refresh_access_token(data: RefreshTokenRequest, conn=Depends(get_db)):
 
 @router.post("/forgot-password")
 def forgot_password(data: ForgotPasswordRequest, conn=Depends(get_db)):
-    user = get_user_by_email(conn, data.email)
-
-    if not user:
+    if not any_user_with_email(conn, data.email):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No account found with that email address"
@@ -156,15 +175,14 @@ def forgot_password(data: ForgotPasswordRequest, conn=Depends(get_db)):
 
 @router.post("/reset-password")
 def reset_password(data: ResetPasswordRequest, conn=Depends(get_db)):
-    user = verify_reset_token(conn, data.token)
+    updated = reset_password_by_token(conn, data.token, data.new_password)
 
-    if not user:
+    if not updated:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token"
         )
 
-    reset_user_password(conn, user["user_id"], data.new_password)
     return {"message": "Password updated successfully"}
 
 
@@ -187,12 +205,16 @@ oauth.register(
 )
 
 @router.get("/google")
-async def google_login(request: Request):
+async def google_login(request: Request, role: str = "coach"):
+    if role not in ("coach", "member"):
+        raise HTTPException(status_code=400, detail="role must be 'coach' or 'member'")
+    request.session["oauth_role"] = role
     redirect_uri = f"{settings.BACKEND_URL}/auth/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
 async def google_callback(request: Request, conn=Depends(get_db)):
+    role = request.session.pop("oauth_role", "coach")
     token = await oauth.google.authorize_access_token(request)
     user_info = token.get("userinfo")
 
@@ -205,27 +227,36 @@ async def google_callback(request: Request, conn=Depends(get_db)):
     email = user_info.get("email")
     name = user_info.get("name")
 
-    user = get_user_by_email(conn, email)
+    user = get_user_by_email(conn, email, role)
 
     if not user:
         try:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
                 cursor.execute("""
                     INSERT INTO users (name, email, role)
-                    VALUES (%s, %s, 'coach')
+                    VALUES (%s, %s, %s)
                     RETURNING user_id, name, email, role, created_at
-                """, (name, email))
+                """, (name, email, role))
                 user = cursor.fetchone()
 
-                cursor.execute("""
-                    INSERT INTO coaches (user_id) VALUES (%s)
-                """, (str(user["user_id"]),))
+                if role == "coach":
+                    cursor.execute("""
+                        INSERT INTO coaches (user_id) VALUES (%s)
+                    """, (str(user["user_id"]),))
 
-                cursor.execute("""
-                    INSERT INTO coach_drills (coach_id, drill_id)
-                    SELECT %s, drill_id FROM drills
-                    WHERE coach_id IS NULL
-                """, (str(user["user_id"]),))
+                    cursor.execute("""
+                        INSERT INTO coach_drills (coach_id, drill_id)
+                        SELECT %s, drill_id FROM drills
+                        WHERE coach_id IS NULL
+                    """, (str(user["user_id"]),))
+                else:
+                    cursor.execute("""
+                        INSERT INTO members (user_id) VALUES (%s)
+                    """, (str(user["user_id"]),))
+
+                    cursor.execute("""
+                        INSERT INTO students (user_id) VALUES (%s)
+                    """, (str(user["user_id"]),))
 
                 conn.commit()
         except Exception as e:

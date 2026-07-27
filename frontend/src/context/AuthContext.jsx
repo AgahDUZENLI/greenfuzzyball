@@ -25,8 +25,8 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const login = async (email, password, rememberMe = true) => {
-    const res = await loginApi({ email, password })
+  const login = async (email, password, rememberMe = true, role = 'coach') => {
+    const res = await loginApi({ email, password, role })
     const storage = rememberMe ? localStorage : sessionStorage
     storage.setItem('access_token', res.data.access_token)
     storage.setItem('refresh_token', res.data.refresh_token)

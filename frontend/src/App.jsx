@@ -20,6 +20,7 @@ import About from './pages/public/About'
 import Contact from './pages/public/Contact'
 import MemberDashboard from './pages/member/MemberDashboard'
 import MemberSessions from './pages/member/MemberSessions'
+import MemberSessionDetail from './pages/member/MemberSessionDetail'
 import MemberProgress from './pages/member/MemberProgress'
 import MemberProfile from './pages/member/MemberProfile'
 
@@ -69,6 +70,7 @@ function AppRoutes() {
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/member" element={<ProtectedRoute role="member"><MemberDashboard /></ProtectedRoute>} />
       <Route path="/member/sessions" element={<ProtectedRoute role="member"><MemberSessions /></ProtectedRoute>} />
+      <Route path="/member/sessions/:sessionId" element={<ProtectedRoute role="member"><MemberSessionDetail /></ProtectedRoute>} />
       <Route path="/member/progress" element={<ProtectedRoute role="member"><MemberProgress /></ProtectedRoute>} />
       <Route path="/member/profile" element={<ProtectedRoute role="member"><MemberProfile /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />

@@ -55,13 +55,18 @@ def decode_token(token: str) -> Optional[dict]:
 
 # ─── AUTH QUERIES ────────────────────────────────────────────────────────────
 
-def get_user_by_email(conn, email: str) -> Optional[dict]:
+def get_user_by_email(conn, email: str, role: str) -> Optional[dict]:
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute(
-            "SELECT * FROM users WHERE email = %s",
-            (email,)
+            "SELECT * FROM users WHERE email = %s AND role = %s",
+            (email, role)
         )
         return cursor.fetchone()
+
+def any_user_with_email(conn, email: str) -> bool:
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT 1 FROM users WHERE email = %s LIMIT 1", (email,))
+        return cursor.fetchone() is not None
 
 def get_user_by_id(conn, user_id: UUID) -> Optional[dict]:
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
@@ -94,16 +99,42 @@ def register_coach(conn, name: str, email: str, password: str,
         conn.commit()
         return user
 
-def login_user(conn, email: str, password: str) -> Optional[dict]:
-    user = get_user_by_email(conn, email)
+def register_member(conn, name: str, email: str, password: str,
+                    phone: Optional[str], level: Optional[str]) -> dict:
+    hashed = hash_password(password)
+
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        # Step 1 — insert into users
+        cursor.execute("""
+            INSERT INTO users (name, email, hashed_password, role, phone)
+            VALUES (%s, %s, %s, 'member', %s)
+            RETURNING user_id, name, email, role, created_at
+        """, (name, email, hashed, phone))
+
+        user = cursor.fetchone()
+
+        # Step 2 — insert into members
+        cursor.execute("""
+            INSERT INTO members (user_id)
+            VALUES (%s)
+        """, (str(user["user_id"]),))
+
+        # Step 3 — every member is also a coachable student record
+        cursor.execute("""
+            INSERT INTO students (user_id, level)
+            VALUES (%s, %s)
+        """, (str(user["user_id"]), level))
+
+        conn.commit()
+        return user
+
+def login_user(conn, email: str, password: str, role: str) -> Optional[dict]:
+    user = get_user_by_email(conn, email, role)
 
     if not user:
         return None
 
     if not verify_password(password, user["hashed_password"]):
-        return None
-
-    if user["role"] == "student":
         return None
 
     return user
@@ -124,19 +155,7 @@ def store_reset_token(conn, email: str, token: str, expires_at: datetime):
         """, (token, expires_at, email))
         conn.commit()
 
-def verify_reset_token(conn, token: str):
-    print(f"Verifying token: '{token}'")
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-        cursor.execute("""
-            SELECT * FROM users
-            WHERE password_reset_token = %s
-            AND password_reset_expires_at > NOW()
-        """, (token,))
-        result = cursor.fetchone()
-        print(f"Result: {result}")
-        return result
-
-def reset_user_password(conn, user_id, new_password: str):
+def reset_password_by_token(conn, token: str, new_password: str) -> bool:
     hashed = hash_password(new_password)
     with conn.cursor() as cursor:
         cursor.execute("""
@@ -144,9 +163,12 @@ def reset_user_password(conn, user_id, new_password: str):
             SET hashed_password = %s,
                 password_reset_token = NULL,
                 password_reset_expires_at = NULL
-            WHERE user_id = %s
-        """, (hashed, str(user_id)))
+            WHERE password_reset_token = %s
+              AND password_reset_expires_at > NOW()
+        """, (hashed, token))
+        updated = cursor.rowcount > 0
         conn.commit()
+        return updated
 
 def send_reset_email(to_email: str, reset_link: str):
     msg = MIMEMultipart()

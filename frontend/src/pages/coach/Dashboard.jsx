@@ -8,10 +8,15 @@ import Button from '../../components/Button'
 import Typography from '../../components/Typography'
 import Avatar from '../../components/Avatar'
 import Calendar from '../../components/Calendar'
-import { getStudents, getSessions, getDrills } from '../../services/api'
+import {
+  getStudents, getSessions, getDrills,
+  getCoachSessionRequests, respondToSessionRequest,
+  getCoachCancellationRequests, respondToCancellation
+} from '../../services/api'
 import { colors, spacing, radius, shadows } from '../../styles/tokens'
-import { Users, Calendar as CalendarIcon, Dumbbell, Clock, ChevronRight, Plus } from 'lucide-react'
+import { Users, Calendar as CalendarIcon, Dumbbell, Clock, ChevronRight, Plus, Check, X } from 'lucide-react'
 import BookSessionModal from '../../components/BookSessionModal'
+import NotificationBell from '../../components/NotificationBell'
 import useIsMobile from '../../hooks/useIsMobile'
 
 function formatTime(t) {
@@ -49,6 +54,48 @@ function Dashboard() {
   const [showBookModal, setShowBookModal] = useState(false)
   const [bookStudent, setBookStudent] = useState(null)
 
+  const [sessionRequests, setSessionRequests] = useState([])
+  const [respondingReqId, setRespondingReqId] = useState(null)
+
+  const [cancellationRequests, setCancellationRequests] = useState([])
+  const [respondingCancelId, setRespondingCancelId] = useState(null)
+
+  useEffect(() => {
+    getCoachSessionRequests()
+      .then(res => setSessionRequests(res.data))
+      .catch(() => setSessionRequests([]))
+    getCoachCancellationRequests()
+      .then(res => setCancellationRequests(res.data))
+      .catch(() => setCancellationRequests([]))
+  }, [])
+
+  const handleRespondSessionRequest = async (requestId, status) => {
+    setRespondingReqId(requestId)
+    try {
+      await respondToSessionRequest(requestId, status)
+      setSessionRequests(prev => prev.filter(r => r.request_id !== requestId))
+      if (status === 'approved') {
+        const res = await getSessions()
+        setSessions(res.data)
+      }
+    } catch {
+    } finally {
+      setRespondingReqId(null)
+    }
+  }
+
+  const handleRespondCancellation = async (sessionId, status) => {
+    setRespondingCancelId(sessionId)
+    try {
+      await respondToCancellation(sessionId, status)
+      setCancellationRequests(prev => prev.filter(r => r.session_id !== sessionId))
+      const res = await getSessions()
+      setSessions(res.data)
+    } catch {
+    } finally {
+      setRespondingCancelId(null)
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,6 +142,7 @@ function Dashboard() {
     const seen = new Set()
     const result = []
     ;[...sessions]
+      .filter(s => new Date(s.date) < new Date())
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .forEach(s => {
         s.student_names?.forEach(name => {
@@ -156,9 +204,12 @@ function Dashboard() {
                 })}
               </Typography>
             </div>
-            <Button onClick={() => setShowBookModal(true)}>
-              <Plus size={16} /> New Session
-            </Button>
+            <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
+              <NotificationBell />
+              <Button onClick={() => setShowBookModal(true)}>
+                <Plus size={16} /> New Session
+              </Button>
+            </div>
           </div>
 
           {/* Stats */}
@@ -303,6 +354,135 @@ function Dashboard() {
           gap: spacing[6],
           padding: spacing[6]
         }}>
+
+          {/* Session Requests */}
+          <Card style={{ padding: 0 }}>
+            <div style={{
+              padding: `${spacing[4]} ${spacing[4]} ${spacing[3]}`,
+              borderBottom: `1px solid ${colors.gray[100]}`
+            }}>
+              <Typography variant="h4">Session Requests</Typography>
+            </div>
+            {sessionRequests.length === 0 ? (
+              <div style={{ padding: spacing[5], textAlign: 'center' }}>
+                <Typography variant="bodySmall" color={colors.gray[400]}>
+                  No pending requests
+                </Typography>
+              </div>
+            ) : (
+              sessionRequests.map((req, i) => (
+                <div
+                  key={req.request_id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: spacing[3],
+                    padding: `${spacing[3]} ${spacing[4]}`,
+                    borderBottom: i < sessionRequests.length - 1 ? `1px solid ${colors.gray[100]}` : 'none'
+                  }}
+                >
+                  <Avatar name={req.student_name} size="sm" />
+                  <div style={{ flex: 1 }}>
+                    <Typography variant="bodySmall" style={{ fontWeight: '600' }}>{req.student_name}</Typography>
+                    <Typography variant="caption" color={colors.gray[400]}>
+                      {new Date(req.requested_date + 'T00:00:00').toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric'
+                      })}
+                      {req.requested_time ? ` · ${req.requested_time.slice(0, 5)}` : ''} · via {req.member_name}
+                    </Typography>
+                  </div>
+                  <button
+                    onClick={() => handleRespondSessionRequest(req.request_id, 'approved')}
+                    disabled={respondingReqId === req.request_id}
+                    style={{
+                      width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                      backgroundColor: colors.primaryLight, color: colors.primary,
+                      cursor: respondingReqId === req.request_id ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleRespondSessionRequest(req.request_id, 'rejected')}
+                    disabled={respondingReqId === req.request_id}
+                    style={{
+                      width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                      backgroundColor: colors.errorLight, color: colors.error,
+                      cursor: respondingReqId === req.request_id ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))
+            )}
+          </Card>
+
+          {/* Cancellation Requests */}
+          <Card style={{ padding: 0 }}>
+            <div style={{
+              padding: `${spacing[4]} ${spacing[4]} ${spacing[3]}`,
+              borderBottom: `1px solid ${colors.gray[100]}`
+            }}>
+              <Typography variant="h4">Cancellation Requests</Typography>
+            </div>
+            {cancellationRequests.length === 0 ? (
+              <div style={{ padding: spacing[5], textAlign: 'center' }}>
+                <Typography variant="bodySmall" color={colors.gray[400]}>
+                  No pending cancellations
+                </Typography>
+              </div>
+            ) : (
+              cancellationRequests.map((session, i) => (
+                <div
+                  key={session.session_id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: spacing[3],
+                    padding: `${spacing[3]} ${spacing[4]}`,
+                    borderBottom: i < cancellationRequests.length - 1 ? `1px solid ${colors.gray[100]}` : 'none'
+                  }}
+                >
+                  <Avatar name={session.student_names?.[0] || 'S'} size="sm" />
+                  <div style={{ flex: 1 }}>
+                    <Typography variant="bodySmall" style={{ fontWeight: '600' }}>
+                      {session.student_names?.length > 0 ? session.student_names.join(', ') : 'Session'}
+                    </Typography>
+                    <Typography variant="caption" color={colors.gray[400]}>
+                      {new Date(session.date + 'T00:00:00').toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric'
+                      })}
+                      {session.start_time ? ` · ${session.start_time.slice(0, 5)}` : ''}
+                      {session.cancellation_reason ? ` · "${session.cancellation_reason}"` : ''}
+                    </Typography>
+                  </div>
+                  <button
+                    onClick={() => handleRespondCancellation(session.session_id, 'approved')}
+                    disabled={respondingCancelId === session.session_id}
+                    style={{
+                      width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                      backgroundColor: colors.primaryLight, color: colors.primary,
+                      cursor: respondingCancelId === session.session_id ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleRespondCancellation(session.session_id, 'rejected')}
+                    disabled={respondingCancelId === session.session_id}
+                    style={{
+                      width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                      backgroundColor: colors.errorLight, color: colors.error,
+                      cursor: respondingCancelId === session.session_id ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))
+            )}
+          </Card>
 
           {/* Needs Rating */}
           <Card style={{ padding: 0 }}>
