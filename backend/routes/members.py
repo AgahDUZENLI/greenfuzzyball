@@ -333,7 +333,8 @@ def join_coach_by_code(
 
             create_notification(
                 cursor, coach_id,
-                f"{current_user['name']} wants to join as a client"
+                f"{current_user['name']} wants to join as a client",
+                notification_type="join_request"
             )
 
             conn.commit()
@@ -439,7 +440,8 @@ def request_session(
 
             create_notification(
                 cursor, data.coach_id,
-                f"{current_user['name']} requested a session on {data.requested_date}"
+                f"{current_user['name']} requested a session on {data.requested_date}",
+                notification_type="session_request"
             )
 
             conn.commit()
@@ -683,7 +685,7 @@ def cancel_session(
                 "UPDATE sessions SET status = %s, cancellation_reason = %s WHERE session_id = %s",
                 (new_status, data.reason, session_id)
             )
-            create_notification(cursor, session["coach_id"], message)
+            create_notification(cursor, session["coach_id"], message, notification_type="cancellation_request")
             conn.commit()
             return {"session_id": session_id, "status": new_status}
 

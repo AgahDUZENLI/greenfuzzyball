@@ -87,7 +87,16 @@ function Sessions() {
       </span>
     )
 
-    const statusNode = isUpcoming ? (
+    const statusNode = session.status === 'cancelled' ? (
+      <span style={{
+        display: 'inline-block', padding: '4px 12px',
+        borderRadius: radius.full,
+        backgroundColor: colors.gray[100], color: colors.gray[500],
+        fontSize: '13px', fontWeight: '500', width: 'fit-content'
+      }}>
+        Cancelled
+      </span>
+    ) : isUpcoming ? (
       time ? (
         <div style={{
           display: 'flex', alignItems: 'center', gap: spacing[2],
@@ -123,7 +132,8 @@ function Sessions() {
             padding: `${spacing[3]} ${spacing[4]}`,
             borderBottom: `1px solid ${colors.gray[100]}`,
             cursor: 'pointer',
-            borderLeft: isUpcoming ? `3px solid ${colors.primary}` : '3px solid transparent'
+            borderLeft: isUpcoming ? `3px solid ${colors.primary}` : '3px solid transparent',
+            opacity: session.status === 'cancelled' ? 0.6 : 1
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -155,7 +165,8 @@ function Sessions() {
           borderBottom: `1px solid ${colors.gray[100]}`,
           alignItems: 'center',
           cursor: 'pointer',
-          borderLeft: isUpcoming ? `3px solid ${colors.primary}` : '3px solid transparent'
+          borderLeft: isUpcoming ? `3px solid ${colors.primary}` : '3px solid transparent',
+          opacity: session.status === 'cancelled' ? 0.6 : 1
         }}
         onMouseEnter={e => e.currentTarget.style.backgroundColor = colors.gray[50]}
         onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}

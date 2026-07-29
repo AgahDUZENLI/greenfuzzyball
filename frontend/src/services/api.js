@@ -62,7 +62,6 @@ export const getSessions = (date, studentId) => {
 }
 export const getSession = (id) => api.get(`/sessions/${id}`)
 export const createSession = (data) => api.post('/sessions/', data)
-export const deleteSession = (id) => api.delete(`/sessions/${id}`)
 export const cancelSessionAsCoach = (sessionId, note) => api.post(`/sessions/${sessionId}/cancel`, { note: note || null })
 export const addRating = (sessionId, data) => api.post(`/sessions/${sessionId}/ratings`, data)
 export const getStudentProgress = (studentId) => api.get(`/sessions/progress/${studentId}`)
@@ -119,3 +118,7 @@ export const respondToCancellation = (sessionId, status) => api.patch(`/coaches/
 // Notifications
 export const getNotifications = () => api.get('/notifications/')
 export const markAllNotificationsRead = () => api.patch('/notifications/read-all')
+
+// Push notifications
+export const subscribePush = (subscription) => api.post('/push/subscribe', subscription)
+export const unsubscribePush = (payload) => api.delete('/push/subscribe', { data: payload })
