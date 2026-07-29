@@ -246,41 +246,6 @@ def get_session(
         return session_dict
 
 
-# ─── DELETE SESSION ───────────────────────────────────────────────────────────
-
-@router.delete("/{session_id}", status_code=204)
-def delete_session(
-    session_id: str,
-    conn=Depends(get_db),
-    coach=Depends(get_current_coach)
-):
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT 1 FROM sessions
-                WHERE session_id = %s AND coach_id = %s
-            """, (session_id, str(coach["user_id"])))
-
-            if not cursor.fetchone():
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Session not found"
-                )
-
-            cursor.execute("DELETE FROM sessions WHERE session_id = %s", (session_id,))
-            conn.commit()
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        conn.rollback()
-        print(f"DELETE SESSION ERROR: {type(e).__name__}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not delete session"
-        )
-
-
 # ─── COACH CANCEL SESSION ──────────────────────────────────────────────────────
 
 @router.post("/{session_id}/cancel")
@@ -321,7 +286,7 @@ def cancel_session_as_coach(
             note_suffix = f' — "{data.note}"' if data.note else ""
             message = f"{coach['name']} cancelled your session on {session['date']}{note_suffix}"
             for r in recipients:
-                create_notification(cursor, r["member_id"], message)
+                create_notification(cursor, r["member_id"], message, notification_type="session_cancelled")
 
             conn.commit()
             return {"session_id": session_id, "status": "cancelled"}

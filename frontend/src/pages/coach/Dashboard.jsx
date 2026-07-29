@@ -128,6 +128,19 @@ function Dashboard() {
     .filter(s => s.date === selectedDate)
     .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
 
+  const selectedPendingRequests = sessionRequests.filter(r => r.requested_date === selectedDate)
+
+  const firstActiveSession = selectedSessions.find(s => s.status !== 'cancelled')
+
+  const selectedDayItems = [
+    ...selectedSessions.map(s => ({ kind: 'session', ...s })),
+    ...selectedPendingRequests.map(r => ({ kind: 'request', ...r }))
+  ].sort((a, b) => {
+    const ta = a.kind === 'session' ? a.start_time : a.requested_time
+    const tb = b.kind === 'session' ? b.start_time : b.requested_time
+    return (ta || '').localeCompare(tb || '')
+  })
+
   const selectedDateLabel = selectedDate === todayStr
     ? "Today's Sessions"
     : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
@@ -228,9 +241,17 @@ function Dashboard() {
           {/* Calendar — full width */}
           <div style={{ marginBottom: spacing[6] }}>
             <Calendar
-              sessions={sessions}
+              sessions={[
+                ...sessions,
+                ...sessionRequests.map(r => ({ date: r.requested_date, status: 'pending' }))
+              ]}
               selectedDate={selectedDate}
               onDayClick={setSelectedDate}
+              legend={[
+                { color: colors.primary, label: 'Scheduled' },
+                { color: colors.warning, label: 'Pending' },
+                { color: colors.gray[300], label: 'Cancelled' }
+              ]}
             />
           </div>
 
@@ -254,7 +275,7 @@ function Dashboard() {
             </button>
           </div>
 
-          {selectedSessions.length === 0 ? (
+          {selectedDayItems.length === 0 ? (
             <Card style={{ padding: spacing[6], textAlign: 'center' }}>
               <Typography variant="bodySmall" color={colors.gray[400]}>
                 No sessions on this day
@@ -262,14 +283,90 @@ function Dashboard() {
             </Card>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
-              {selectedSessions.map((session, i) => {
+              {selectedDayItems.map(item => {
+                if (item.kind === 'request') {
+                  const time = formatTime(item.requested_time)
+                  return (
+                    <div
+                      key={`req-${item.request_id}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: spacing[4],
+                        padding: `${spacing[4]} ${spacing[5]}`,
+                        borderRadius: radius.xl,
+                        backgroundColor: 'white',
+                        border: `1px dashed ${colors.gray[300]}`,
+                        boxShadow: shadows.sm
+                      }}
+                    >
+                      {/* Time */}
+                      {time && (
+                        <div style={{ minWidth: '52px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '18px', fontWeight: '700', color: colors.black, lineHeight: 1 }}>{time.hour}</div>
+                          <div style={{ fontSize: '11px', color: colors.gray[400], textTransform: 'uppercase' }}>{time.ampm}</div>
+                        </div>
+                      )}
+
+                      {/* Avatar */}
+                      <Avatar name={item.student_name || 'S'} size="md" />
+
+                      {/* Info */}
+                      <div style={{ flex: 1 }}>
+                        <Typography variant="body" style={{ fontWeight: '600', color: colors.black }}>
+                          {item.student_name || 'Session request'}
+                        </Typography>
+                        <Typography variant="bodySmall" color={colors.gray[500]}>
+                          via {item.member_name}
+                        </Typography>
+                      </div>
+
+                      {/* Action */}
+                      <span style={{
+                        display: 'inline-block', padding: '4px 12px',
+                        borderRadius: radius.full,
+                        backgroundColor: colors.warningLight, color: colors.warning,
+                        fontSize: '13px', fontWeight: '500', flexShrink: 0
+                      }}>
+                        Pending
+                      </span>
+                      <button
+                        onClick={() => handleRespondSessionRequest(item.request_id, 'approved')}
+                        disabled={respondingReqId === item.request_id}
+                        style={{
+                          width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                          backgroundColor: colors.primaryLight, color: colors.primary,
+                          cursor: respondingReqId === item.request_id ? 'not-allowed' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        }}
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleRespondSessionRequest(item.request_id, 'rejected')}
+                        disabled={respondingReqId === item.request_id}
+                        style={{
+                          width: '32px', height: '32px', border: 'none', borderRadius: radius.md,
+                          backgroundColor: colors.errorLight, color: colors.error,
+                          cursor: respondingReqId === item.request_id ? 'not-allowed' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )
+                }
+
+                const session = item
                 const time = formatTime(session.start_time)
-                const isFirst = i === 0
+                const isCancelled = session.status === 'cancelled'
+                const isFirst = session.session_id === firstActiveSession?.session_id
 
                 return (
                   <div
                     key={session.session_id}
-                    onClick={() => navigate('/sessions')}
+                    onClick={() => navigate(`/sessions/${session.session_id}`)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -279,7 +376,8 @@ function Dashboard() {
                       backgroundColor: isFirst ? colors.black : 'white',
                       border: isFirst ? 'none' : `1px solid ${colors.gray[200]}`,
                       boxShadow: isFirst ? 'none' : shadows.sm,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      opacity: isCancelled ? 0.6 : 1
                     }}
                   >
                     {/* Time */}
@@ -329,10 +427,20 @@ function Dashboard() {
                     </div>
 
                     {/* Action */}
-                    {isFirst
-                      ? <Button onClick={e => { e.stopPropagation(); navigate('/sessions') }}>Start</Button>
-                      : <ChevronRight size={16} color={colors.gray[400]} />
-                    }
+                    {isCancelled ? (
+                      <span style={{
+                        display: 'inline-block', padding: '4px 12px',
+                        borderRadius: radius.full,
+                        backgroundColor: colors.gray[100], color: colors.gray[500],
+                        fontSize: '13px', fontWeight: '500', flexShrink: 0
+                      }}>
+                        Cancelled
+                      </span>
+                    ) : isFirst ? (
+                      <Button onClick={e => { e.stopPropagation(); navigate(`/sessions/${session.session_id}`) }}>Start</Button>
+                    ) : (
+                      <ChevronRight size={16} color={colors.gray[400]} />
+                    )}
                   </div>
                 )
               })}
@@ -511,7 +619,7 @@ function Dashboard() {
               unratedSessions.map((session, i) => (
                 <div
                   key={session.session_id}
-                  onClick={() => navigate('/sessions')}
+                  onClick={() => navigate(`/sessions/${session.session_id}`)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

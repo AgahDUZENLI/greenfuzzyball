@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/auth/Login'
 import Dashboard from './pages/coach/Dashboard'
@@ -33,6 +33,20 @@ function ScrollToTop() {
   useEffect(() => {
     if (!hash) window.scrollTo(0, 0)
   }, [pathname])
+
+  return null
+}
+
+function PushNavigationListener() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.data?.type === 'PUSH_NAVIGATE' && event.data.link) navigate(event.data.link)
+    }
+    navigator.serviceWorker?.addEventListener('message', handler)
+    return () => navigator.serviceWorker?.removeEventListener('message', handler)
+  }, [navigate])
 
   return null
 }
@@ -84,6 +98,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ScrollToTop />
+        <PushNavigationListener />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

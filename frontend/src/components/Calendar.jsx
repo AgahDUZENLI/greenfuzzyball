@@ -3,7 +3,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 
-function Calendar({ sessions = [], selectedDate, onDayClick, dotsByDate, legend }) {
+function dotColorFor(session) {
+  if (session.status === 'cancelled') return colors.gray[300]
+  if (session.status === 'pending') return colors.warning
+  return session.color || colors.primary
+}
+
+function Calendar({ sessions = [], selectedDate, onDayClick, legend }) {
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const today = new Date()
@@ -19,11 +25,11 @@ function Calendar({ sessions = [], selectedDate, onDayClick, dotsByDate, legend 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1))
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1))
 
-  // Sessions grouped by date
-  const sessionsByDate = {}
+  // Sessions grouped by date, colored per-session
+  const dotsByDate = {}
   sessions.forEach(s => {
-    if (!sessionsByDate[s.date]) sessionsByDate[s.date] = 0
-    sessionsByDate[s.date]++
+    if (!dotsByDate[s.date]) dotsByDate[s.date] = []
+    dotsByDate[s.date].push(dotColorFor(s))
   })
 
   const sessionsThisMonth = sessions.filter(s => {
@@ -121,28 +127,23 @@ function Calendar({ sessions = [], selectedDate, onDayClick, dotsByDate, legend 
           if (!day) return <div key={i} />
 
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-          const dots = dotsByDate ? (dotsByDate[dateStr] || []) : null
-          const hasSession = dots ? dots.length > 0 : !!sessionsByDate[dateStr]
-          const sessionCount = sessionsByDate[dateStr] || 0
+          const dots = dotsByDate[dateStr] || []
+          const hasSession = dots.length > 0
           const isToday = dateStr === todayStr
           const isSelected = dateStr === selectedDate
 
           let backgroundColor = 'transparent'
           let textColor = colors.gray[700]
-          let dotColor = colors.primary
 
           if (isToday && isSelected) {
             backgroundColor = colors.primary
             textColor = 'white'
-            dotColor = 'white'
           } else if (isToday) {
             backgroundColor = colors.primary
             textColor = 'white'
-            dotColor = 'white'
           } else if (isSelected) {
             backgroundColor = colors.primaryLight
             textColor = colors.primary
-            dotColor = colors.primary
           }
 
           return (
@@ -176,28 +177,16 @@ function Calendar({ sessions = [], selectedDate, onDayClick, dotsByDate, legend 
                   gap: '3px',
                   marginTop: '3px'
                 }}>
-                  {dots
-                    ? dots.slice(0, 3).map((c, j) => (
-                        <div
-                          key={j}
-                          style={{
-                            width: '5px', height: '5px',
-                            borderRadius: '50%',
-                            backgroundColor: c
-                          }}
-                        />
-                      ))
-                    : [...Array(Math.min(sessionCount, 3))].map((_, j) => (
-                        <div
-                          key={j}
-                          style={{
-                            width: '5px', height: '5px',
-                            borderRadius: '50%',
-                            backgroundColor: dotColor
-                          }}
-                        />
-                      ))
-                  }
+                  {dots.slice(0, 3).map((c, j) => (
+                    <div
+                      key={j}
+                      style={{
+                        width: '5px', height: '5px',
+                        borderRadius: '50%',
+                        backgroundColor: c
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>

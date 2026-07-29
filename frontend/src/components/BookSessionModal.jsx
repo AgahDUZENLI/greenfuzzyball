@@ -61,7 +61,7 @@ function BookSessionModal({
 
   useEffect(() => {
     getSessions(date)
-      .then(res => setDaySessions(res.data))
+      .then(res => setDaySessions(res.data.filter(s => s.status !== 'cancelled')))
       .catch(() => setDaySessions([]))
   }, [date])
 

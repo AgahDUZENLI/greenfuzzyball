@@ -98,7 +98,19 @@ CREATE TABLE notifications (
     user_id         UUID REFERENCES users(user_id) ON DELETE CASCADE,
     message         TEXT NOT NULL,
     link            TEXT,
+    type            TEXT,
     read_at         TIMESTAMP,
+    created_at      TIMESTAMP DEFAULT NOW()
+);
+
+-- ─── PUSH SUBSCRIPTIONS ──────────────────────────────────────────────────────
+
+CREATE TABLE push_subscriptions (
+    subscription_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    endpoint        TEXT NOT NULL UNIQUE,
+    p256dh          TEXT NOT NULL,
+    auth            TEXT NOT NULL,
     created_at      TIMESTAMP DEFAULT NOW()
 );
 
@@ -219,3 +231,4 @@ CREATE INDEX idx_join_requests_member  ON coach_join_requests(member_id);
 CREATE INDEX idx_session_requests      ON session_requests(coach_id, member_id);
 CREATE INDEX idx_sessions_coach_status ON sessions(coach_id, status);
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id, read_at);
+CREATE INDEX idx_push_subscriptions_user   ON push_subscriptions(user_id);

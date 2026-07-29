@@ -13,6 +13,7 @@ import {
   Bell, Shield, LogOut, ChevronRight, Save, Copy, KeyRound
 } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
+import { isPushSupported, isStandalone, getPushSubscription, enablePush, disablePush } from '../../utils/push'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -60,6 +61,32 @@ function Settings() {
     session_reminder: true,
     weekly_summary: false
   })
+
+  const [pushSupported, setPushSupported] = useState(true)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushError, setPushError] = useState('')
+
+  useEffect(() => {
+    if (!isPushSupported()) { setPushSupported(false); return }
+    getPushSubscription().then(sub => setPushEnabled(!!sub))
+  }, [])
+
+  const handlePushToggle = async (nextOn) => {
+    setPushError('')
+    setPushBusy(true)
+    try {
+      if (nextOn) await enablePush()
+      else await disablePush()
+      setPushEnabled(nextOn)
+    } catch (err) {
+      setPushError(err.message === 'Notification permission denied'
+        ? 'Enable notifications in your browser/OS settings to turn this on.'
+        : 'Something went wrong. Try again.')
+    } finally {
+      setPushBusy(false)
+    }
+  }
 
   useEffect(() => {
     getCoachProfile()
@@ -451,6 +478,38 @@ function Settings() {
             {activeTab === 'notifications' && (
               <div style={{ maxWidth: '760px' }}>
                 <Typography variant="h4" mb={spacing[4]}>Notifications</Typography>
+
+                {/* Push notifications — acts immediately, independent of Save changes */}
+                <div style={{
+                  backgroundColor: 'white', borderRadius: radius.xl,
+                  border: `1px solid ${colors.gray[200]}`, overflow: 'hidden',
+                  marginBottom: spacing[5]
+                }}>
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: `${spacing[4]} ${spacing[6]}`
+                  }}>
+                    <div>
+                      <Typography variant="body" style={{ fontWeight: '500' }}>Push notifications</Typography>
+                      <Typography variant="caption" color={colors.gray[400]}>
+                        {!pushSupported
+                          ? 'Not supported in this browser'
+                          : (!isStandalone() && /iPhone|iPad|iPod/.test(navigator.userAgent))
+                            ? 'Install this app to your Home Screen to enable push on iOS'
+                            : 'Get an alert on this device for new activity, even when the app is closed'}
+                      </Typography>
+                      {pushError && (
+                        <Typography variant="caption" color={colors.error} style={{ display: 'block' }}>
+                          {pushError}
+                        </Typography>
+                      )}
+                    </div>
+                    {pushSupported && (
+                      <Toggle on={pushEnabled} onChange={handlePushToggle} disabled={pushBusy} />
+                    )}
+                  </div>
+                </div>
+
                 <div style={{
                   backgroundColor: 'white', borderRadius: radius.xl,
                   border: `1px solid ${colors.gray[200]}`, overflow: 'hidden'
@@ -613,14 +672,15 @@ function Settings() {
   )
 }
 
-function Toggle({ on, onChange }) {
+function Toggle({ on, onChange, disabled }) {
   return (
     <div
-      onClick={() => onChange(!on)}
+      onClick={() => !disabled && onChange(!on)}
       style={{
         width: '44px', height: '24px', borderRadius: '12px',
         backgroundColor: on ? colors.primary : colors.gray[200],
-        cursor: 'pointer', position: 'relative', transition: 'background 0.2s'
+        cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.6 : 1,
+        position: 'relative', transition: 'background 0.2s'
       }}
     >
       <div style={{

@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
 
+    #Web Push (VAPID)
+    VAPID_PUBLIC_KEY: str
+    VAPID_PRIVATE_KEY: str
+    VAPID_CLAIMS_EMAIL: str
+
     @property
     def DATABASE_URL(self) -> str:
         return (

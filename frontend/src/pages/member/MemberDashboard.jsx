@@ -117,25 +117,21 @@ function MemberDashboard() {
 
   const effectiveSelectedId = selectedPersonId || user?.user_id
 
-  // Family-wide calendar dots + legend
-  const dotsByDate = {}
-  const addDot = (date, color) => {
-    if (!dotsByDate[date]) dotsByDate[date] = []
-    dotsByDate[date].push(color)
-  }
-  selfSessions.forEach(s => addDot(s.date, colors.primary))
-  children.forEach((c, i) => {
-    (sessionsByPerson[c.user_id] || []).forEach(s => addDot(s.date, CHILD_COLORS[i % CHILD_COLORS.length]))
-  })
-  sessionRequests.filter(r => r.status === 'pending').forEach(r => addDot(r.requested_date, colors.warning))
+  // Family-wide calendar dots (cancelled sessions are grayed out by Calendar itself) + legend
+  const calendarSessions = [
+    ...selfSessions.map(s => ({ date: s.date, status: s.status, color: colors.primary })),
+    ...children.flatMap((c, i) =>
+      (sessionsByPerson[c.user_id] || []).map(s => ({ date: s.date, status: s.status, color: CHILD_COLORS[i % CHILD_COLORS.length] }))
+    ),
+    ...sessionRequests.filter(r => r.status === 'pending').map(r => ({ date: r.requested_date, status: 'pending', color: colors.warning }))
+  ]
 
   const legend = [
     { color: colors.primary, label: `${firstName(user?.name)} · confirmed` },
     ...children.map((c, i) => ({ color: CHILD_COLORS[i % CHILD_COLORS.length], label: `${firstName(c.name)} · confirmed` })),
-    { color: colors.warning, label: 'Pending' }
+    { color: colors.warning, label: 'Pending' },
+    { color: colors.gray[300], label: 'Cancelled' }
   ]
-
-  const familySessions = [...selfSessions, ...children.flatMap(c => sessionsByPerson[c.user_id] || [])]
 
   const taggedFamilySessions = [
     ...selfSessions.map(s => ({ ...s, personName: firstName(user?.name) })),
@@ -331,8 +327,7 @@ function MemberDashboard() {
           {/* Calendar */}
           <div style={{ marginBottom: spacing[6] }}>
             <Calendar
-              sessions={familySessions}
-              dotsByDate={dotsByDate}
+              sessions={calendarSessions}
               legend={legend}
               selectedDate={selectedDate}
               onDayClick={setSelectedDate}

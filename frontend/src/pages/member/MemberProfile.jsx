@@ -14,13 +14,15 @@ import {
   getChildren, getMyJoinRequests, joinCoachByCode, removeCoach
 } from '../../services/api'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, UserPlus, Plus, Pencil, KeyRound, Trash2 } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, UserPlus, Plus, Pencil, KeyRound, Trash2, Bell } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
+import { isPushSupported, isStandalone, getPushSubscription, enablePush, disablePush } from '../../utils/push'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'kids', label: 'My Kids', icon: Users },
   { id: 'coaches', label: 'Coaches', icon: UserPlus },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: Shield }
 ]
 
@@ -51,6 +53,33 @@ function MemberProfile() {
   const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
+
+  // Push notifications state
+  const [pushSupported, setPushSupported] = useState(true)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushError, setPushError] = useState('')
+
+  useEffect(() => {
+    if (!isPushSupported()) { setPushSupported(false); return }
+    getPushSubscription().then(sub => setPushEnabled(!!sub))
+  }, [])
+
+  const handlePushToggle = async (nextOn) => {
+    setPushError('')
+    setPushBusy(true)
+    try {
+      if (nextOn) await enablePush()
+      else await disablePush()
+      setPushEnabled(nextOn)
+    } catch (err) {
+      setPushError(err.message === 'Notification permission denied'
+        ? 'Enable notifications in your browser/OS settings to turn this on.'
+        : 'Something went wrong. Try again.')
+    } finally {
+      setPushBusy(false)
+    }
+  }
 
   // Kids state
   const [children, setChildren] = useState([])
@@ -499,6 +528,41 @@ function MemberProfile() {
               </div>
             )}
 
+            {/* ── NOTIFICATIONS TAB ── */}
+            {activeTab === 'notifications' && (
+              <div style={{ maxWidth: '760px' }}>
+                <Typography variant="h4" mb={spacing[4]}>Notifications</Typography>
+                <div style={{
+                  backgroundColor: 'white', borderRadius: radius.xl,
+                  border: `1px solid ${colors.gray[200]}`, overflow: 'hidden'
+                }}>
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: `${spacing[4]} ${spacing[6]}`
+                  }}>
+                    <div>
+                      <Typography variant="body" style={{ fontWeight: '500' }}>Push notifications</Typography>
+                      <Typography variant="caption" color={colors.gray[400]}>
+                        {!pushSupported
+                          ? 'Not supported in this browser'
+                          : (!isStandalone() && /iPhone|iPad|iPod/.test(navigator.userAgent))
+                            ? 'Install this app to your Home Screen to enable push on iOS'
+                            : 'Get an alert on this device when a coach responds or a session changes'}
+                      </Typography>
+                      {pushError && (
+                        <Typography variant="caption" color={colors.error} style={{ display: 'block' }}>
+                          {pushError}
+                        </Typography>
+                      )}
+                    </div>
+                    {pushSupported && (
+                      <Toggle on={pushEnabled} onChange={handlePushToggle} disabled={pushBusy} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── SECURITY TAB ── */}
             {activeTab === 'security' && (
               <div style={{ maxWidth: '760px' }}>
@@ -630,6 +694,29 @@ function MemberProfile() {
         />
       )}
     </Layout>
+  )
+}
+
+function Toggle({ on, onChange, disabled }) {
+  return (
+    <div
+      onClick={() => !disabled && onChange(!on)}
+      style={{
+        width: '44px', height: '24px', borderRadius: '12px',
+        backgroundColor: on ? colors.primary : colors.gray[200],
+        cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.6 : 1,
+        position: 'relative', transition: 'background 0.2s'
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: '2px',
+        left: on ? '22px' : '2px',
+        width: '20px', height: '20px', borderRadius: '50%',
+        backgroundColor: 'white',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+        transition: 'left 0.2s'
+      }} />
+    </div>
   )
 }
 

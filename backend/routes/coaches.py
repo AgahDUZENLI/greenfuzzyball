@@ -66,7 +66,8 @@ def respond_to_join_request(
 
             create_notification(
                 cursor, request["member_id"],
-                f"{coach['name']} {new_status} your join request"
+                f"{coach['name']} {new_status} your join request",
+                notification_type="join_request_response"
             )
 
             conn.commit()
@@ -167,7 +168,8 @@ def respond_to_session_request(
             verb = "approved" if new_status == "approved" else "declined"
             create_notification(
                 cursor, req["member_id"],
-                f"{coach['name']} {verb} your session request for {req['requested_date']}"
+                f"{coach['name']} {verb} your session request for {req['requested_date']}",
+                notification_type="session_request_response"
             )
 
             conn.commit()
@@ -257,7 +259,7 @@ def respond_to_cancellation(
                 f"{coach['name']} declined your cancellation request — your session on {session['date']} is still scheduled"
             )
             for r in recipients:
-                create_notification(cursor, r["member_id"], message)
+                create_notification(cursor, r["member_id"], message, notification_type="cancellation_response")
 
             conn.commit()
             return {"session_id": session_id, "status": final_status}
