@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Layout from '../../components/Layout'
 import Card from '../../components/Card'
@@ -47,6 +48,7 @@ function formatShortDate(dateStr) {
 
 function MemberDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const isMobile = useIsMobile()
 
   const [children, setChildren] = useState([])
@@ -236,7 +238,7 @@ function MemberDashboard() {
             justifyContent: 'space-between',
             alignItems: isMobile ? 'stretch' : 'flex-start',
             gap: isMobile ? spacing[3] : 0,
-            marginBottom: spacing[6]
+            marginBottom: isMobile ? spacing[4] : spacing[6]
           }}>
             <div>
               <Typography variant="h2" mb={spacing[1]}>
@@ -248,7 +250,7 @@ function MemberDashboard() {
                 })}
               </Typography>
             </div>
-            <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center', justifyContent: isMobile ? 'flex-end' : 'flex-start' }}>
               <NotificationBell />
               <Button onClick={() => setShowRequestModal(true)}>
                 <Plus size={16} /> Request Session
@@ -256,13 +258,39 @@ function MemberDashboard() {
             </div>
           </div>
 
+          {/* Person switcher */}
+          <div style={{ marginBottom: spacing[3] }}>
+            <PersonSwitcher people={people} selectedId={effectiveSelectedId} onSelect={setSelectedPersonId} />
+          </div>
+
+          {/* Stats */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: spacing[4],
+            marginBottom: isMobile ? spacing[4] : spacing[6]
+          }}>
+            <StatCard label="Total sessions" value={totalSessions} icon={<CalendarIcon size={20} color={colors.primary} />} />
+            <StatCard label="Avg rating" value={avgRating} icon={<Target size={20} color={colors.primary} />} />
+          </div>
+
+          {/* Calendar */}
+          <div style={{ marginBottom: isMobile ? spacing[4] : spacing[6] }}>
+            <Calendar
+              sessions={calendarSessions}
+              legend={legend}
+              selectedDate={selectedDate}
+              onDayClick={setSelectedDate}
+            />
+          </div>
+
           {/* Next session banner */}
           {nextSession && (
             <div style={{
               backgroundColor: colors.black,
               borderRadius: radius.xl,
-              padding: `${spacing[4]} ${spacing[5]}`,
-              marginBottom: spacing[4],
+              padding: isMobile ? `${spacing[3]} ${spacing[4]}` : `${spacing[4]} ${spacing[5]}`,
+              marginBottom: isMobile ? spacing[3] : spacing[4],
               display: 'flex',
               alignItems: 'center',
               flexWrap: 'wrap',
@@ -306,7 +334,7 @@ function MemberDashboard() {
               backgroundColor: colors.warningLight,
               borderRadius: radius.xl,
               padding: `${spacing[3]} ${spacing[5]}`,
-              marginBottom: spacing[6],
+              marginBottom: isMobile ? spacing[4] : spacing[6],
               display: 'flex',
               alignItems: 'center',
               gap: spacing[3]
@@ -319,31 +347,87 @@ function MemberDashboard() {
             </div>
           )}
 
-          {/* Person switcher */}
-          <div style={{ marginBottom: spacing[3] }}>
-            <PersonSwitcher people={people} selectedId={effectiveSelectedId} onSelect={setSelectedPersonId} />
-          </div>
-
-          {/* Calendar */}
-          <div style={{ marginBottom: spacing[6] }}>
-            <Calendar
-              sessions={calendarSessions}
-              legend={legend}
-              selectedDate={selectedDate}
-              onDayClick={setSelectedDate}
-            />
-          </div>
-
-          {/* Stats */}
+          {/* Sessions for selected day */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-            gap: spacing[4],
-            marginBottom: spacing[6]
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: spacing[4]
           }}>
-            <StatCard label="Total sessions" value={totalSessions} icon={<CalendarIcon size={20} color={colors.primary} />} />
-            <StatCard label="Avg rating" value={avgRating} icon={<Target size={20} color={colors.primary} />} />
+            <Typography variant="h3">{scheduleDateLabel} Schedule</Typography>
+            <button
+              onClick={() => navigate('/member/sessions')}
+              style={{
+                background: 'none', border: 'none',
+                color: colors.primary, fontSize: '14px',
+                fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+              }}
+            >
+              See all
+            </button>
           </div>
+
+          {familyScheduleRows.length === 0 ? (
+            <Card style={{ padding: spacing[6], textAlign: 'center', marginBottom: isMobile ? spacing[4] : spacing[6] }}>
+              <Typography variant="bodySmall" color={colors.gray[400]}>
+                No sessions scheduled
+              </Typography>
+            </Card>
+          ) : (
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: spacing[3],
+              marginBottom: isMobile ? spacing[4] : spacing[6]
+            }}>
+              {familyScheduleRows.map(row => {
+                const meta = scheduleStatusMeta[row.status] || scheduleStatusMeta.scheduled
+                const canCancel = row.kind === 'session' && row.status === 'scheduled'
+                return (
+                  <div
+                    key={row.session_id || row.request_id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: spacing[3],
+                      padding: `${spacing[3]} ${spacing[4]}`,
+                      borderRadius: radius.xl,
+                      backgroundColor: 'white',
+                      border: `1px solid ${colors.gray[200]}`,
+                      opacity: row.status === 'cancelled' ? 0.6 : 1
+                    }}
+                  >
+                    <Avatar name={row.personName} size="sm" />
+                    <div style={{ flex: 1 }}>
+                      <Typography variant="bodySmall" style={{ fontWeight: '600' }}>
+                        {row.personName}{row.start_time ? ` · ${formatTime(row.start_time)}` : ''}
+                      </Typography>
+                      <Typography variant="caption" color={colors.gray[400]}>
+                        {row.kind === 'request' ? 'Requested, pending' : `${meta.label}${row.court_name ? ` · ${row.court_name}` : ''}`}
+                      </Typography>
+                    </div>
+                    <span style={{
+                      padding: `2px ${spacing[2]}`,
+                      borderRadius: radius.full,
+                      backgroundColor: meta.bg,
+                      color: meta.color,
+                      fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap'
+                    }}>
+                      {meta.label}
+                    </span>
+                    {canCancel && (
+                      <button
+                        onClick={() => setCancelTarget(row)}
+                        title="Cancel session"
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          padding: 2, display: 'flex', color: colors.gray[400], flexShrink: 0
+                        }}
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {/* Latest session */}
           <Typography variant="h3" mb={spacing[4]}>Latest Session</Typography>
@@ -389,8 +473,8 @@ function MemberDashboard() {
           overflowY: isMobile ? 'visible' : 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: spacing[6],
-          padding: spacing[6]
+          gap: isMobile ? spacing[4] : spacing[6],
+          padding: isMobile ? spacing[4] : spacing[6]
         }}>
 
           {/* Rating over time */}
@@ -463,70 +547,6 @@ function MemberDashboard() {
                 {p.id === effectiveSelectedId && <CheckCircle size={16} color={colors.primary} />}
               </div>
             ))}
-          </Card>
-
-          {/* Family schedule */}
-          <Card style={{ padding: 0 }}>
-            <div style={{
-              padding: `${spacing[4]} ${spacing[4]} ${spacing[3]}`,
-              borderBottom: `1px solid ${colors.gray[100]}`
-            }}>
-              <Typography variant="h4">{scheduleDateLabel} Schedule</Typography>
-            </div>
-            {familyScheduleRows.length === 0 ? (
-              <div style={{ padding: spacing[5], textAlign: 'center' }}>
-                <Typography variant="bodySmall" color={colors.gray[400]}>
-                  No sessions scheduled
-                </Typography>
-              </div>
-            ) : (
-              familyScheduleRows.map((row, i) => {
-                const meta = scheduleStatusMeta[row.status] || scheduleStatusMeta.scheduled
-                const canCancel = row.kind === 'session' && row.status === 'scheduled'
-                return (
-                  <div
-                    key={row.session_id || row.request_id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: spacing[3],
-                      padding: `${spacing[3]} ${spacing[4]}`,
-                      borderBottom: i < familyScheduleRows.length - 1 ? `1px solid ${colors.gray[100]}` : 'none',
-                      opacity: row.status === 'cancelled' ? 0.6 : 1
-                    }}
-                  >
-                    <Avatar name={row.personName} size="sm" />
-                    <div style={{ flex: 1 }}>
-                      <Typography variant="bodySmall" style={{ fontWeight: '600' }}>
-                        {row.personName}{row.start_time ? ` · ${formatTime(row.start_time)}` : ''}
-                      </Typography>
-                      <Typography variant="caption" color={colors.gray[400]}>
-                        {row.kind === 'request' ? 'Requested, pending' : `${meta.label}${row.court_name ? ` · ${row.court_name}` : ''}`}
-                      </Typography>
-                    </div>
-                    <span style={{
-                      padding: `2px ${spacing[2]}`,
-                      borderRadius: radius.full,
-                      backgroundColor: meta.bg,
-                      color: meta.color,
-                      fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap'
-                    }}>
-                      {meta.label}
-                    </span>
-                    {canCancel && (
-                      <button
-                        onClick={() => setCancelTarget(row)}
-                        title="Cancel session"
-                        style={{
-                          background: 'none', border: 'none', cursor: 'pointer',
-                          padding: 2, display: 'flex', color: colors.gray[400]
-                        }}
-                      >
-                        <XCircle size={16} />
-                      </button>
-                    )}
-                  </div>
-                )
-              })
-            )}
           </Card>
 
         </div>

@@ -4,6 +4,7 @@ import { colors, spacing, radius, shadows } from '../styles/tokens'
 import Typography from './Typography'
 import Card from './Card'
 import { getNotifications, markAllNotificationsRead } from '../services/api'
+import useIsMobile from '../hooks/useIsMobile'
 
 function timeAgo(dateStr) {
   const diffMs = Date.now() - new Date(dateStr).getTime()
@@ -17,6 +18,7 @@ function timeAgo(dateStr) {
 }
 
 function NotificationBell() {
+  const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -71,7 +73,12 @@ function NotificationBell() {
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 998 }} />
-          <Card style={{
+          <Card style={isMobile ? {
+            position: 'fixed', top: '56px', left: spacing[4], right: spacing[4],
+            width: 'auto', padding: 0, zIndex: 999,
+            maxHeight: '360px', overflowY: 'auto',
+            boxShadow: shadows.lg
+          } : {
             position: 'absolute', top: '48px', right: 0,
             width: '320px', padding: 0, zIndex: 999,
             maxHeight: '360px', overflowY: 'auto',
