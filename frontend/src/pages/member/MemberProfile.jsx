@@ -62,7 +62,12 @@ function MemberProfile() {
 
   useEffect(() => {
     if (!isPushSupported()) { setPushSupported(false); return }
-    getPushSubscription().then(sub => setPushEnabled(!!sub))
+    getPushSubscription().then(sub => {
+      setPushEnabled(!!sub)
+      if (!sub && Notification.permission === 'default') {
+        handlePushToggle(true)
+      }
+    })
   }, [])
 
   const handlePushToggle = async (nextOn) => {
@@ -538,9 +543,9 @@ function MemberProfile() {
                 }}>
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: `${spacing[4]} ${spacing[6]}`
+                    padding: `${spacing[4]} ${spacing[6]}`, gap: spacing[4]
                   }}>
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="body" style={{ fontWeight: '500' }}>Push notifications</Typography>
                       <Typography variant="caption" color={colors.gray[400]}>
                         {!pushSupported
@@ -702,16 +707,16 @@ function Toggle({ on, onChange, disabled }) {
     <div
       onClick={() => !disabled && onChange(!on)}
       style={{
-        width: '44px', height: '24px', borderRadius: '12px',
+        width: '48px', height: '28px', borderRadius: '14px',
         backgroundColor: on ? colors.primary : colors.gray[200],
         cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.6 : 1,
-        position: 'relative', transition: 'background 0.2s'
+        position: 'relative', transition: 'background 0.2s', flexShrink: 0
       }}
     >
       <div style={{
         position: 'absolute', top: '2px',
         left: on ? '22px' : '2px',
-        width: '20px', height: '20px', borderRadius: '50%',
+        width: '24px', height: '24px', borderRadius: '50%',
         backgroundColor: 'white',
         boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
         transition: 'left 0.2s'

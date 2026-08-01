@@ -44,7 +44,7 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState('coach')
+  const [tab, setTab] = useState('member')
   const [rememberMe, setRememberMe] = useState(true)
 
   const handleLogin = async (e) => {
@@ -73,8 +73,8 @@ function Login() {
         <div style={{ marginBottom: spacing[6] }}>
           <TabToggle
             options={[
-              { value: 'coach', label: 'Coach', icon: <Dumbbell size={14} /> },
-              { value: 'member', label: 'Member', icon: <User size={14} /> }
+              { value: 'member', label: 'Member', icon: <User size={14} /> },
+              { value: 'coach', label: 'Coach', icon: <Dumbbell size={14} /> }
             ]}
             active={tab}
             onChange={setTab}

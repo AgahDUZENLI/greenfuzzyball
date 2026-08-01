@@ -217,7 +217,7 @@ function Dashboard() {
                 })}
               </Typography>
             </div>
-            <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center', justifyContent: isMobile ? 'flex-end' : 'flex-start' }}>
               <NotificationBell />
               <Button onClick={() => setShowBookModal(true)}>
                 <Plus size={16} /> New Session

@@ -38,7 +38,7 @@ function Register() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const [tab, setTab] = useState('coach')
+  const [tab, setTab] = useState('member')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -73,8 +73,8 @@ function Register() {
         <div style={{ marginBottom: spacing[6] }}>
           <TabToggle
             options={[
-              { value: 'coach', label: 'Coach', icon: <User size={14} /> },
-              { value: 'member', label: 'Member', icon: <User size={14} /> }
+              { value: 'member', label: 'Member', icon: <User size={14} /> },
+              { value: 'coach', label: 'Coach', icon: <User size={14} /> }
             ]}
             active={tab}
             onChange={setTab}
