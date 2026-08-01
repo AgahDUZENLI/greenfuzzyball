@@ -62,7 +62,12 @@ function MemberProfile() {
 
   useEffect(() => {
     if (!isPushSupported()) { setPushSupported(false); return }
-    getPushSubscription().then(sub => setPushEnabled(!!sub))
+    getPushSubscription().then(sub => {
+      setPushEnabled(!!sub)
+      if (!sub && Notification.permission === 'default') {
+        handlePushToggle(true)
+      }
+    })
   }, [])
 
   const handlePushToggle = async (nextOn) => {
