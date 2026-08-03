@@ -496,7 +496,9 @@ function Students() {
           </div>
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography variant="bodySmall" color={colors.gray[400]}>Select a student</Typography>
+            <Typography variant="bodySmall" color={colors.gray[400]}>
+              {students.length === 0 ? 'No students' : 'Select a student'}
+            </Typography>
           </div>
         ))}
 
