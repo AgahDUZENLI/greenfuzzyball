@@ -232,3 +232,5 @@ CREATE INDEX idx_session_requests      ON session_requests(coach_id, member_id);
 CREATE INDEX idx_sessions_coach_status ON sessions(coach_id, status);
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id, read_at);
 CREATE INDEX idx_push_subscriptions_user   ON push_subscriptions(user_id);
+CREATE INDEX idx_session_students_student ON session_students(student_id);
+CREATE INDEX idx_member_children_student  ON member_children(student_id);

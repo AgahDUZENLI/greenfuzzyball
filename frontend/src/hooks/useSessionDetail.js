@@ -55,19 +55,19 @@ export function useSessionDetail(sessionId) {
   useEffect(() => {
     const cacheKey = `session/${sessionId}`
     if (!getPageCache(cacheKey)) setLoading(true)
+
+    const drillsPromise = getDrills().catch(() => ({ data: [] }))
+
     getSession(sessionId)
-      .then(res => {
+      .then(async res => {
         const s = res.data
         setSession(s)
         setSessionNotes(s.notes || '')
         setRatings(buildRatings(s))
 
-        getDrills().then(d => {
-          setAllDrills(d.data)
-          setPageCache(cacheKey, { session: s, allDrills: d.data })
-        }).catch(() => {
-          setPageCache(cacheKey, { session: s, allDrills: [] })
-        })
+        const d = await drillsPromise
+        setAllDrills(d.data)
+        setPageCache(cacheKey, { session: s, allDrills: d.data })
       })
       .finally(() => setLoading(false))
   }, [sessionId])
