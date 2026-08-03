@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { colors, spacing, radius } from '../styles/tokens'
+import { colors, spacing, radius, navBarReserve } from '../styles/tokens'
 import Typography from './Typography'
 import Button from './Button'
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react'
@@ -150,6 +150,7 @@ function BookSessionModal({
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0,
+      bottom: isMobile ? navBarReserve : 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
       display: 'flex', alignItems: 'center',
       justifyContent: 'center', zIndex: 9999, padding: isMobile ? 0 : spacing[4]
@@ -157,7 +158,7 @@ function BookSessionModal({
       <div onClick={e => e.stopPropagation()} style={{
         backgroundColor: 'white', borderRadius: isMobile ? 0 : radius['2xl'],
         width: '100%', maxWidth: isMobile ? 'none' : '860px',
-        height: isMobile ? '100dvh' : 'auto', maxHeight: isMobile ? '100dvh' : '90vh',
+        height: isMobile ? '100%' : 'auto', maxHeight: isMobile ? '100%' : '90vh',
         overflowY: 'hidden', boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
         display: 'flex', flexDirection: 'column'
       }}>
@@ -214,7 +215,7 @@ function BookSessionModal({
                 {selectedStudents.length === 0 ? 'Select Student' : 'Add Another Student'}
               </Typography>
               <input
-                autoFocus={selectedStudents.length === 0}
+                autoFocus={!isMobile && selectedStudents.length === 0}
                 placeholder="Search students..."
                 value={studentSearch}
                 onChange={e => setStudentSearch(e.target.value)}
@@ -306,7 +307,7 @@ function BookSessionModal({
           justifyContent: 'space-between',
           alignItems: isMobile ? 'stretch' : 'center',
           gap: isMobile ? spacing[3] : 0,
-          padding: `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
+          padding: `${spacing[4]} ${spacing[6]} ${isMobile ? spacing[4] : `calc(${spacing[4]} + env(safe-area-inset-bottom))`}`,
           borderTop: `1px solid ${colors.gray[100]}`,
           flexShrink: 0
         }}>
