@@ -64,6 +64,16 @@ def respond_to_join_request(
                     ON CONFLICT DO NOTHING
                 """, (str(coach["user_id"]), str(request["member_id"])))
 
+                # Also link any kids this member already added, so the coach
+                # sees them immediately instead of only after a session is booked
+                cursor.execute("""
+                    INSERT INTO coach_students (coach_id, student_id)
+                    SELECT %s, mc.student_id
+                    FROM member_children mc
+                    WHERE mc.member_id = %s
+                    ON CONFLICT DO NOTHING
+                """, (str(coach["user_id"]), str(request["member_id"])))
+
             create_notification(
                 cursor, request["member_id"],
                 f"{coach['name']} {new_status} your join request",

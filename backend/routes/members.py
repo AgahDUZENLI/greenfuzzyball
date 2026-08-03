@@ -120,6 +120,15 @@ def add_child(
                 VALUES (%s, %s)
             """, (str(current_user["user_id"]), child_id))
 
+            # Link the child to every coach this member is already approved
+            # with, so kids added after approval are visible to the coach too
+            cursor.execute("""
+                INSERT INTO coach_students (coach_id, student_id)
+                SELECT coach_id, %s FROM coach_join_requests
+                WHERE member_id = %s AND status = 'approved'
+                ON CONFLICT DO NOTHING
+            """, (child_id, str(current_user["user_id"])))
+
             conn.commit()
 
             cursor.execute("""
