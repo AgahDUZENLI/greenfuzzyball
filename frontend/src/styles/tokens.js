@@ -90,6 +90,11 @@ export const breakpoints = {
   mobile: 768
 }
 
+// Height reserved for the fixed mobile bottom tab bar (BottomTabBar /
+// MemberBottomTabBar), so scrollable areas and full-screen modals know to
+// stop above it instead of covering it.
+export const navBarReserve = 'calc(64px + max(16px, env(safe-area-inset-bottom)))'
+
 // ─── BORDER RADIUS ───────────────────────────────────────────────────────────
 
 export const radius = {

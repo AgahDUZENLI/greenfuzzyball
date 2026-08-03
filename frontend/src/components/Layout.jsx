@@ -6,6 +6,7 @@ import MemberSidebar from './MemberSidebar'
 import MemberBottomTabBar from './MemberBottomTabBar'
 import useIsMobile from '../hooks/useIsMobile'
 import { useAuth } from '../context/AuthContext'
+import { navBarReserve } from '../styles/tokens'
 
 const scrollPositions = new Map()
 
@@ -55,7 +56,7 @@ function Layout({ children, variant = 'app' }) {
         overflow: 'auto',
         WebkitOverflowScrolling: 'touch',
         paddingTop: isMobile ? 'env(safe-area-inset-top)' : 0,
-        paddingBottom: isMobile ? 'calc(64px + max(16px, env(safe-area-inset-bottom)))' : 0
+        paddingBottom: isMobile ? navBarReserve : 0
       }}>
         {children}
       </main>

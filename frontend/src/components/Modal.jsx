@@ -1,4 +1,4 @@
-import { colors, radius, shadows, spacing } from '../styles/tokens'
+import { colors, radius, shadows, spacing, navBarReserve } from '../styles/tokens'
 import Typography from './Typography'
 import { X } from 'lucide-react'
 import useIsMobile from '../hooks/useIsMobile'
@@ -12,6 +12,7 @@ function Modal({ title, subtitle, children, footer, onClose, maxWidth = '560px' 
       style={{
         position: 'fixed',
         inset: 0,
+        bottom: isMobile ? navBarReserve : 0,
         backgroundColor: 'rgba(0,0,0,0.5)',
         display: 'flex',
         alignItems: 'center',
@@ -27,9 +28,9 @@ function Modal({ title, subtitle, children, footer, onClose, maxWidth = '560px' 
           borderRadius: isMobile ? 0 : radius['2xl'],
           boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
           width: '100%',
-          height: isMobile ? '100dvh' : 'auto',
+          height: isMobile ? '100%' : 'auto',
           maxWidth: isMobile ? 'none' : maxWidth,
-          maxHeight: isMobile ? '100dvh' : '90vh',
+          maxHeight: isMobile ? '100%' : '90vh',
           display: 'flex',
           flexDirection: 'column',
           overflowY: 'hidden'
@@ -78,7 +79,7 @@ function Modal({ title, subtitle, children, footer, onClose, maxWidth = '560px' 
         {footer && (
           <div style={{
             flexShrink: 0,
-            padding: `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
+            padding: `${spacing[4]} ${spacing[6]} ${isMobile ? spacing[4] : `calc(${spacing[4]} + env(safe-area-inset-bottom))`}`,
             borderTop: `1px solid ${colors.gray[100]}`,
             backgroundColor: 'white'
           }}>

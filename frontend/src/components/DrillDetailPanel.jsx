@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Typography from './Typography'
 import Button from './Button'
 import { X, Target, Pencil, Trash2 } from 'lucide-react'
-import { colors, spacing, radius } from '../styles/tokens'
+import { colors, spacing, radius, navBarReserve } from '../styles/tokens'
 import { updateDrill, deleteDrill } from '../services/api'
 import useIsMobile from '../hooks/useIsMobile'
 
@@ -39,6 +39,7 @@ function DrillDetailPanel({ drill, onClose, onUpdated, onDeleted }) {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0,
+        bottom: isMobile ? navBarReserve : 0,
         backgroundColor: 'rgba(0,0,0,0.5)',
         display: 'flex', alignItems: 'center',
         justifyContent: 'center', zIndex: 9999,
@@ -52,8 +53,8 @@ function DrillDetailPanel({ drill, onClose, onUpdated, onDeleted }) {
           borderRadius: isMobile ? 0 : radius['2xl'],
           width: '100%',
           maxWidth: isMobile ? 'none' : '520px',
-          height: isMobile ? '100dvh' : 'auto',
-          maxHeight: isMobile ? '100dvh' : '90vh',
+          height: isMobile ? '100%' : 'auto',
+          maxHeight: isMobile ? '100%' : '90vh',
           overflowY: 'auto',
           boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
           display: 'flex', flexDirection: 'column'
@@ -161,7 +162,7 @@ function DrillDetailPanel({ drill, onClose, onUpdated, onDeleted }) {
 
         {/* Footer */}
         <div style={{
-          padding: `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
+          padding: `${spacing[4]} ${spacing[6]} ${isMobile ? spacing[4] : `calc(${spacing[4]} + env(safe-area-inset-bottom))`}`,
           borderTop: `1px solid ${colors.gray[100]}`,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           flexShrink: 0
