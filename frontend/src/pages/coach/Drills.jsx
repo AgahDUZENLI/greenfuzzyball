@@ -10,6 +10,7 @@ import CreateDrillModal from '../../components/CreateDrillModal'
 import DrillMenu from '../../components/DrillMenu'
 import DrillDetailPanel from '../../components/DrillDetailPanel'
 import useIsMobile from '../../hooks/useIsMobile'
+import useBackNavigable from '../../hooks/useBackNavigable'
 
 function Drills() {
   const isMobile = useIsMobile()
@@ -21,6 +22,8 @@ function Drills() {
   const [loading, setLoading] = useState(true)
   const [selectedDrill, setSelectedDrill] = useState(null)
   const [deletingCategoryId, setDeletingCategoryId] = useState(null)
+
+  useBackNavigable(isMobile && !!selectedDrill, () => setSelectedDrill(null))
 
   useEffect(() => {
     Promise.all([getDrills(), getDrillCategories()])

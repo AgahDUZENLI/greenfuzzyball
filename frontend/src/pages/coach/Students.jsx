@@ -14,6 +14,7 @@ import EditStudentModal from '../../components/EditStudentModal'
 import BookSessionModal from '../../components/BookSessionModal'
 import { useNavigate } from 'react-router-dom'
 import useIsMobile from '../../hooks/useIsMobile'
+import useBackNavigable from '../../hooks/useBackNavigable'
 
 
 
@@ -54,6 +55,8 @@ function Students() {
   const [showBookModal, setShowBookModal] = useState(false)
   const [joinRequests, setJoinRequests] = useState([])
   const [respondingId, setRespondingId] = useState(null)
+
+  useBackNavigable(isMobile && mobileShowDetail, () => setMobileShowDetail(false))
 
   const handleRespond = async (requestId, status) => {
     setRespondingId(requestId)
