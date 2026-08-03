@@ -20,6 +20,7 @@ import {
   getMyJoinRequests, getMySessionRequests
 } from '../../services/api'
 import useIsMobile from '../../hooks/useIsMobile'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 const CHILD_COLORS = ['#8b5cf6', '#3b82f6', '#ec4899', '#06b6d4']
 
@@ -51,14 +52,15 @@ function MemberDashboard() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const [children, setChildren] = useState([])
-  const [selfSessions, setSelfSessions] = useState([])
-  const [selfProgress, setSelfProgress] = useState([])
-  const [sessionsByPerson, setSessionsByPerson] = useState({})
-  const [progressByPerson, setProgressByPerson] = useState({})
-  const [sessionRequests, setSessionRequests] = useState([])
-  const [selfCoach, setSelfCoach] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const cached = getPageCache('member-dashboard')
+  const [children, setChildren] = useState(() => cached?.children ?? [])
+  const [selfSessions, setSelfSessions] = useState(() => cached?.selfSessions ?? [])
+  const [selfProgress, setSelfProgress] = useState(() => cached?.selfProgress ?? [])
+  const [sessionsByPerson, setSessionsByPerson] = useState(() => cached?.sessionsByPerson ?? {})
+  const [progressByPerson, setProgressByPerson] = useState(() => cached?.progressByPerson ?? {})
+  const [sessionRequests, setSessionRequests] = useState(() => cached?.sessionRequests ?? [])
+  const [selfCoach, setSelfCoach] = useState(() => cached?.selfCoach ?? null)
+  const [loading, setLoading] = useState(() => !cached)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedPersonId, setSelectedPersonId] = useState(null)
   const [showRequestModal, setShowRequestModal] = useState(false)
@@ -87,11 +89,11 @@ function MemberDashboard() {
       setSelfCoach(approved ? { coach_id: approved.coach_id, coach_name: approved.coach_name } : null)
 
       const kids = childrenRes.data
+      let sByP = {}, pByP = {}
       if (kids.length > 0) {
         const results = await Promise.all(
           kids.map(k => Promise.all([getMemberSessions(k.user_id), getMemberProgress(k.user_id)]))
         )
-        const sByP = {}, pByP = {}
         kids.forEach((k, i) => {
           sByP[k.user_id] = results[i][0].data
           pByP[k.user_id] = results[i][1].data
@@ -99,6 +101,16 @@ function MemberDashboard() {
         setSessionsByPerson(sByP)
         setProgressByPerson(pByP)
       }
+
+      setPageCache('member-dashboard', {
+        children: childrenRes.data,
+        selfSessions: sessionsRes.data,
+        selfProgress: progressRes.data,
+        sessionRequests: sessionReqRes.data,
+        selfCoach: approved ? { coach_id: approved.coach_id, coach_name: approved.coach_name } : null,
+        sessionsByPerson: sByP,
+        progressByPerson: pByP
+      })
     } catch (err) {
       console.error('Member dashboard fetch error:', err)
     } finally {

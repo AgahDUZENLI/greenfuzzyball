@@ -18,6 +18,7 @@ import { Users, Calendar as CalendarIcon, Dumbbell, Clock, ChevronRight, Plus, C
 import BookSessionModal from '../../components/BookSessionModal'
 import NotificationBell from '../../components/NotificationBell'
 import useIsMobile from '../../hooks/useIsMobile'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 function formatTime(t) {
   if (!t) return null
@@ -40,10 +41,11 @@ function Dashboard() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const [students, setStudents] = useState([])
-  const [sessions, setSessions] = useState([])
-  const [drills, setDrills] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cached = getPageCache('dashboard')
+  const [students, setStudents] = useState(() => cached?.students ?? [])
+  const [sessions, setSessions] = useState(() => cached?.sessions ?? [])
+  const [drills, setDrills] = useState(() => cached?.drills ?? [])
+  const [loading, setLoading] = useState(() => !cached)
 
   const todayStr = new Date().toISOString().split('T')[0]
   const [selectedDate, setSelectedDate] = useState(todayStr)
@@ -108,6 +110,7 @@ function Dashboard() {
         setStudents(studentsRes.data)
         setSessions(sessionsRes.data)
         setDrills(drillsRes.data)
+        setPageCache('dashboard', { students: studentsRes.data, sessions: sessionsRes.data, drills: drillsRes.data })
       } catch (err) {
         console.error('Dashboard fetch error:', err)
       } finally {

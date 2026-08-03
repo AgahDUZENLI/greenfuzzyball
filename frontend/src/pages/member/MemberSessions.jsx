@@ -10,6 +10,7 @@ import { colors, spacing, radius } from '../../styles/tokens'
 import { getMemberSessions, getChildren, getMySessionRequests, deleteSessionRequest } from '../../services/api'
 import useIsMobile from '../../hooks/useIsMobile'
 import { X } from 'lucide-react'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 const statusMeta = {
   scheduled: { label: 'Confirmed', color: colors.primary, bg: colors.primaryLight },
@@ -136,11 +137,12 @@ function MemberSessions() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
 
-  const [children, setChildren] = useState([])
-  const [selfSessions, setSelfSessions] = useState([])
-  const [sessionsByPerson, setSessionsByPerson] = useState({})
-  const [sessionRequests, setSessionRequests] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cached = getPageCache('member-sessions')
+  const [children, setChildren] = useState(() => cached?.children ?? [])
+  const [selfSessions, setSelfSessions] = useState(() => cached?.selfSessions ?? [])
+  const [sessionsByPerson, setSessionsByPerson] = useState(() => cached?.sessionsByPerson ?? {})
+  const [sessionRequests, setSessionRequests] = useState(() => cached?.sessionRequests ?? [])
+  const [loading, setLoading] = useState(() => !cached)
   const [selectedPersonId, setSelectedPersonId] = useState('all')
   const [deletingRequestId, setDeletingRequestId] = useState(null)
 
@@ -158,12 +160,19 @@ function MemberSessions() {
         setSessionRequests(requestsRes.data)
 
         const kids = childrenRes.data
+        let sByP = {}
         if (kids.length > 0) {
           const results = await Promise.all(kids.map(k => getMemberSessions(k.user_id)))
-          const sByP = {}
           kids.forEach((k, i) => { sByP[k.user_id] = results[i].data })
           setSessionsByPerson(sByP)
         }
+
+        setPageCache('member-sessions', {
+          children: childrenRes.data,
+          selfSessions: sessionsRes.data,
+          sessionRequests: requestsRes.data,
+          sessionsByPerson: sByP
+        })
       } catch (err) {
         console.error('Member sessions fetch error:', err)
       } finally {

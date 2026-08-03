@@ -6,21 +6,26 @@ import { getSharedDrill, importSharedDrill } from '../../services/api'
 import { colors, spacing, radius } from '../../styles/tokens'
 import { Target, CheckCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 function DrillShare() {
   const { token } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
   const isCoach = user?.role === 'coach'
-  const [drill, setDrill] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const cached = getPageCache(`drill-share/${token}`)
+  const [drill, setDrill] = useState(() => cached?.drill ?? null)
+  const [loading, setLoading] = useState(() => !cached)
   const [importing, setImporting] = useState(false)
   const [imported, setImported] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     getSharedDrill(token)
-      .then(res => setDrill(res.data))
+      .then(res => {
+        setDrill(res.data)
+        setPageCache(`drill-share/${token}`, { drill: res.data })
+      })
       .catch(() => setError('Drill not found or link is invalid.'))
       .finally(() => setLoading(false))
   }, [token])
