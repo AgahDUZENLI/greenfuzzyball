@@ -50,7 +50,35 @@ function EditChildModal({ child, onClose, onUpdated, onDeleted }) {
   }
 
   return (
-    <Modal title="Edit Kid" subtitle={`Update ${child.name}'s profile`} onClose={onClose} maxWidth="520px">
+    <Modal
+      title="Edit Kid"
+      subtitle={`Update ${child.name}'s profile`}
+      onClose={onClose}
+      maxWidth="520px"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={handleDelete} disabled={deleting} style={{
+            background: 'none', border: 'none', color: colors.error,
+            fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: spacing[2]
+          }}>
+            <Trash2 size={14} />
+            {deleting ? 'Deleting...' : 'Delete'}
+          </button>
+          <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
+            <button onClick={onClose} style={{
+              background: 'none', border: 'none', color: colors.gray[500],
+              fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+            }}>
+              Cancel
+            </button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? 'Saving...' : 'Save changes'}
+            </Button>
+          </div>
+        </div>
+      }
+    >
 
       {/* Avatar preview */}
       <div style={{
@@ -144,29 +172,6 @@ function EditChildModal({ child, onClose, onUpdated, onDeleted }) {
           onFocus={e => e.target.style.borderColor = colors.primary}
           onBlur={e => e.target.style.borderColor = colors.gray[200]}
         />
-      </div>
-
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={handleDelete} disabled={deleting} style={{
-          background: 'none', border: 'none', color: colors.error,
-          fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-          fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: spacing[2]
-        }}>
-          <Trash2 size={14} />
-          {deleting ? 'Deleting...' : 'Delete'}
-        </button>
-        <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
-          <button onClick={onClose} style={{
-            background: 'none', border: 'none', color: colors.gray[500],
-            fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
-          }}>
-            Cancel
-          </button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? 'Saving...' : 'Save changes'}
-          </Button>
-        </div>
       </div>
 
     </Modal>

@@ -75,14 +75,15 @@ function CreateDrillModal({ categories: initialCategories, onClose, onCreated, o
         backgroundColor: 'white', borderRadius: isMobile ? 0 : radius['2xl'],
         width: '100%', maxWidth: isMobile ? 'none' : '560px',
         height: isMobile ? '100dvh' : 'auto', maxHeight: isMobile ? '100dvh' : '90vh',
-        overflowY: 'auto',
+        overflowY: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)'
       }}>
 
         {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-          padding: `calc(${spacing[6]} + env(safe-area-inset-top)) ${spacing[6]} ${spacing[4]}`
+          padding: `calc(${spacing[6]} + env(safe-area-inset-top)) ${spacing[6]} ${spacing[4]}`,
+          flexShrink: 0
         }}>
           <div>
             <Typography variant="h3">Create Drill</Typography>
@@ -97,7 +98,7 @@ function CreateDrillModal({ categories: initialCategories, onClose, onCreated, o
           </button>
         </div>
 
-        <div style={{ padding: `0 ${spacing[6]} calc(${spacing[6]} + env(safe-area-inset-bottom))` }}>
+        <div style={{ padding: `0 ${spacing[6]} ${spacing[6]}`, overflowY: 'auto', flex: 1 }}>
 
           {error && (
             <div style={{
@@ -333,22 +334,27 @@ function CreateDrillModal({ categories: initialCategories, onClose, onCreated, o
             />
           </div>
 
-          {/* Footer */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button onClick={onClose} style={{
-              background: 'none', border: 'none',
-              color: colors.gray[500], fontSize: '14px',
-              fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
-            }}>
-              Cancel
-            </button>
-            <Button onClick={handleCreate} disabled={loading}>
-              <Plus size={16} />
-              {loading ? 'Creating...' : 'Create Drill'}
-            </Button>
-          </div>
-
         </div>
+
+        {/* Footer */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexShrink: 0, padding: `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
+          borderTop: `1px solid ${colors.gray[100]}`
+        }}>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none',
+            color: colors.gray[500], fontSize: '14px',
+            fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+          }}>
+            Cancel
+          </button>
+          <Button onClick={handleCreate} disabled={loading}>
+            <Plus size={16} />
+            {loading ? 'Creating...' : 'Create Drill'}
+          </Button>
+        </div>
+
       </div>
     </div>
   )
