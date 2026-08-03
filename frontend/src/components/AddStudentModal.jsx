@@ -35,7 +35,26 @@ function AddStudentModal({ onClose, onAdded }) {
   }
 
   return (
-    <Modal title="Add Student" subtitle="Create a new athlete profile" onClose={onClose} maxWidth="520px">
+    <Modal
+      title="Add Student"
+      subtitle="Create a new athlete profile"
+      onClose={onClose}
+      maxWidth="520px"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', color: colors.gray[500],
+            fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+          }}>
+            Cancel
+          </button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            <Plus size={16} />
+            {loading ? 'Adding...' : 'Add Student'}
+          </Button>
+        </div>
+      }
+    >
 
       {error && (
         <div style={{
@@ -123,20 +142,6 @@ function AddStudentModal({ onClose, onAdded }) {
           onFocus={e => e.target.style.borderColor = colors.primary}
           onBlur={e => e.target.style.borderColor = colors.gray[200]}
         />
-      </div>
-
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: colors.gray[500],
-          fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
-        }}>
-          Cancel
-        </button>
-        <Button onClick={handleSubmit} disabled={loading}>
-          <Plus size={16} />
-          {loading ? 'Adding...' : 'Add Student'}
-        </Button>
       </div>
 
     </Modal>

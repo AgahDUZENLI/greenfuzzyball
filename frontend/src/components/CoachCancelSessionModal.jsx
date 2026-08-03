@@ -33,7 +33,25 @@ function CoachCancelSessionModal({ session, onClose, onCancelled }) {
   }
 
   return (
-    <Modal title="Cancel Session" onClose={onClose} maxWidth="480px">
+    <Modal
+      title="Cancel Session"
+      onClose={onClose}
+      maxWidth="480px"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', color: colors.gray[500],
+            fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+          }}>
+            Back
+          </button>
+          <Button variant="danger" onClick={handleSubmit} disabled={loading}>
+            <XCircle size={16} />
+            {loading ? 'Cancelling...' : 'Cancel Session'}
+          </Button>
+        </div>
+      }
+    >
 
       {error && (
         <div style={{
@@ -66,18 +84,6 @@ function CoachCancelSessionModal({ session, onClose, onCancelled }) {
         />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: colors.gray[500],
-          fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
-        }}>
-          Back
-        </button>
-        <Button variant="danger" onClick={handleSubmit} disabled={loading}>
-          <XCircle size={16} />
-          {loading ? 'Cancelling...' : 'Cancel Session'}
-        </Button>
-      </div>
     </Modal>
   )
 }

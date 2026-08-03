@@ -3,7 +3,7 @@ import Typography from './Typography'
 import { X } from 'lucide-react'
 import useIsMobile from '../hooks/useIsMobile'
 
-function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
+function Modal({ title, subtitle, children, footer, onClose, maxWidth = '560px' }) {
   const isMobile = useIsMobile()
 
   return (
@@ -67,12 +67,24 @@ function Modal({ title, subtitle, children, onClose, maxWidth = '560px' }) {
 
         {/* Content */}
         <div style={{
-          padding: `${spacing[5]} ${spacing[6]} calc(${spacing[6]} + env(safe-area-inset-bottom))`,
+          padding: `${spacing[5]} ${spacing[6]} ${spacing[6]}`,
           overflowY: 'auto',
           flex: 1
         }}>
           {children}
         </div>
+
+        {/* Footer */}
+        {footer && (
+          <div style={{
+            flexShrink: 0,
+            padding: `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
+            borderTop: `1px solid ${colors.gray[100]}`,
+            backgroundColor: 'white'
+          }}>
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -76,7 +76,28 @@ function RequestSessionModal({ people, initialPersonId, onClose, onRequested }) 
   }
 
   return (
-    <Modal title="Request Session" subtitle={selectedPerson ? `For ${selectedPerson.name}` : undefined} onClose={onClose} maxWidth="480px">
+    <Modal
+      title="Request Session"
+      subtitle={selectedPerson ? `For ${selectedPerson.name}` : undefined}
+      onClose={onClose}
+      maxWidth="480px"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', color: colors.gray[500],
+            fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
+          }}>
+            Cancel
+          </button>
+          {coaches.length > 0 && (
+            <Button onClick={handleSubmit} disabled={loading}>
+              <Send size={16} />
+              {loading ? 'Sending...' : 'Send Request'}
+            </Button>
+          )}
+        </div>
+      }
+    >
 
       {error && (
         <div style={{
@@ -152,20 +173,6 @@ function RequestSessionModal({ people, initialPersonId, onClose, onRequested }) 
         </>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: colors.gray[500],
-          fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit'
-        }}>
-          Cancel
-        </button>
-        {coaches.length > 0 && (
-          <Button onClick={handleSubmit} disabled={loading}>
-            <Send size={16} />
-            {loading ? 'Sending...' : 'Send Request'}
-          </Button>
-        )}
-      </div>
     </Modal>
   )
 }

@@ -158,7 +158,7 @@ function BookSessionModal({
         backgroundColor: 'white', borderRadius: isMobile ? 0 : radius['2xl'],
         width: '100%', maxWidth: isMobile ? 'none' : '860px',
         height: isMobile ? '100dvh' : 'auto', maxHeight: isMobile ? '100dvh' : '90vh',
-        overflowY: 'auto', boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
+        overflowY: 'hidden', boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
         display: 'flex', flexDirection: 'column'
       }}>
 
@@ -189,7 +189,7 @@ function BookSessionModal({
         </div>
 
         {/* Body */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', flex: 1, overflowY: 'auto' }}>
 
           {/* Left */}
           <div style={{
