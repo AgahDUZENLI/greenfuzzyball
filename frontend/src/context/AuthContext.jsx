@@ -25,6 +25,15 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // Fired by the api client when a refresh token has also expired, so a
+  // failure deep in the app (not just the boot check above) still logs
+  // the user out and lets ProtectedRoute redirect to /login.
+  useEffect(() => {
+    const handler = () => setUser(null)
+    window.addEventListener('auth:logout', handler)
+    return () => window.removeEventListener('auth:logout', handler)
+  }, [])
+
   const login = async (email, password, rememberMe = true, role = 'coach') => {
     const res = await loginApi({ email, password, role })
     const storage = rememberMe ? localStorage : sessionStorage

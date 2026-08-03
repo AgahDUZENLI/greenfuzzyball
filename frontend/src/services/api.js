@@ -10,14 +10,72 @@ const api = axios.create({
   }
 })
 
+function getStoredToken(name) {
+  return localStorage.getItem(name) || sessionStorage.getItem(name)
+}
+
+function storeTokens(accessToken, refreshToken) {
+  const storage = localStorage.getItem('access_token') ? localStorage : sessionStorage
+  storage.setItem('access_token', accessToken)
+  storage.setItem('refresh_token', refreshToken)
+}
+
+function clearTokens() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  sessionStorage.removeItem('access_token')
+  sessionStorage.removeItem('refresh_token')
+}
+
 // Automatically add JWT token to every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
+  const token = getStoredToken('access_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
+
+// Access tokens are short-lived (30min) and mobile PWAs get suspended by the
+// OS for far longer than that while backgrounded, so a dead access token on
+// relaunch is the common case, not the exception. Refresh it once and retry
+// instead of forcing a re-login. Concurrent 401s share one refresh call.
+let refreshPromise = null
+
+function refreshAccessToken() {
+  if (!refreshPromise) {
+    const refreshToken = getStoredToken('refresh_token')
+    refreshPromise = axios.post(`${API_URL}/auth/refresh`, { refresh_token: refreshToken })
+      .then(res => {
+        storeTokens(res.data.access_token, res.data.refresh_token)
+        return res.data.access_token
+      })
+      .finally(() => { refreshPromise = null })
+  }
+  return refreshPromise
+}
+
+api.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const { config, response } = error
+    const isAuthRoute = /\/auth\/(login|register|refresh)/.test(config?.url || '')
+
+    if (response?.status === 401 && !config._retry && !isAuthRoute && getStoredToken('refresh_token')) {
+      config._retry = true
+      try {
+        const newToken = await refreshAccessToken()
+        config.headers.Authorization = `Bearer ${newToken}`
+        return api(config)
+      } catch {
+        clearTokens()
+        window.dispatchEvent(new Event('auth:logout'))
+      }
+    }
+
+    return Promise.reject(error)
+  }
+)
 
 // Auth
 export const register = (data) => api.post('/auth/register', data)
