@@ -51,6 +51,58 @@ function PushNavigationListener() {
   return null
 }
 
+// Standalone PWA mode has no browser chrome, so the OS edge-swipe-to-go-back gesture isn't available. This recreates it: a swipe starting within the left edge strip that moves mostly horizontally triggers a back navigation.
+const SWIPE_EDGE_ZONE = 24
+const SWIPE_DISTANCE_THRESHOLD = 70
+const SWIPE_MAX_VERTICAL_RATIO = 0.5
+
+function SwipeBackListener() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    let tracking = false
+    let startX = 0
+    let startY = 0
+
+    const onTouchStart = (event) => {
+      const touch = event.touches[0]
+      tracking = touch.clientX <= SWIPE_EDGE_ZONE
+      startX = touch.clientX
+      startY = touch.clientY
+    }
+
+    const onTouchMove = (event) => {
+      if (!tracking) return
+      const touch = event.touches[0]
+      const dx = touch.clientX - startX
+      const dy = touch.clientY - startY
+      if (Math.abs(dy) > Math.abs(dx) * SWIPE_MAX_VERTICAL_RATIO) tracking = false
+    }
+
+    const onTouchEnd = (event) => {
+      if (!tracking) return
+      tracking = false
+      const touch = event.changedTouches[0]
+      const dx = touch.clientX - startX
+      const dy = touch.clientY - startY
+      if (dx > SWIPE_DISTANCE_THRESHOLD && Math.abs(dy) < dx * SWIPE_MAX_VERTICAL_RATIO) {
+        navigate(-1)
+      }
+    }
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: true })
+    window.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [navigate])
+
+  return null
+}
+
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth()
 
@@ -99,6 +151,7 @@ function App() {
       <AuthProvider>
         <ScrollToTop />
         <PushNavigationListener />
+        <SwipeBackListener />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>
