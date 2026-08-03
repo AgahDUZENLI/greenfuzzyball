@@ -8,6 +8,7 @@ import { colors, spacing, radius } from '../../styles/tokens'
 import { getMemberProgress, getChildren } from '../../services/api'
 import useIsMobile from '../../hooks/useIsMobile'
 import PersonSwitcher from '../../components/PersonSwitcher'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 const CHART_COLORS = [colors.primary, '#9ca3af', '#3b82f6', '#f59e0b']
 
@@ -19,9 +20,10 @@ function MemberProgress() {
   const { user } = useAuth()
   const isMobile = useIsMobile()
 
-  const [children, setChildren] = useState([])
-  const [progressByPerson, setProgressByPerson] = useState({})
-  const [loading, setLoading] = useState(true)
+  const cached = getPageCache('member-progress')
+  const [children, setChildren] = useState(() => cached?.children ?? [])
+  const [progressByPerson, setProgressByPerson] = useState(() => cached?.progressByPerson ?? {})
+  const [loading, setLoading] = useState(() => !cached)
   const [selectedPersonId, setSelectedPersonId] = useState('self')
 
   useEffect(() => {
@@ -41,6 +43,7 @@ function MemberProgress() {
           kids.forEach((k, i) => { byP[k.user_id] = results[i].data })
         }
         setProgressByPerson(byP)
+        setPageCache('member-progress', { children: kids, progressByPerson: byP })
       } catch (err) {
         console.error('Member progress fetch error:', err)
       } finally {

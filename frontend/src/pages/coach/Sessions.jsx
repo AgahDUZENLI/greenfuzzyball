@@ -8,27 +8,32 @@ import { ChevronLeft, ChevronRight, Plus, Clock, CheckCircle, Calendar as Calend
 import BookSessionModal from '../../components/BookSessionModal'
 import { useNavigate } from 'react-router-dom'
 import useIsMobile from '../../hooks/useIsMobile'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
 
 function Sessions() {
   const today = new Date()
+  const cached = getPageCache('sessions')
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [showBookModal, setShowBookModal] = useState(false)
   const [bookStudent, setBookStudent] = useState(null)
-  const [students, setStudents] = useState([])
-  const [sessions, setSessions] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [students, setStudents] = useState(() => cached?.students ?? [])
+  const [sessions, setSessions] = useState(() => cached?.sessions ?? [])
+  const [loading, setLoading] = useState(() => !cached)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
 
   useEffect(() => {
-    getStudents().then(res => setStudents(res.data))
-    getSessions()
-      .then(res => setSessions(res.data))
+    Promise.all([getStudents(), getSessions()])
+      .then(([studentsRes, sessionsRes]) => {
+        setStudents(studentsRes.data)
+        setSessions(sessionsRes.data)
+        setPageCache('sessions', { students: studentsRes.data, sessions: sessionsRes.data })
+      })
       .finally(() => setLoading(false))
   }, [])
 

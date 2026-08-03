@@ -17,6 +17,7 @@ import { colors, spacing, radius } from '../../styles/tokens'
 import { User, Mail, Phone, MapPin, Shield, LogOut, ChevronRight, Save, Users, UserPlus, Plus, Pencil, KeyRound, Trash2, Bell } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 import { isPushSupported, isStandalone, getPushSubscription, enablePush, disablePush } from '../../utils/push'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -32,18 +33,19 @@ function MemberProfile() {
   const { logout } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+  const cached = getPageCache('member-profile')
   const [activeTab, setActiveTab] = useState('profile')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !cached?.profile)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   // Profile state
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [location, setLocation] = useState('')
-  const [age, setAge] = useState('')
-  const [notes, setNotes] = useState('')
+  const [name, setName] = useState(() => cached?.profile?.name || '')
+  const [email, setEmail] = useState(() => cached?.profile?.email || '')
+  const [phone, setPhone] = useState(() => cached?.profile?.phone || '')
+  const [location, setLocation] = useState(() => cached?.profile?.location || '')
+  const [age, setAge] = useState(() => cached?.profile?.age ?? '')
+  const [notes, setNotes] = useState(() => cached?.profile?.notes || '')
 
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false)
@@ -87,14 +89,14 @@ function MemberProfile() {
   }
 
   // Kids state
-  const [children, setChildren] = useState([])
-  const [childrenLoading, setChildrenLoading] = useState(true)
+  const [children, setChildren] = useState(() => cached?.children ?? [])
+  const [childrenLoading, setChildrenLoading] = useState(() => !cached?.children)
   const [showAddChildModal, setShowAddChildModal] = useState(false)
   const [editingChild, setEditingChild] = useState(null)
 
   // Coaches state
-  const [myRequests, setMyRequests] = useState([])
-  const [coachesLoading, setCoachesLoading] = useState(true)
+  const [myRequests, setMyRequests] = useState(() => cached?.myRequests ?? [])
+  const [coachesLoading, setCoachesLoading] = useState(() => !cached?.myRequests)
   const [coachCode, setCoachCode] = useState('')
   const [joiningCoach, setJoiningCoach] = useState(false)
   const [coachError, setCoachError] = useState('')
@@ -109,20 +111,27 @@ function MemberProfile() {
         setLocation(p.location || '')
         setAge(p.age ?? '')
         setNotes(p.notes || '')
+        setPageCache('member-profile', { ...(getPageCache('member-profile') || {}), profile: p })
       })
       .finally(() => setLoading(false))
 
     getChildren()
-      .then(res => setChildren(res.data))
+      .then(res => {
+        setChildren(res.data)
+        setPageCache('member-profile', { ...(getPageCache('member-profile') || {}), children: res.data })
+      })
       .catch(() => setChildren([]))
       .finally(() => setChildrenLoading(false))
   }, [])
 
   useEffect(() => {
     if (activeTab !== 'coaches') return
-    setCoachesLoading(true)
+    if (!getPageCache('member-profile')?.myRequests) setCoachesLoading(true)
     getMyJoinRequests()
-      .then(res => setMyRequests(res.data))
+      .then(res => {
+        setMyRequests(res.data)
+        setPageCache('member-profile', { ...(getPageCache('member-profile') || {}), myRequests: res.data })
+      })
       .catch(() => setMyRequests([]))
       .finally(() => setCoachesLoading(false))
   }, [activeTab])

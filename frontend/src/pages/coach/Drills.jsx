@@ -10,23 +10,29 @@ import CreateDrillModal from '../../components/CreateDrillModal'
 import DrillMenu from '../../components/DrillMenu'
 import DrillDetailPanel from '../../components/DrillDetailPanel'
 import useIsMobile from '../../hooks/useIsMobile'
+import useBackNavigable from '../../hooks/useBackNavigable'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 function Drills() {
   const isMobile = useIsMobile()
-  const [drills, setDrills] = useState([])
-  const [categories, setCategories] = useState([])
+  const cached = getPageCache('drills')
+  const [drills, setDrills] = useState(() => cached?.drills ?? [])
+  const [categories, setCategories] = useState(() => cached?.categories ?? [])
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !cached)
   const [selectedDrill, setSelectedDrill] = useState(null)
   const [deletingCategoryId, setDeletingCategoryId] = useState(null)
+
+  useBackNavigable(isMobile && !!selectedDrill, () => setSelectedDrill(null))
 
   useEffect(() => {
     Promise.all([getDrills(), getDrillCategories()])
       .then(([drillsRes, catsRes]) => {
         setDrills(drillsRes.data)
         setCategories(catsRes.data)
+        setPageCache('drills', { drills: drillsRes.data, categories: catsRes.data })
       })
       .finally(() => setLoading(false))
   }, [])

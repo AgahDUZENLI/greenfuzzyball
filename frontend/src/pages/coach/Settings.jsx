@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 import { isPushSupported, isStandalone, getPushSubscription, enablePush, disablePush } from '../../utils/push'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -28,24 +29,25 @@ function Settings() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+  const cached = getPageCache('coach-settings')
   const [activeTab, setActiveTab] = useState('profile')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !cached)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   // Profile state
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [location, setLocation] = useState('')
-  const [age, setAge] = useState('')
-  const [code, setCode] = useState('')
+  const [name, setName] = useState(() => cached?.profile?.name || '')
+  const [email, setEmail] = useState(() => cached?.profile?.email || '')
+  const [phone, setPhone] = useState(() => cached?.profile?.phone || '')
+  const [location, setLocation] = useState(() => cached?.profile?.location || '')
+  const [age, setAge] = useState(() => cached?.profile?.age ?? '')
+  const [code, setCode] = useState(() => cached?.profile?.code || '')
   const [codeCopied, setCodeCopied] = useState(false)
-  const [notes, setNotes] = useState('')
-  const [availStart, setAvailStart] = useState('00:00')
-  const [availEnd, setAvailEnd] = useState('23:59')
-  const [sessionDuration, setSessionDuration] = useState([60, 90, 120])
-  const [coachingDays, setCoachingDays] = useState([])
+  const [notes, setNotes] = useState(() => cached?.profile?.notes || '')
+  const [availStart, setAvailStart] = useState(() => cached?.profile?.availability_start?.slice(0, 5) || '00:00')
+  const [availEnd, setAvailEnd] = useState(() => cached?.profile?.availability_end?.slice(0, 5) || '23:59')
+  const [sessionDuration, setSessionDuration] = useState(() => cached?.profile?.session_duration || [60, 90, 120])
+  const [coachingDays, setCoachingDays] = useState(() => cached?.profile?.coaching_days || DAYS)
 
   // Change password state
   const [showChangePassword, setShowChangePassword] = useState(false)
@@ -56,7 +58,7 @@ function Settings() {
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
 
-  const [notificationPrefs, setNotificationPrefs] = useState({
+  const [notificationPrefs, setNotificationPrefs] = useState(() => cached?.profile?.notification_preferences || {
     session_booked: true,
     session_reminder: true,
     weekly_summary: false
@@ -108,6 +110,7 @@ function Settings() {
           session_reminder: true,
           weekly_summary: false
         })
+        setPageCache('coach-settings', { profile: p })
       })
       .finally(() => setLoading(false))
   }, [])

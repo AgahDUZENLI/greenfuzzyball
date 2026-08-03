@@ -14,6 +14,8 @@ import EditStudentModal from '../../components/EditStudentModal'
 import BookSessionModal from '../../components/BookSessionModal'
 import { useNavigate } from 'react-router-dom'
 import useIsMobile from '../../hooks/useIsMobile'
+import useBackNavigable from '../../hooks/useBackNavigable'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 
 
@@ -41,19 +43,22 @@ const levelColor = level =>
 function Students() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [students, setStudents] = useState([])
-  const [selected, setSelected] = useState(null)
+  const cached = getPageCache('students')
+  const [students, setStudents] = useState(() => cached?.students ?? [])
+  const [selected, setSelected] = useState(() => cached?.selected ?? null)
   const [mobileShowDetail, setMobileShowDetail] = useState(false)
-  const [progress, setProgress] = useState([])
-  const [sessions, setSessions] = useState([])
+  const [progress, setProgress] = useState(() => cached?.progress ?? [])
+  const [sessions, setSessions] = useState(() => cached?.sessions ?? [])
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !cached)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showBookModal, setShowBookModal] = useState(false)
   const [joinRequests, setJoinRequests] = useState([])
   const [respondingId, setRespondingId] = useState(null)
+
+  useBackNavigable(isMobile && mobileShowDetail, () => setMobileShowDetail(false))
 
   const handleRespond = async (requestId, status) => {
     setRespondingId(requestId)
@@ -80,7 +85,7 @@ function Students() {
     getStudents()
       .then(res => {
         setStudents(res.data)
-        if (res.data.length > 0) setSelected(res.data[0])
+        if (res.data.length > 0 && !selected) setSelected(res.data[0])
       })
       .finally(() => setLoading(false))
   }, [])
@@ -94,6 +99,10 @@ function Students() {
       .then(res => setSessions(res.data.sort((a, b) => b.date.localeCompare(a.date))))
       .catch(() => setSessions([]))
   }, [selected])
+
+  useEffect(() => {
+    setPageCache('students', { students, selected, progress, sessions })
+  }, [students, selected, progress, sessions])
 
   const filtered = students.filter(s =>
     (filter === 'all' || ageBucket(s.age) === filter) &&

@@ -4,6 +4,15 @@ import {
   addDrillToSession, removeDrillFromSession, updateSession
 } from '../services/api'
 import { formatTime12 } from '../utils/timeUtils'
+import { getPageCache, setPageCache } from '../utils/pageCache'
+
+function buildRatings(session) {
+  const initial = {}
+  session?.ratings?.forEach(r => {
+    initial[`${r.student_id}-${r.drill_id}`] = { rating: r.rating, notes: r.notes || '' }
+  })
+  return initial
+}
 
 function calcEndTime(startTime, durationMinutes) {
   if (!startTime) return null
@@ -15,26 +24,27 @@ function calcEndTime(startTime, durationMinutes) {
 }
 
 export function useSessionDetail(sessionId) {
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const cached = getPageCache(`session/${sessionId}`)
+  const [session, setSession] = useState(() => cached?.session ?? null)
+  const [loading, setLoading] = useState(() => !cached)
 
   // Modals
   const [showEditModal, setShowEditModal] = useState(false)
   const [showRepeatModal, setShowRepeatModal] = useState(false)
 
   // Drills
-  const [allDrills, setAllDrills] = useState([])
+  const [allDrills, setAllDrills] = useState(() => cached?.allDrills ?? [])
   const [showDrillPicker, setShowDrillPicker] = useState(false)
   const [drillSearch, setDrillSearch] = useState('')
   const pickerRef = useRef(null)
 
   // Notes
-  const [sessionNotes, setSessionNotes] = useState('')
+  const [sessionNotes, setSessionNotes] = useState(() => cached?.session?.notes || '')
   const [savingNotes, setSavingNotes] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
 
   // Ratings
-  const [ratings, setRatings] = useState({})
+  const [ratings, setRatings] = useState(() => buildRatings(cached?.session))
   const [savedRatings, setSavedRatings] = useState({})
   const [editMode, setEditMode] = useState(false)
   const [savingRatings, setSavingRatings] = useState(false)
@@ -43,20 +53,21 @@ export function useSessionDetail(sessionId) {
   // ── Load session ──────────────────────────────────────────────────────────
 
   useEffect(() => {
-    setLoading(true)
+    const cacheKey = `session/${sessionId}`
+    if (!getPageCache(cacheKey)) setLoading(true)
     getSession(sessionId)
       .then(res => {
         const s = res.data
         setSession(s)
         setSessionNotes(s.notes || '')
+        setRatings(buildRatings(s))
 
-        const initial = {}
-        s.ratings?.forEach(r => {
-          initial[`${r.student_id}-${r.drill_id}`] = { rating: r.rating, notes: r.notes || '' }
+        getDrills().then(d => {
+          setAllDrills(d.data)
+          setPageCache(cacheKey, { session: s, allDrills: d.data })
+        }).catch(() => {
+          setPageCache(cacheKey, { session: s, allDrills: [] })
         })
-        setRatings(initial)
-
-        getDrills().then(d => setAllDrills(d.data)).catch(() => {})
       })
       .finally(() => setLoading(false))
   }, [sessionId])

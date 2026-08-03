@@ -9,6 +9,7 @@ import { formatTime12 } from '../../utils/timeUtils'
 import { colors, spacing, radius } from '../../styles/tokens'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
+import { getPageCache, setPageCache } from '../../utils/pageCache'
 
 const statusMeta = {
   scheduled: { label: 'Confirmed', color: colors.primary },
@@ -30,13 +31,18 @@ function MemberSessionDetail() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const cached = getPageCache(`member-session/${sessionId}`)
+  const [session, setSession] = useState(() => cached?.session ?? null)
+  const [loading, setLoading] = useState(() => !cached)
 
   useEffect(() => {
-    setLoading(true)
+    const cacheKey = `member-session/${sessionId}`
+    if (!getPageCache(cacheKey)) setLoading(true)
     getMemberSessionDetail(sessionId)
-      .then(res => setSession(res.data))
+      .then(res => {
+        setSession(res.data)
+        setPageCache(cacheKey, { session: res.data })
+      })
       .catch(() => setSession(null))
       .finally(() => setLoading(false))
   }, [sessionId])
