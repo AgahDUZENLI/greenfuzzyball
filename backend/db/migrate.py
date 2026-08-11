@@ -21,10 +21,12 @@ def get_applied_migrations(cursor):
 
 def run_migrations():
     with conn.cursor() as cursor:
+        # Get already applied migrations
         try:
             applied = get_applied_migrations(cursor)
         except psycopg2.errors.UndefinedTable:
             conn.rollback()
+            # schema_migrations doesn't exist yet — create it
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS schema_migrations (
                     version     VARCHAR PRIMARY KEY,
@@ -34,24 +36,34 @@ def run_migrations():
             conn.commit()
             applied = set()
 
-            # Check if tables already exist (existing database)
-            cursor.execute("""
-                SELECT COUNT(*) FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name = 'users'
-            """)
-            users_exists = cursor.fetchone()[0] > 0
+        # Get all migration files sorted
+        migration_files = sorted(migrations_dir.glob("*.sql"))
 
-            if users_exists:
-                # Mark all existing migration files as already applied
-                migration_files = sorted(Path(migrations_dir).glob("*.sql"))
-                for f in migration_files:
-                    cursor.execute(
-                        "INSERT INTO schema_migrations (version) VALUES (%s) ON CONFLICT DO NOTHING",
-                        (f.stem,)
-                    )
+        for f in migration_files:
+            version = f.stem  # filename without .sql
+
+            if version in applied:
+                print(f"  SKIP  {version}")
+                continue
+
+            print(f"  RUN   {version}")
+            sql = f.read_text()
+
+            try:
+                cursor.execute(sql)
+                cursor.execute(
+                    "INSERT INTO schema_migrations (version) VALUES (%s)",
+                    (version,)
+                )
                 conn.commit()
-                print("Existing database detected — marked all migrations as applied")
-                applied = get_applied_migrations(cursor)
+                print(f"  OK    {version}")
+            except Exception as e:
+                conn.rollback()
+                print(f"  FAIL  {version}: {e}")
+                raise
+
+    conn.close()
+    print("Migrations complete!")
 
 if __name__ == "__main__":
     run_migrations()
