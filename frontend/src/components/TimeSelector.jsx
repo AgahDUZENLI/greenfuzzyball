@@ -79,7 +79,7 @@ function TimeSelector({ timeSlot, onTimeChange, duration, daySessions, conflict 
                 textDecoration: busy ? 'line-through' : 'none',
                 transition: 'all 0.15s'
               }}>
-                {t.startsWith('0') ? t.slice(1) : t}
+                {formatTime12(t)}
               </button>
             )
           })}

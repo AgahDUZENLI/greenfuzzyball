@@ -12,9 +12,9 @@ import { colors, spacing, radius, shadows } from '../../styles/tokens'
 import {
   Zap, FileText, CalendarX2, BrainCircuit,
   Users, Calendar, Share2, Gauge, Mail, Smartphone,
-  Map as MapIcon, ArrowRight, Home, Search, Download, ChevronRight,
+  ArrowRight, Home, Search, Download, ChevronRight,
   MessageSquare, FolderOpen, CheckCircle2, ArrowDown,
-  X, Check, Sun, Star, Save, TrendingUp
+  X, Check, Sun, Star, Save, TrendingUp, Link2, Trophy
 } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
@@ -72,6 +72,12 @@ const STEPS = [
   { n: '01', title: 'Create your account', text: 'Set your availability, coaching days, and default session length.' },
   { n: '02', title: 'Add your students', text: 'Bring over your roster with levels, contact info, and any notes you already keep.' },
   { n: '03', title: 'Book & track sessions', text: 'Plan drills, rate performance as you go, and watch progress build session after session.' }
+]
+
+const SHARED_SPACE = [
+  { icon: Link2, title: 'Link with a coach code', text: 'Every coach gets a private code. Students and parents enter it once to connect and start booking.' },
+  { icon: Users, title: 'Book for yourself or your kids', text: 'Parents can add each child, then book sessions and track progress separately for every kid.' },
+  { icon: Trophy, title: 'Progress, straight from the coach', text: 'Students and parents see the same drill ratings and session history the coach records.' }
 ]
 
 const STATS = [
@@ -398,7 +404,7 @@ function Landing() {
       <div id="how-it-works" style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.white }}>
         <SectionLabel>How it works</SectionLabel>
         <Typography variant="h2" mb={spacing[10]}>Up and running in three steps.</Typography>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: spacing[8], marginBottom: spacing[10] }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: spacing[8] }}>
           {STEPS.map(s => (
             <div key={s.n}>
               <div style={{ fontSize: '40px', fontWeight: '800', color: colors.gray[200], marginBottom: spacing[2] }}>{s.n}</div>
@@ -407,26 +413,25 @@ function Landing() {
             </div>
           ))}
         </div>
+      </div>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: spacing[4],
-          backgroundColor: colors.primaryLight, borderRadius: radius.xl,
-          padding: spacing[5]
-        }}>
-          <div style={{
-            width: '40px', height: '40px', borderRadius: radius.md, backgroundColor: colors.white,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-          }}>
-            <MapIcon size={18} color={colors.primary} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <Typography variant="h4" mb={spacing[1]}>Built for coaches today. A shared space for coaches and students tomorrow.</Typography>
-            <Typography variant="bodySmall">
-              Right now, Green Fuzzy Ball is all about running your coaching business. Student accounts —
-              so athletes can see their own progress — are on the roadmap.
-            </Typography>
-          </div>
-          <Badge label="Coming soon" />
+      {/* Shared space for coaches and students */}
+      <div style={{ padding: sectionPadding(spacing[12]), backgroundColor: colors.white, borderTop: `1px solid ${colors.gray[200]}` }}>
+        <SectionLabel>Now live</SectionLabel>
+        <Typography variant="h2" mb={spacing[10]} style={{ maxWidth: '640px' }}>
+          A shared space for coaches and students.
+        </Typography>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: spacing[6] }}>
+          {SHARED_SPACE.map(f => (
+            <div key={f.title} style={{
+              padding: spacing[6], borderRadius: radius.xl,
+              backgroundColor: colors.primaryLight, border: `1px solid ${colors.gray[200]}`
+            }}>
+              <f.icon size={22} color={colors.primary} style={{ marginBottom: spacing[3] }} />
+              <Typography variant="h4" mb={spacing[2]}>{f.title}</Typography>
+              <Typography variant="bodySmall">{f.text}</Typography>
+            </div>
+          ))}
         </div>
       </div>
 

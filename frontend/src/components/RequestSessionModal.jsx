@@ -4,21 +4,25 @@ import Typography from './Typography'
 import Button from './Button'
 import Modal from './Modal'
 import PersonSwitcher from './PersonSwitcher'
+import TimeSelector from './TimeSelector'
 import { Send } from 'lucide-react'
-import { requestSession, getMyJoinRequests } from '../services/api'
-import useIsMobile from '../hooks/useIsMobile'
+import { requestSession, getMyJoinRequests, getCoachAvailability } from '../services/api'
+import { hasConflict, formatTime12 } from '../utils/timeUtils'
+
+const DAY_ABBR = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' }
 
 function RequestSessionModal({ people, initialPersonId, onClose, onRequested }) {
-  const isMobile = useIsMobile()
   const [personId, setPersonId] = useState(initialPersonId)
   const [coaches, setCoaches] = useState([])
   const [coachesLoading, setCoachesLoading] = useState(true)
   const [coachId, setCoachId] = useState('')
   const [date, setDate] = useState('')
-  const [time, setTime] = useState('')
+  const [time, setTime] = useState('09:00')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [availability, setAvailability] = useState(null)
+  const [availabilityLoading, setAvailabilityLoading] = useState(false)
 
   useEffect(() => {
     getMyJoinRequests()
@@ -26,6 +30,23 @@ function RequestSessionModal({ people, initialPersonId, onClose, onRequested }) 
       .catch(() => setCoaches([]))
       .finally(() => setCoachesLoading(false))
   }, [])
+
+  // Load the selected coach's availability + booked times for the chosen date
+  useEffect(() => {
+    if (!coachId || !date) {
+      setAvailability(null)
+      return
+    }
+    setAvailabilityLoading(true)
+    getCoachAvailability(coachId, date)
+      .then(res => setAvailability(res.data))
+      .catch(() => setAvailability(null))
+      .finally(() => setAvailabilityLoading(false))
+  }, [coachId, date])
+
+  const duration = availability?.session_duration?.[0] || 60
+  const busyBlocks = availability?.busy_blocks || []
+  const conflict = availability ? hasConflict(busyBlocks, time, duration) : false
 
   // Default the coach to whichever coach is already linked to the selected person
   useEffect(() => {
@@ -133,29 +154,40 @@ function RequestSessionModal({ people, initialPersonId, onClose, onRequested }) 
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: spacing[4], marginBottom: spacing[4] }}>
-            <div>
-              <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>DATE</Typography>
-              <input
-                type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = colors.primary}
-                onBlur={e => e.target.style.borderColor = colors.gray[200]}
+          <div style={{ marginBottom: spacing[2] }}>
+            <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>DATE</Typography>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = colors.primary}
+              onBlur={e => e.target.style.borderColor = colors.gray[200]}
+            />
+          </div>
+
+          {availability && (
+            <Typography variant="caption" color={colors.gray[400]} style={{ display: 'block', marginBottom: spacing[3] }}>
+              Coach available {(availability.coaching_days || []).map(d => DAY_ABBR[d] || d).join(', ')}
+              {availability.availability_start && availability.availability_end &&
+                ` · ${formatTime12(String(availability.availability_start).slice(0, 5))} – ${formatTime12(String(availability.availability_end).slice(0, 5))}`}
+            </Typography>
+          )}
+
+          <div style={{ marginBottom: spacing[4] }}>
+            {!date ? (
+              <Typography variant="bodySmall" color={colors.gray[400]}>Pick a date to see the coach's open times.</Typography>
+            ) : availabilityLoading ? (
+              <Typography variant="bodySmall" color={colors.gray[400]}>Loading availability...</Typography>
+            ) : (
+              <TimeSelector
+                timeSlot={time}
+                onTimeChange={setTime}
+                duration={duration}
+                daySessions={busyBlocks}
+                conflict={conflict}
               />
-            </div>
-            <div>
-              <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>TIME (OPTIONAL)</Typography>
-              <input
-                type="time"
-                value={time}
-                onChange={e => setTime(e.target.value)}
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = colors.primary}
-                onBlur={e => e.target.style.borderColor = colors.gray[200]}
-              />
-            </div>
+            )}
           </div>
 
           <div style={{ marginBottom: spacing[6] }}>
