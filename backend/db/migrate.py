@@ -20,8 +20,6 @@ def get_applied_migrations(cursor):
     return {row[0] for row in cursor.fetchall()}
 
 def run_migrations():
-    migration_files = sorted(migrations_dir.glob("*.sql"))
-
     with conn.cursor() as cursor:
         try:
             applied = get_applied_migrations(cursor)
@@ -38,13 +36,14 @@ def run_migrations():
 
             # Check if tables already exist (existing database)
             cursor.execute("""
-                SELECT COUNT(*) FROM information_schema.tables
+                SELECT COUNT(*) FROM information_schema.tables 
                 WHERE table_schema = 'public' AND table_name = 'users'
             """)
             users_exists = cursor.fetchone()[0] > 0
 
             if users_exists:
                 # Mark all existing migration files as already applied
+                migration_files = sorted(Path(migrations_dir).glob("*.sql"))
                 for f in migration_files:
                     cursor.execute(
                         "INSERT INTO schema_migrations (version) VALUES (%s) ON CONFLICT DO NOTHING",
@@ -53,23 +52,6 @@ def run_migrations():
                 conn.commit()
                 print("Existing database detected — marked all migrations as applied")
                 applied = get_applied_migrations(cursor)
-
-        pending = [f for f in migration_files if f.stem not in applied]
-
-        if not pending:
-            print("No pending migrations")
-            return
-
-        for f in pending:
-            print(f"Applying migration {f.stem}")
-            cursor.execute(f.read_text())
-            cursor.execute(
-                "INSERT INTO schema_migrations (version) VALUES (%s)",
-                (f.stem,)
-            )
-            conn.commit()
-
-        print(f"Applied {len(pending)} migration(s)")
 
 if __name__ == "__main__":
     run_migrations()
