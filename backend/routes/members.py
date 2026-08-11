@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from datetime import date as _date, datetime, time as _time
 import psycopg2.extras
 
@@ -11,7 +11,8 @@ from models.schemas import (
     JoinByCodeRequest,
     SessionRequestCreate,
     SessionRequestResponse,
-    CancelSessionRequest
+    CancelSessionRequest,
+    CoachAvailabilityResponse
 )
 from middleware.auth_middleware import get_current_user
 from services.notification_service import create_notification
@@ -418,6 +419,42 @@ def remove_coach(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not remove coach"
         )
+
+
+# ─── GET A LINKED COACH'S AVAILABILITY ────────────────────────────────────────
+
+@router.get("/coaches/{coach_id}/availability", response_model=CoachAvailabilityResponse)
+def get_coach_availability(
+    coach_id: str,
+    date: str = Query(...),
+    conn=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute("""
+            SELECT status FROM coach_join_requests
+            WHERE member_id = %s AND coach_id = %s AND status = 'approved'
+        """, (str(current_user["user_id"]), coach_id))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=403, detail="You're not connected with this coach")
+
+        cursor.execute("""
+            SELECT availability_start, availability_end, coaching_days, session_duration
+            FROM coaches WHERE user_id = %s
+        """, (coach_id,))
+        coach = cursor.fetchone()
+        if not coach:
+            raise HTTPException(status_code=404, detail="Coach not found")
+
+        cursor.execute("""
+            SELECT start_time, duration_minutes, type
+            FROM sessions
+            WHERE coach_id = %s AND date = %s AND status != 'cancelled'
+            ORDER BY start_time ASC
+        """, (coach_id, date))
+        busy_blocks = cursor.fetchall()
+
+        return {**coach, "busy_blocks": busy_blocks}
 
 
 # ─── REQUEST A SESSION ────────────────────────────────────────────────────────

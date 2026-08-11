@@ -116,6 +116,18 @@ class CoachResponse(BaseModel):
     coaching_days: Optional[list[str]]
     notification_preferences: Optional[dict] = None
 
+class BusyBlock(BaseModel):
+    start_time: time
+    duration_minutes: int
+    type: str
+
+class CoachAvailabilityResponse(BaseModel):
+    availability_start: Optional[time]
+    availability_end: Optional[time]
+    coaching_days: Optional[list[str]]
+    session_duration: Optional[list[int]]
+    busy_blocks: list[BusyBlock] = []
+
 # ─── STUDENTS ───────────────────────────────────
 
 class CreateStudentRequest(BaseModel):

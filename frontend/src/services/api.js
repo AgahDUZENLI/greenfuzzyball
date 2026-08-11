@@ -155,6 +155,7 @@ export const deleteChild = (childId) => api.delete(`/members/children/${childId}
 export const getMyJoinRequests = () => api.get('/members/join-requests')
 export const joinCoachByCode = (code) => api.post('/members/join-by-code', { code })
 export const removeCoach = (requestId) => api.delete(`/members/join-requests/${requestId}`)
+export const getCoachAvailability = (coachId, date) => api.get(`/members/coaches/${coachId}/availability?date=${date}`)
 export const requestSession = (data) => api.post('/members/session-requests', data)
 export const getMySessionRequests = () => api.get('/members/session-requests')
 export const deleteSessionRequest = (requestId) => api.delete(`/members/session-requests/${requestId}`)

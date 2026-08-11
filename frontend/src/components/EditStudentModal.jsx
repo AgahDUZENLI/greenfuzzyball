@@ -92,7 +92,7 @@ function EditStudentModal({ student, onClose, onUpdated, onDeleted }) {
             </Button>
           </div>
         </div>
-      }
+      }Do 
     >
 
       {/* Avatar preview */}
