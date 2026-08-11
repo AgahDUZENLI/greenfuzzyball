@@ -1,10 +1,3 @@
--- ─── MIGRATIONS ──────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS schema_migrations (
-    version     VARCHAR PRIMARY KEY,
-    applied_at  TIMESTAMP DEFAULT NOW()
-);
-
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
