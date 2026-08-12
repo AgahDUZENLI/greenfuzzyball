@@ -53,7 +53,8 @@ function Register() {
     setLoading(true)
     try {
       await register({ name, email, password, role: tab, location: tab === 'coach' ? location : null })
-      navigate('/login')
+      await login(email, password, true, tab)
+      navigate('/')
     } catch (err) {
       setError(err.response?.data?.detail || 'Something went wrong')
     } finally {

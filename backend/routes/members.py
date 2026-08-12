@@ -344,6 +344,7 @@ def join_coach_by_code(
             create_notification(
                 cursor, coach_id,
                 f"{current_user['name']} wants to join as a client",
+                link=f"/students?joinRequestId={request['request_id']}",
                 notification_type="join_request"
             )
 
