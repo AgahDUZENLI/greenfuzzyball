@@ -6,8 +6,11 @@ from middleware.auth_middleware import get_current_coach
 from models.schemas import (
     CreateStudentRequest,
     UpdateStudentRequest,
-    StudentResponse
+    LinkMemberRequest,
+    StudentResponse,
+    MergeStudentResponse
 )
+from services.notification_service import create_notification
 
 router = APIRouter()
 
@@ -208,6 +211,269 @@ def update_student(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not update student"
+        )
+
+
+# ─── LINK STUDENT TO MEMBER ───────────────────────────────────────────────────
+
+@router.post("/{student_id}/link-member", response_model=StudentResponse)
+def link_student_to_member(
+    student_id: str,
+    data: LinkMemberRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    member_id = str(data.member_id)
+
+    if student_id == member_id:
+        raise HTTPException(status_code=400, detail="Cannot link a student to themselves")
+
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+            # Verify the kid belongs to this coach's roster
+            cursor.execute("""
+                SELECT u.name FROM coach_students cs
+                JOIN users u ON u.user_id = cs.student_id
+                WHERE cs.coach_id = %s AND cs.student_id = %s
+            """, (str(coach["user_id"]), student_id))
+            kid = cursor.fetchone()
+            if not kid:
+                raise HTTPException(status_code=404, detail="Student not found")
+
+            # The kid must not already be member-managed
+            cursor.execute("SELECT 1 FROM members WHERE user_id = %s", (student_id,))
+            is_own_member = cursor.fetchone() is not None
+            cursor.execute("SELECT 1 FROM member_children WHERE student_id = %s", (student_id,))
+            is_member_child = cursor.fetchone() is not None
+            if is_own_member or is_member_child:
+                raise HTTPException(status_code=400, detail="This student is already linked to a member account")
+
+            # member_id must be a member already connected to this coach
+            cursor.execute("""
+                SELECT 1 FROM coach_students
+                WHERE coach_id = %s AND student_id = %s
+            """, (str(coach["user_id"]), member_id))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Member not found in your roster")
+
+            cursor.execute("SELECT 1 FROM members WHERE user_id = %s", (member_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=400, detail="That person is not a member account")
+
+            cursor.execute("SELECT 1 FROM member_children WHERE student_id = %s", (member_id,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=400, detail="That account is itself a linked child and can't have children of its own")
+
+            cursor.execute("""
+                INSERT INTO member_children (member_id, student_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """, (member_id, student_id))
+
+            create_notification(
+                cursor, member_id,
+                f"{coach['name']} linked {kid['name']} to your account",
+                link="/member/profile",
+                notification_type="child_linked"
+            )
+
+            cursor.execute("""
+                SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                       s.level, s.notes, (m.user_id IS NOT NULL OR mc.member_id IS NOT NULL) AS is_member,
+                       mc.member_id AS parent_member_id, mu.name AS parent_member_name
+                FROM users u
+                JOIN students s ON u.user_id = s.user_id
+                LEFT JOIN members m ON m.user_id = u.user_id
+                LEFT JOIN member_children mc ON mc.student_id = u.user_id
+                LEFT JOIN users mu ON mu.user_id = mc.member_id
+                WHERE u.user_id = %s
+            """, (student_id,))
+
+            conn.commit()
+            return cursor.fetchone()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"LINK STUDENT TO MEMBER ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not link student to member"
+        )
+
+
+# ─── UNLINK STUDENT FROM MEMBER ────────────────────────────────────────────────
+
+@router.delete("/{student_id}/link-member", response_model=StudentResponse)
+def unlink_student_from_member(
+    student_id: str,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+            # Verify the kid belongs to this coach's roster
+            cursor.execute("""
+                SELECT 1 FROM coach_students
+                WHERE coach_id = %s AND student_id = %s
+            """, (str(coach["user_id"]), student_id))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Student not found")
+
+            cursor.execute("DELETE FROM member_children WHERE student_id = %s", (student_id,))
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=400, detail="This student isn't linked to a member")
+
+            cursor.execute("""
+                SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                       s.level, s.notes, (m.user_id IS NOT NULL OR mc.member_id IS NOT NULL) AS is_member,
+                       mc.member_id AS parent_member_id, mu.name AS parent_member_name
+                FROM users u
+                JOIN students s ON u.user_id = s.user_id
+                LEFT JOIN members m ON m.user_id = u.user_id
+                LEFT JOIN member_children mc ON mc.student_id = u.user_id
+                LEFT JOIN users mu ON mu.user_id = mc.member_id
+                WHERE u.user_id = %s
+            """, (student_id,))
+
+            conn.commit()
+            return cursor.fetchone()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"UNLINK STUDENT FROM MEMBER ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not unlink student from member"
+        )
+
+
+# ─── MERGE STUDENT INTO MEMBER ─────────────────────────────────────────────────
+
+@router.post("/{student_id}/merge-into-member", response_model=MergeStudentResponse)
+def merge_student_into_member(
+    student_id: str,
+    data: LinkMemberRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    member_id = str(data.member_id)
+
+    if student_id == member_id:
+        raise HTTPException(status_code=400, detail="Cannot merge a student into themselves")
+
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+            # Verify the source student belongs to this coach's roster
+            cursor.execute("""
+                SELECT u.name FROM coach_students cs
+                JOIN users u ON u.user_id = cs.student_id
+                WHERE cs.coach_id = %s AND cs.student_id = %s
+            """, (str(coach["user_id"]), student_id))
+            old = cursor.fetchone()
+            if not old:
+                raise HTTPException(status_code=404, detail="Student not found")
+
+            # The source must not already be member-managed
+            cursor.execute("SELECT 1 FROM members WHERE user_id = %s", (student_id,))
+            is_own_member = cursor.fetchone() is not None
+            cursor.execute("SELECT 1 FROM member_children WHERE student_id = %s", (student_id,))
+            is_member_child = cursor.fetchone() is not None
+            if is_own_member or is_member_child:
+                raise HTTPException(status_code=400, detail="This student is already linked to a member account")
+
+            # member_id must be a member already connected to this coach
+            cursor.execute("""
+                SELECT 1 FROM coach_students
+                WHERE coach_id = %s AND student_id = %s
+            """, (str(coach["user_id"]), member_id))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Member not found in your roster")
+
+            cursor.execute("SELECT 1 FROM members WHERE user_id = %s", (member_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=400, detail="That person is not a member account")
+
+            cursor.execute("SELECT 1 FROM member_children WHERE student_id = %s", (member_id,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=400, detail="That account is itself a linked child and can't have children of its own")
+
+            # Move session history off the old id, dropping anything that
+            # would collide with data the member already has under their own id
+            cursor.execute("""
+                DELETE FROM session_drill_ratings AS old_r
+                USING session_drill_ratings AS new_r
+                WHERE old_r.student_id = %s AND new_r.student_id = %s
+                  AND old_r.session_id = new_r.session_id AND old_r.drill_id = new_r.drill_id
+            """, (student_id, member_id))
+            cursor.execute("""
+                UPDATE session_drill_ratings SET student_id = %s WHERE student_id = %s
+            """, (member_id, student_id))
+
+            cursor.execute("""
+                DELETE FROM session_students AS old_ss
+                USING session_students AS new_ss
+                WHERE old_ss.student_id = %s AND new_ss.student_id = %s
+                  AND old_ss.session_id = new_ss.session_id
+            """, (student_id, member_id))
+            cursor.execute("""
+                UPDATE session_students SET student_id = %s WHERE student_id = %s
+            """, (member_id, student_id))
+
+            # Carry the coach-entered level/notes onto the member's own record
+            cursor.execute("""
+                UPDATE students AS target
+                SET level = COALESCE(target.level, old.level),
+                    notes = CASE
+                        WHEN target.notes IS NULL OR target.notes = '' THEN old.notes
+                        WHEN old.notes IS NULL OR old.notes = '' THEN target.notes
+                        ELSE target.notes || E'\n---\n' || old.notes
+                    END
+                FROM students AS old
+                WHERE target.user_id = %s AND old.user_id = %s
+            """, (member_id, student_id))
+
+            create_notification(
+                cursor, member_id,
+                f"{coach['name']} merged {old['name']}'s session history into your account",
+                link="/member/profile",
+                notification_type="student_merged"
+            )
+
+            # The old identity is now fully superseded — delete it last, once
+            # everything worth keeping has already been moved off it
+            cursor.execute("DELETE FROM users WHERE user_id = %s", (student_id,))
+
+            cursor.execute("""
+                SELECT u.user_id, u.name, u.email, u.phone, u.location, u.age,
+                       s.level, s.notes, (m.user_id IS NOT NULL OR mc.member_id IS NOT NULL) AS is_member,
+                       mc.member_id AS parent_member_id, mu.name AS parent_member_name
+                FROM users u
+                JOIN students s ON u.user_id = s.user_id
+                LEFT JOIN members m ON m.user_id = u.user_id
+                LEFT JOIN member_children mc ON mc.student_id = u.user_id
+                LEFT JOIN users mu ON mu.user_id = mc.member_id
+                WHERE u.user_id = %s
+            """, (member_id,))
+            merged_member = cursor.fetchone()
+
+            conn.commit()
+            return {"merged_member": merged_member, "deleted_student_id": student_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"MERGE STUDENT ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not merge student into member"
         )
 
 

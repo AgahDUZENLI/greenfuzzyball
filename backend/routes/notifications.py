@@ -16,7 +16,7 @@ def get_notifications(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT notification_id, message, link, read_at, created_at
+            SELECT notification_id, message, link, type, read_at, created_at
             FROM notifications
             WHERE user_id = %s
             ORDER BY created_at DESC

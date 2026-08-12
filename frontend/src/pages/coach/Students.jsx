@@ -85,7 +85,10 @@ function Students() {
     getStudents()
       .then(res => {
         setStudents(res.data)
-        if (res.data.length > 0 && !selected) setSelected(res.data[0])
+        setSelected(prev => {
+          if (prev && res.data.some(s => s.user_id === prev.user_id)) return prev
+          return res.data.length > 0 ? res.data[0] : null
+        })
       })
       .finally(() => setLoading(false))
   }, [])
@@ -103,6 +106,8 @@ function Students() {
   useEffect(() => {
     setPageCache('students', { students, selected, progress, sessions })
   }, [students, selected, progress, sessions])
+
+  const candidateMembers = students.filter(s => s.is_member && !s.parent_member_id)
 
   const filtered = students.filter(s =>
     (filter === 'all' || ageBucket(s.age) === filter) &&
@@ -495,10 +500,15 @@ function Students() {
 
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: spacing[4] }}>
             <Typography variant="bodySmall" color={colors.gray[400]}>
-              {students.length === 0 ? 'No students' : 'Select a student'}
+              {students.length === 0 ? 'No students yet' : 'Select a student'}
             </Typography>
+            {students.length === 0 && (
+              <Button onClick={() => setShowAddModal(true)}>
+                <Plus size={14} /> Add Student
+              </Button>
+            )}
           </div>
         ))}
 
@@ -518,6 +528,7 @@ function Students() {
       {showEditModal && selected && (
         <EditStudentModal
           student={selected}
+          candidateMembers={candidateMembers}
           onClose={() => setShowEditModal(false)}
           onUpdated={updated => {
             setStudents(prev => prev.map(s => s.user_id === updated.user_id ? updated : s))

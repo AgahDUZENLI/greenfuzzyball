@@ -150,6 +150,9 @@ class UpdateStudentRequest(BaseModel):
     level: Optional[str] = None
     notes: Optional[str] = None
 
+class LinkMemberRequest(BaseModel):
+    member_id: UUID
+
 class StudentResponse(BaseModel):
     user_id: UUID
     name: str
@@ -162,6 +165,10 @@ class StudentResponse(BaseModel):
     is_member: bool = False
     parent_member_id: Optional[UUID] = None
     parent_member_name: Optional[str] = None
+
+class MergeStudentResponse(BaseModel):
+    merged_member: StudentResponse
+    deleted_student_id: UUID
 
 class AddStudentToCoachRequest(BaseModel):
     student_id: UUID
