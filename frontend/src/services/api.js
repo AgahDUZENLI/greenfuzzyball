@@ -98,6 +98,9 @@ export const getStudent = (id) => api.get(`/students/${id}`)
 export const createStudent = (data) => api.post('/students/', data)
 export const updateStudent = (id, data) => api.put(`/students/${id}`, data)
 export const deleteStudent = (id) => api.delete(`/students/${id}`)
+export const linkStudentToMember = (id, memberId) => api.post(`/students/${id}/link-member`, { member_id: memberId })
+export const unlinkStudentFromMember = (id) => api.delete(`/students/${id}/link-member`)
+export const mergeStudentIntoMember = (id, memberId) => api.post(`/students/${id}/merge-into-member`, { member_id: memberId })
 
 // Drills
 export const getDrills = () => api.get('/drills/')

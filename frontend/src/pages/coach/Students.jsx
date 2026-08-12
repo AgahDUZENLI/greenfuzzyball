@@ -107,6 +107,8 @@ function Students() {
     setPageCache('students', { students, selected, progress, sessions })
   }, [students, selected, progress, sessions])
 
+  const candidateMembers = students.filter(s => s.is_member && !s.parent_member_id)
+
   const filtered = students.filter(s =>
     (filter === 'all' || ageBucket(s.age) === filter) &&
     s.name.toLowerCase().includes(search.toLowerCase())
@@ -526,6 +528,7 @@ function Students() {
       {showEditModal && selected && (
         <EditStudentModal
           student={selected}
+          candidateMembers={candidateMembers}
           onClose={() => setShowEditModal(false)}
           onUpdated={updated => {
             setStudents(prev => prev.map(s => s.user_id === updated.user_id ? updated : s))
