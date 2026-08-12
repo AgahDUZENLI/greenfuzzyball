@@ -18,6 +18,7 @@ function BookSessionModal({
   initialCourtId = null,
   initialDuration = null,
   initialDrillIds = [],
+  initialDate = null,
   session = null,
   onClose,
   onBooked,
@@ -27,7 +28,7 @@ function BookSessionModal({
   const isEditMode = !!session
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  const defaultDate = tomorrow.toISOString().split('T')[0]
+  const defaultDate = initialDate || tomorrow.toISOString().split('T')[0]
 
   const preStudents = session
     ? (session.students || [])

@@ -707,6 +707,7 @@ function Dashboard() {
       <BookSessionModal
         student={bookStudent}
         students={students}
+        initialDate={selectedDate}
         onClose={() => { setShowBookModal(false); setBookStudent(null) }}
         onBooked={() => {
           setShowBookModal(false)
