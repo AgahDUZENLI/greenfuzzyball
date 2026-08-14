@@ -163,17 +163,17 @@ def update_student(
                 if any([data.phone, data.location]):
                     cursor.execute("""
                         UPDATE users SET
-                            phone = COALESCE(%s, phone),
-                            location = COALESCE(%s, location)
+                            phone = COALESCE(NULLIF(%s, ''), phone),
+                            location = COALESCE(NULLIF(%s, ''), location)
                         WHERE user_id = %s
                     """, (data.phone, data.location, student_id))
             elif any([data.name, data.email, data.phone, data.location, data.age is not None]):
                 cursor.execute("""
                     UPDATE users SET
                         name = COALESCE(%s, name),
-                        email = COALESCE(%s, email),
-                        phone = COALESCE(%s, phone),
-                        location = COALESCE(%s, location),
+                        email = COALESCE(NULLIF(%s, ''), email),
+                        phone = COALESCE(NULLIF(%s, ''), phone),
+                        location = COALESCE(NULLIF(%s, ''), location),
                         age = COALESCE(%s, age)
                     WHERE user_id = %s
                 """, (data.name, data.email, data.phone, data.location, data.age, student_id))
