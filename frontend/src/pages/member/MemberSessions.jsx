@@ -8,6 +8,7 @@ import Avatar from '../../components/Avatar'
 import PersonSwitcher from '../../components/PersonSwitcher'
 import { colors, spacing, radius } from '../../styles/tokens'
 import { getMemberSessions, getChildren, getMySessionRequests, deleteSessionRequest } from '../../services/api'
+import { localDateStr } from '../../utils/timeUtils'
 import useIsMobile from '../../hooks/useIsMobile'
 import { X } from 'lucide-react'
 import { getPageCache, setPageCache } from '../../utils/pageCache'
@@ -211,7 +212,7 @@ function MemberSessions() {
 
   const pendingRequests = sessionRequests.filter(r => r.status === 'pending')
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
 
   const upcomingSessions = visibleSessions
     .filter(s => s.date >= todayStr)

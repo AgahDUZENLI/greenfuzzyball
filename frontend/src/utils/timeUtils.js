@@ -1,3 +1,7 @@
+export function localDateStr(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 export function timeToMinutes(t) {
   if (!t) return 0
   const [h, m] = String(t).split(':').map(Number)

@@ -21,6 +21,7 @@ import {
 } from '../../services/api'
 import useIsMobile from '../../hooks/useIsMobile'
 import { getPageCache, setPageCache } from '../../utils/pageCache'
+import { localDateStr } from '../../utils/timeUtils'
 
 const CHILD_COLORS = ['#8b5cf6', '#3b82f6', '#ec4899', '#06b6d4']
 
@@ -122,7 +123,7 @@ function MemberDashboard() {
     fetchAll()
   }, [])
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
 
   const people = user ? [
     { id: user.user_id, label: `${firstName(user.name)} (Me)`, name: user.name, isSelf: true, coach_id: selfCoach?.coach_id, coach_name: selfCoach?.coach_name },
