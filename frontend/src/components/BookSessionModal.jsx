@@ -4,7 +4,7 @@ import Typography from './Typography'
 import Button from './Button'
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react'
 import { createSession, updateSession, getCoachCourts, getSessions, getStudents } from '../services/api'
-import { hasConflict, timeToMinutes, formatTime12 } from '../utils/timeUtils'
+import { hasConflict, timeToMinutes, formatTime12, localDateStr } from '../utils/timeUtils'
 import StudentCard from './StudentCard'
 import DateSelector from './DateSelector'
 import TimeSelector from './TimeSelector'
@@ -28,7 +28,7 @@ function BookSessionModal({
   const isEditMode = !!session
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  const defaultDate = initialDate || tomorrow.toISOString().split('T')[0]
+  const defaultDate = initialDate || localDateStr(tomorrow)
 
   const preStudents = session
     ? (session.students || [])

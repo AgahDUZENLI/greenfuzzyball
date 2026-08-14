@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
+import { localDateStr } from '../utils/timeUtils'
 
 function dotColorFor(session) {
   if (session.status === 'cancelled') return colors.gray[300]
@@ -12,8 +13,7 @@ function dotColorFor(session) {
 function Calendar({ sessions = [], selectedDate, onDayClick, legend }) {
   const [currentDate, setCurrentDate] = useState(new Date())
 
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  const todayStr = localDateStr()
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()

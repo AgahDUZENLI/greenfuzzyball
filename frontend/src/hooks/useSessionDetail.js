@@ -3,7 +3,7 @@ import {
   getSession, addRating, getDrills,
   addDrillToSession, removeDrillFromSession, updateSession
 } from '../services/api'
-import { formatTime12 } from '../utils/timeUtils'
+import { formatTime12, localDateStr } from '../utils/timeUtils'
 import { getPageCache, setPageCache } from '../utils/pageCache'
 
 function buildRatings(session) {
@@ -86,7 +86,7 @@ export function useSessionDetail(sessionId) {
 
   // ── Derived values ────────────────────────────────────────────────────────
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
   const isPast = session ? session.date < todayStr : false
 
   const dateLabel = session

@@ -3,6 +3,7 @@ import Layout from '../../components/Layout'
 import Button from '../../components/Button'
 import Typography from '../../components/Typography'
 import { getStudents, getSessions } from '../../services/api'
+import { localDateStr } from '../../utils/timeUtils'
 import { colors, spacing, radius } from '../../styles/tokens'
 import { ChevronLeft, ChevronRight, Plus, Clock, CheckCircle, Calendar as CalendarIcon } from 'lucide-react'
 import BookSessionModal from '../../components/BookSessionModal'
@@ -42,7 +43,7 @@ function Sessions() {
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear
   })
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
   const upcoming = filteredSessions.filter(s => s.date >= todayStr).sort((a, b) => a.date.localeCompare(b.date))
   const past = filteredSessions.filter(s => s.date < todayStr).sort((a, b) => b.date.localeCompare(a.date))
 
@@ -57,10 +58,10 @@ function Sessions() {
   }
 
   const formatDateLabel = (dateStr) => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = localDateStr()
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
-    const tomorrowStr = tomorrow.toISOString().split('T')[0]
+    const tomorrowStr = localDateStr(tomorrow)
     if (dateStr === today) return { main: 'Today', sub: new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }
     if (dateStr === tomorrowStr) return { main: 'Tomorrow', sub: new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }
     return {

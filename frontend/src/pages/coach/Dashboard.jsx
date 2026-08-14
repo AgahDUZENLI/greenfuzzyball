@@ -19,6 +19,7 @@ import BookSessionModal from '../../components/BookSessionModal'
 import NotificationBell from '../../components/NotificationBell'
 import useIsMobile from '../../hooks/useIsMobile'
 import { getPageCache, setPageCache } from '../../utils/pageCache'
+import { localDateStr } from '../../utils/timeUtils'
 
 function formatTime(t) {
   if (!t) return null
@@ -47,7 +48,7 @@ function Dashboard() {
   const [drills, setDrills] = useState(() => cached?.drills ?? [])
   const [loading, setLoading] = useState(() => !cached)
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
   const [selectedDate, setSelectedDate] = useState(todayStr)
 
   const hour = new Date().getHours()

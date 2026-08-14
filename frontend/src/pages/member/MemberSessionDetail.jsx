@@ -5,7 +5,7 @@ import Avatar from '../../components/Avatar'
 import Typography from '../../components/Typography'
 import PerformanceSection from '../../components/PerformanceSection'
 import { getMemberSessionDetail } from '../../services/api'
-import { formatTime12 } from '../../utils/timeUtils'
+import { formatTime12, localDateStr } from '../../utils/timeUtils'
 import { colors, spacing, radius } from '../../styles/tokens'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
@@ -63,7 +63,7 @@ function MemberSessionDetail() {
     </Layout>
   )
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
   const isPast = session.date < todayStr
   const dateLabel = new Date(session.date + 'T00:00:00').toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric'
