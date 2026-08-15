@@ -306,6 +306,54 @@ def cancel_session_as_coach(
         )
 
 
+# ─── COACH DELETE SESSION ──────────────────────────────────────────────────────
+
+@router.delete("/{session_id}", status_code=200)
+def delete_session(
+    session_id: str,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT session_id, date, status FROM sessions
+                WHERE session_id = %s AND coach_id = %s
+            """, (session_id, str(coach["user_id"])))
+            session = cursor.fetchone()
+            if not session:
+                raise HTTPException(status_code=404, detail="Session not found")
+
+            recipients = []
+            if session["status"] in ("scheduled", "cancellation_pending"):
+                cursor.execute("""
+                    SELECT DISTINCT COALESCE(mc.member_id, ss.student_id) as member_id
+                    FROM session_students ss
+                    LEFT JOIN member_children mc ON mc.student_id = ss.student_id
+                    WHERE ss.session_id = %s
+                """, (session_id,))
+                recipients = cursor.fetchall()
+
+            cursor.execute("DELETE FROM sessions WHERE session_id = %s", (session_id,))
+
+            message = f"{coach['name']} deleted your session on {session['date']}"
+            for r in recipients:
+                create_notification(cursor, r["member_id"], message, notification_type="session_deleted")
+
+            conn.commit()
+            return {"session_id": session_id, "deleted": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"DELETE SESSION ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not delete session"
+        )
+
+
 # ─── ADD RATING ───────────────────────────────────────────────────────────────
 
 @router.post("/{session_id}/ratings", response_model=RatingResponse, status_code=201)
