@@ -207,6 +207,31 @@ class DrillResponse(BaseModel):
     categories: list[CategoryResponse] = []
 
 
+# ─── COURTS ─────────────────────────────────────
+
+class CreateCourtRequest(BaseModel):
+    name: str
+    city: str
+    area: Optional[str] = None
+    address: Optional[str] = None
+    map_url: Optional[str] = None
+
+class UpdateCourtRequest(BaseModel):
+    name: Optional[str] = None
+    city: Optional[str] = None
+    area: Optional[str] = None
+    address: Optional[str] = None
+    map_url: Optional[str] = None
+
+class CourtResponse(BaseModel):
+    court_id: UUID
+    name: str
+    city: str
+    area: Optional[str] = None
+    address: Optional[str] = None
+    map_url: Optional[str] = None
+    is_own: bool = False
+
 # ─── SESSIONS ───────────────────────────────────
 
 class CreateSessionRequest(BaseModel):
@@ -230,6 +255,8 @@ class SessionResponse(BaseModel):
     court_id: Optional[UUID] = None
     court_name: Optional[str] = None
     court_area: Optional[str] = None
+    court_address: Optional[str] = None
+    court_map_url: Optional[str] = None
     student_names: list[str] = []
     unrated: bool = False
     status: str = "scheduled"

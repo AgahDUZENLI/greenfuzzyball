@@ -541,6 +541,7 @@ def get_member_sessions(
                 s.session_id, s.date, s.start_time, s.duration_minutes,
                 s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                 c.name as court_name, c.area as court_area,
+                c.address as court_address, c.map_url as court_map_url,
                 u.name as coach_name,
                 COALESCE(
                     json_agg(
@@ -563,7 +564,7 @@ def get_member_sessions(
                 sdr.drill_id = d.drill_id AND
                 sdr.student_id = %s
             WHERE ss.student_id = %s
-            GROUP BY s.session_id, c.name, c.area, u.name
+            GROUP BY s.session_id, c.name, c.area, c.address, c.map_url, u.name
             ORDER BY s.date DESC
         """, (sid, sid))
 
@@ -584,6 +585,7 @@ def get_member_session_detail(
                 s.session_id, s.date, s.start_time, s.duration_minutes,
                 s.type, s.created_at, s.status, s.cancellation_reason,
                 c.court_id, c.name as court_name, c.area as court_area,
+                c.address as court_address, c.map_url as court_map_url,
                 u.name as coach_name
             FROM sessions s
             JOIN session_students ss ON s.session_id = ss.session_id

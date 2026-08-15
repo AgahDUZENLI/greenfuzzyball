@@ -1,7 +1,7 @@
 import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Avatar from './Avatar'
-import { Plus, Check } from 'lucide-react'
+import { Plus, Check, MapPin } from 'lucide-react'
 import { formatTime12, minutesToTime, timeToMinutes } from '../utils/timeUtils'
 
 function SessionSummary({ allSlots, student, courts, courtId, daySessions, selectedDateLabel, onSlotClick }) {
@@ -73,6 +73,23 @@ function SessionSummary({ allSlots, student, courts, courtId, daySessions, selec
                       {formatTime12(startLabel)} – {formatTime12(endLabel)}
                       {selectedCourt ? ` · ${selectedCourt.name}` : ''}
                     </Typography>
+                    {selectedCourt?.address && (
+                      <Typography variant="caption" color={colors.gray[400]} style={{ display: 'block' }}>
+                        {selectedCourt.address}
+                      </Typography>
+                    )}
+                    {selectedCourt?.map_url && /^https?:\/\//i.test(selectedCourt.map_url) && (
+                      <a
+                        href={selectedCourt.map_url} target="_blank" rel="noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          fontSize: '12px', fontWeight: '600', color: colors.primary,
+                          textDecoration: 'none', marginTop: '2px'
+                        }}
+                      >
+                        <MapPin size={12} /> Get directions
+                      </a>
+                    )}
                   </div>
                   <Check size={18} color={colors.primary} />
                 </div>

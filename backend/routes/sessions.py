@@ -102,7 +102,8 @@ def create_session(
                 SELECT
                     s.session_id, s.date, s.start_time, s.duration_minutes,
                     s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
-                    c.court_id, c.name as court_name, c.area as court_area
+                    c.court_id, c.name as court_name, c.area as court_area,
+                    c.address as court_address, c.map_url as court_map_url
                 FROM sessions s
                 LEFT JOIN courts c ON s.court_id = c.court_id
                 WHERE s.session_id = %s
@@ -147,6 +148,7 @@ def get_sessions(
                     s.session_id, s.date, s.start_time, s.duration_minutes,
                     s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                     c.court_id, c.name as court_name, c.area as court_area,
+                    c.address as court_address, c.map_url as court_map_url,
                     COALESCE(
                         array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
                         ARRAY[]::text[]
@@ -167,6 +169,7 @@ def get_sessions(
                     s.session_id, s.date, s.start_time, s.duration_minutes,
                     s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
                     c.court_id, c.name as court_name, c.area as court_area,
+                    c.address as court_address, c.map_url as court_map_url,
                     COALESCE(
                         array_agg(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL),
                         ARRAY[]::text[]
@@ -198,7 +201,8 @@ def get_session(
             SELECT
                 s.session_id, s.date, s.start_time, s.duration_minutes,
                 s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
-                c.court_id, c.name as court_name, c.area as court_area
+                c.court_id, c.name as court_name, c.area as court_area,
+                c.address as court_address, c.map_url as court_map_url
             FROM sessions s
             LEFT JOIN courts c ON s.court_id = c.court_id
             WHERE s.session_id = %s AND s.coach_id = %s

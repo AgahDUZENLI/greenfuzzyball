@@ -11,7 +11,7 @@ import BookSessionModal from '../../components/BookSessionModal'
 import CoachCancelSessionModal from '../../components/CoachCancelSessionModal'
 import { useSessionDetail } from '../../hooks/useSessionDetail'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { ArrowLeft, ChevronRight, FileText, Check, Pencil, RefreshCw, XCircle } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check, Pencil, RefreshCw, XCircle, MapPin } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
 function SessionDetail() {
@@ -130,6 +130,24 @@ function SessionDetail() {
                   {` · ${s.type === 'group' ? 'Group' : 'Private'}`}
                   {s.court_name ? ` · ${s.court_name}` : ''}
                 </Typography>
+                {(s.court_address || s.court_map_url) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3], marginTop: spacing[1], flexWrap: 'wrap' }}>
+                    {s.court_address && (
+                      <Typography variant="caption" color={colors.gray[400]}>{s.court_address}</Typography>
+                    )}
+                    {s.court_map_url && /^https?:\/\//i.test(s.court_map_url) && (
+                      <a
+                        href={s.court_map_url} target="_blank" rel="noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          fontSize: '12px', fontWeight: '600', color: colors.primary, textDecoration: 'none'
+                        }}
+                      >
+                        <MapPin size={12} /> Get directions
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: spacing[8] }}>
