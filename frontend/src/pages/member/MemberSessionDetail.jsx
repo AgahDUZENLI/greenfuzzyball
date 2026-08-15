@@ -7,7 +7,7 @@ import PerformanceSection from '../../components/PerformanceSection'
 import { getMemberSessionDetail } from '../../services/api'
 import { formatTime12, localDateStr } from '../../utils/timeUtils'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronRight, MapPin } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 import { getPageCache, setPageCache } from '../../utils/pageCache'
 
@@ -143,6 +143,24 @@ function MemberSessionDetail() {
                   {session.type ? ` · ${session.type === 'group' ? 'Group' : 'Private'}` : ''}
                   {session.court_name ? ` · ${session.court_name}` : ''}
                 </Typography>
+                {(session.court_address || session.court_map_url) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3], marginTop: spacing[1], flexWrap: 'wrap' }}>
+                    {session.court_address && (
+                      <Typography variant="caption" color={colors.gray[400]}>{session.court_address}</Typography>
+                    )}
+                    {session.court_map_url && /^https?:\/\//i.test(session.court_map_url) && (
+                      <a
+                        href={session.court_map_url} target="_blank" rel="noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          fontSize: '12px', fontWeight: '600', color: colors.primary, textDecoration: 'none'
+                        }}
+                      >
+                        <MapPin size={12} /> Get directions
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

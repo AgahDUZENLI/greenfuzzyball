@@ -3,6 +3,7 @@ import psycopg2.extras
 
 from db.connection import get_db
 from middleware.auth_middleware import get_current_coach
+from models.schemas import CreateCourtRequest, UpdateCourtRequest, CourtResponse
 
 router = APIRouter()
 
@@ -18,15 +19,16 @@ def get_courts(
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         if city:
             cursor.execute("""
-                SELECT court_id, name, city, area
+                SELECT court_id, name, city, area, address, map_url
                 FROM courts
-                WHERE LOWER(city) = LOWER(%s)
+                WHERE created_by IS NULL AND LOWER(city) = LOWER(%s)
                 ORDER BY area, name
             """, (city,))
         else:
             cursor.execute("""
-                SELECT court_id, name, city, area
+                SELECT court_id, name, city, area, address, map_url
                 FROM courts
+                WHERE created_by IS NULL
                 ORDER BY city, area, name
             """)
         return cursor.fetchall()
@@ -41,13 +43,104 @@ def get_coach_courts(
 ):
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT c.court_id, c.name, c.city, c.area
-            FROM courts c
-            JOIN coach_courts cc ON c.court_id = cc.court_id
-            WHERE cc.coach_id = %s
-            ORDER BY c.area, c.name
-        """, (str(coach["user_id"]),))
+            SELECT court_id, name, city, area, address, map_url,
+                   (created_by = %s) as is_own
+            FROM courts
+            WHERE created_by IS NULL OR created_by = %s
+            ORDER BY area, name
+        """, (str(coach["user_id"]), str(coach["user_id"])))
         return cursor.fetchall()
+
+
+# ─── CREATE COURT ─────────────────────────────────────────────────────────────
+
+@router.post("/", response_model=CourtResponse, status_code=201)
+def create_court(
+    data: CreateCourtRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                INSERT INTO courts (name, city, area, address, map_url, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING court_id, name, city, area, address, map_url
+            """, (
+                data.name, data.city, data.area, data.address, data.map_url,
+                str(coach["user_id"])
+            ))
+            court = cursor.fetchone()
+            conn.commit()
+            court["is_own"] = True
+            return court
+    except Exception:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not create location"
+        )
+
+
+# ─── UPDATE COURT ──────────────────────────────────────────────────────────────
+
+@router.patch("/{court_id}", response_model=CourtResponse)
+def update_court(
+    court_id: str,
+    data: UpdateCourtRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT court_id FROM courts WHERE court_id = %s AND created_by = %s
+            """, (court_id, str(coach["user_id"])))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Location not found")
+
+            set_parts = []
+            values = []
+            if data.name is not None:
+                set_parts.append("name = %s")
+                values.append(data.name)
+            if data.city is not None:
+                set_parts.append("city = %s")
+                values.append(data.city)
+            if data.area is not None:
+                set_parts.append("area = %s")
+                values.append(data.area)
+            if data.address is not None:
+                set_parts.append("address = %s")
+                values.append(data.address)
+            if data.map_url is not None:
+                set_parts.append("map_url = %s")
+                values.append(data.map_url)
+
+            if set_parts:
+                values.append(court_id)
+                cursor.execute(f"""
+                    UPDATE courts SET {', '.join(set_parts)}
+                    WHERE court_id = %s
+                """, values)
+
+            cursor.execute("""
+                SELECT court_id, name, city, area, address, map_url
+                FROM courts WHERE court_id = %s
+            """, (court_id,))
+            court = cursor.fetchone()
+            conn.commit()
+            court["is_own"] = True
+            return court
+
+    except HTTPException:
+        raise
+    except Exception:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not update location"
+        )
 
 
 # ─── ADD COURT TO COACH ───────────────────────────────────────────────────────

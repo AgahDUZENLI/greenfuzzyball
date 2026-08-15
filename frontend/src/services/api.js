@@ -135,6 +135,8 @@ export const importSharedDrill = (token, force = false) => api.post(`/drills/sha
 //Courts
 export const getCourts = (city) => api.get(`/courts/${city ? `?city=${city}` : ''}`)
 export const getCoachCourts = () => api.get('/courts/mine')
+export const createCourt = (data) => api.post('/courts/', data)
+export const updateCourt = (courtId, data) => api.patch(`/courts/${courtId}`, data)
 
 // Password reset
 export const forgotPassword = (email) =>

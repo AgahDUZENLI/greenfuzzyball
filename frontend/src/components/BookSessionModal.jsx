@@ -10,6 +10,7 @@ import DateSelector from './DateSelector'
 import TimeSelector from './TimeSelector'
 import CourtSelector from './CourtSelector'
 import SessionSummary from './SessionSummary'
+import LocationFormModal from './LocationFormModal'
 import useIsMobile from '../hooks/useIsMobile'
 
 function BookSessionModal({
@@ -46,6 +47,8 @@ function BookSessionModal({
   const [duration, setDuration] = useState(session ? session.duration_minutes : (initialDuration || 60))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showLocationModal, setShowLocationModal] = useState(false)
+  const [editingCourt, setEditingCourt] = useState(null)
 
   useEffect(() => {
     getStudents().then(res => setAllStudents(res.data)).catch(() => setAllStudents([]))
@@ -84,6 +87,14 @@ function BookSessionModal({
     : daySessions
 
   const conflict = hasConflict(otherDaySessions, timeSlot, duration)
+
+  const handleLocationSaved = (court) => {
+    setCourts(prev => {
+      const exists = prev.some(c => c.court_id === court.court_id)
+      return exists ? prev.map(c => (c.court_id === court.court_id ? court : c)) : [...prev, court]
+    })
+    setCourtId(court.court_id)
+  }
 
   const handleSubmit = async () => {
     setError('')
@@ -149,6 +160,7 @@ function BookSessionModal({
     .filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()))
 
   return (
+    <>
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0,
       bottom: isMobile ? navBarReserve : 0,
@@ -278,7 +290,11 @@ function BookSessionModal({
               timeSlot={timeSlot} onTimeChange={setTimeSlot}
               duration={duration} daySessions={otherDaySessions} conflict={conflict}
             />
-            <CourtSelector courts={courts} courtId={courtId} onCourtChange={setCourtId} />
+            <CourtSelector
+              courts={courts} courtId={courtId} onCourtChange={setCourtId}
+              onAddNew={() => { setEditingCourt(null); setShowLocationModal(true) }}
+              onEdit={() => { setEditingCourt(courts.find(c => c.court_id === courtId) || null); setShowLocationModal(true) }}
+            />
             {error && (
               <div style={{
                 backgroundColor: colors.errorLight, color: colors.error,
@@ -347,6 +363,14 @@ function BookSessionModal({
 
       </div>
     </div>
+    {showLocationModal && (
+      <LocationFormModal
+        court={editingCourt}
+        onClose={() => setShowLocationModal(false)}
+        onSaved={handleLocationSaved}
+      />
+    )}
+    </>
   )
 }
 
