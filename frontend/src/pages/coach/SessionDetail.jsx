@@ -10,8 +10,9 @@ import EditSessionModal from '../../components/EditSessionModal'
 import BookSessionModal from '../../components/BookSessionModal'
 import CoachCancelSessionModal from '../../components/CoachCancelSessionModal'
 import { useSessionDetail } from '../../hooks/useSessionDetail'
+import { deleteSession } from '../../services/api'
 import { colors, spacing, radius } from '../../styles/tokens'
-import { ArrowLeft, ChevronRight, FileText, Check, Pencil, RefreshCw, XCircle, MapPin } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check, Pencil, RefreshCw, XCircle, Trash2, MapPin } from 'lucide-react'
 import useIsMobile from '../../hooks/useIsMobile'
 
 function SessionDetail() {
@@ -38,6 +39,12 @@ function SessionDetail() {
   )
 
   const s = d.session
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete this session on ${d.dateLabel}? This cannot be undone.`)) return
+    await deleteSession(sessionId)
+    navigate('/sessions')
+  }
 
   return (
     <Layout>
@@ -90,6 +97,9 @@ function SessionDetail() {
                 </Button>
               </>
             )}
+            <Button variant="danger" onClick={handleDelete}>
+              <Trash2 size={14} /> Delete Session
+            </Button>
           </div>
         </div>
 
