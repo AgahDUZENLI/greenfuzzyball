@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { colors, spacing, radius, navBarReserve } from '../styles/tokens'
+import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Button from './Button'
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react'
@@ -163,23 +163,26 @@ function BookSessionModal({
     <>
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0,
-      bottom: isMobile ? navBarReserve : 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
       display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 9999, padding: isMobile ? 0 : spacing[4]
+      justifyContent: 'center', zIndex: 9999,
+      padding: isMobile ? 0 : spacing[4]
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         backgroundColor: 'white', borderRadius: isMobile ? 0 : radius['2xl'],
         width: '100%', maxWidth: isMobile ? 'none' : '860px',
-        height: isMobile ? '100%' : 'auto', maxHeight: isMobile ? '100%' : '90vh',
-        overflowY: 'hidden', boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
+        height: isMobile ? '100dvh' : 'auto',
+        maxHeight: isMobile ? '100dvh' : '90vh',
+        overflow: 'hidden', boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
         display: 'flex', flexDirection: 'column'
       }}>
 
         {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-          padding: `calc(${spacing[6]} + env(safe-area-inset-top)) ${spacing[6]} ${spacing[4]}`,
+          padding: isMobile
+            ? `calc(${spacing[4]} + env(safe-area-inset-top)) ${spacing[4]} ${spacing[3]}`
+            : `${spacing[6]} ${spacing[6]} ${spacing[4]}`,
           borderBottom: `1px solid ${colors.gray[100]}`,
           flexShrink: 0
         }}>
@@ -203,11 +206,15 @@ function BookSessionModal({
         </div>
 
         {/* Body */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', flex: 1, overflowY: 'auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          flex: 1, overflowY: 'auto', minHeight: 0
+        }}>
 
-          {/* Left */}
+          {/* Left (form) */}
           <div style={{
-            padding: spacing[6],
+            padding: isMobile ? spacing[4] : spacing[6],
             borderRight: isMobile ? 'none' : `1px solid ${colors.gray[100]}`,
             borderBottom: isMobile ? `1px solid ${colors.gray[100]}` : 'none'
           }}>
@@ -240,7 +247,7 @@ function BookSessionModal({
                 }}
               />
               <div style={{
-                maxHeight: '180px', overflowY: 'auto',
+                maxHeight: isMobile ? '140px' : '180px', overflowY: 'auto',
                 border: `1px solid ${colors.gray[200]}`, borderRadius: radius.lg
               }}>
                 {filteredStudents.map((s, i, arr) => (
@@ -305,16 +312,18 @@ function BookSessionModal({
             )}
           </div>
 
-          {/* Right */}
-          <SessionSummary
-            allSlots={allSlots}
-            student={selectedStudents[0] || null}
-            courts={courts}
-            courtId={courtId}
-            daySessions={daySessions}
-            selectedDateLabel={selectedDateLabel}
-            onSlotClick={setTimeSlot}
-          />
+          {/* Right — full day timeline on desktop only */}
+          {!isMobile && (
+            <SessionSummary
+              allSlots={allSlots}
+              student={selectedStudents[0] || null}
+              courts={courts}
+              courtId={courtId}
+              daySessions={daySessions}
+              selectedDateLabel={selectedDateLabel}
+              onSlotClick={setTimeSlot}
+            />
+          )}
         </div>
 
         {/* Footer */}
@@ -324,27 +333,52 @@ function BookSessionModal({
           justifyContent: 'space-between',
           alignItems: isMobile ? 'stretch' : 'center',
           gap: isMobile ? spacing[3] : 0,
-          padding: `${spacing[4]} ${spacing[6]} ${isMobile ? spacing[4] : `calc(${spacing[4]} + env(safe-area-inset-bottom))`}`,
+          padding: isMobile
+            ? `${spacing[3]} ${spacing[4]} calc(${spacing[3]} + env(safe-area-inset-bottom))`
+            : `${spacing[4]} ${spacing[6]} calc(${spacing[4]} + env(safe-area-inset-bottom))`,
           borderTop: `1px solid ${colors.gray[100]}`,
           flexShrink: 0
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
-            {conflict ? (
-              <>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: colors.error }} />
-                <Typography variant="bodySmall" color={colors.error}>
-                  {formatTime12(timeSlot)} conflicts with another session
+          {isMobile ? (
+            // Compact summary so user always sees current selection above Book button
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: spacing[2], flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2], minWidth: 0 }}>
+                <CalendarIcon size={14} color={colors.primary} />
+                <Typography variant="caption" style={{ fontWeight: '600', color: colors.black }}>
+                  {selectedDateLabel}
                 </Typography>
-              </>
-            ) : (
-              <>
-                <Check size={16} color={colors.primary} />
-                <Typography variant="bodySmall" color={colors.primary}>
-                  {formatTime12(timeSlot)} is open · no conflicts
-                </Typography>
-              </>
-            )}
-          </div>
+              </div>
+              <Typography variant="caption" color={conflict ? colors.error : colors.gray[500]}>
+                {formatTime12(timeSlot)} · {duration} min
+                {(() => {
+                  const c = courts.find(x => x.court_id === courtId)
+                  return c ? ` · ${c.name}` : ''
+                })()}
+                {conflict ? ' · conflict' : ''}
+              </Typography>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+              {conflict ? (
+                <>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: colors.error }} />
+                  <Typography variant="bodySmall" color={colors.error}>
+                    {formatTime12(timeSlot)} conflicts with another session
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Check size={16} color={colors.primary} />
+                  <Typography variant="bodySmall" color={colors.primary}>
+                    {formatTime12(timeSlot)} is open · no conflicts
+                  </Typography>
+                </>
+              )}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: spacing[3], alignItems: 'center' }}>
             <button onClick={onClose} style={{
               background: 'none', border: 'none', color: colors.gray[500],

@@ -2,10 +2,12 @@ import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import { Calendar as CalendarIcon, ChevronUp, ChevronDown, ArrowRight } from 'lucide-react'
 import { hasConflict, timeToMinutes, minutesToTime, formatTime12 } from '../utils/timeUtils'
+import useIsMobile from '../hooks/useIsMobile'
 
 const QUICK_PICKS = ['09:00', '10:00', '11:30', '13:00', '14:30', '16:00', '18:00', '18:30']
 
 function TimeSelector({ timeSlot, onTimeChange, duration, daySessions, conflict }) {
+  const isMobile = useIsMobile()
   const adjustTime = (delta) => {
     const mins = timeToMinutes(timeSlot) + delta
     onTimeChange(minutesToTime(Math.max(0, Math.min(23 * 60 + 30, mins))))
@@ -62,18 +64,18 @@ function TimeSelector({ timeSlot, onTimeChange, duration, daySessions, conflict 
         <Typography variant="caption" color={colors.gray[400]} style={{ marginBottom: spacing[2], display: 'block' }}>
           QUICK PICKS
         </Typography>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', gap: spacing[2] }}>
           {QUICK_PICKS.map(t => {
             const busy = hasConflict(daySessions, t, duration)
             const selected = timeSlot === t
             return (
               <button key={t} onClick={() => { if (!busy) onTimeChange(t) }} style={{
-                padding: '10px 8px',
+                padding: isMobile ? '8px 4px' : '10px 8px',
                 border: `1.5px solid ${selected ? colors.primary : busy ? colors.errorLight : colors.gray[200]}`,
                 borderRadius: radius.lg,
                 backgroundColor: selected ? colors.primary : busy ? '#fff5f5' : 'white',
                 color: selected ? 'white' : busy ? colors.error : colors.black,
-                fontSize: '13px', fontWeight: selected ? '700' : '500',
+                fontSize: isMobile ? '12px' : '13px', fontWeight: selected ? '700' : '500',
                 cursor: busy ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit',
                 textDecoration: busy ? 'line-through' : 'none',

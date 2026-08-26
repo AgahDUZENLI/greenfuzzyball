@@ -3,10 +3,12 @@ import Typography from './Typography'
 import Avatar from './Avatar'
 import { Plus, Check, MapPin } from 'lucide-react'
 import { formatTime12, minutesToTime, timeToMinutes } from '../utils/timeUtils'
+import useIsMobile from '../hooks/useIsMobile'
 
 function SessionSummary({ allSlots, student, courts, courtId, daySessions, selectedDateLabel, onSlotClick }) {
+  const isMobile = useIsMobile()
   return (
-    <div style={{ padding: spacing[6], backgroundColor: colors.gray[50] }}>
+    <div style={{ padding: isMobile ? spacing[4] : spacing[6], backgroundColor: colors.gray[50] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[4] }}>
         <div>
           <Typography variant="h4">{selectedDateLabel}</Typography>
@@ -27,7 +29,24 @@ function SessionSummary({ allSlots, student, courts, courtId, daySessions, selec
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
-        {allSlots.map((slot, i) => {
+        {(() => {
+          // On mobile, trim empty free blocks so the timeline fits the screen.
+          // Keep: any session, the new slot, and one free block before/after the new slot.
+          let visibleSlots = allSlots
+          if (isMobile) {
+            const newIdx = allSlots.findIndex(s => s.type === 'new')
+            if (newIdx !== -1) {
+              const startIdx = Math.max(0, newIdx - 2)
+              const endIdx = Math.min(allSlots.length, newIdx + 3)
+              visibleSlots = allSlots.slice(startIdx, endIdx)
+            } else {
+              // No new slot yet — show only existing sessions and 1 free block between them
+              const sessionsOnly = allSlots.filter(s => s.type !== 'free')
+              visibleSlots = sessionsOnly.length > 0 ? sessionsOnly : allSlots.slice(0, 4)
+            }
+          }
+          return visibleSlots
+        })().map((slot, i) => {
           const startLabel = minutesToTime(slot.start)
           const endLabel = minutesToTime(slot.end)
           const mins = slot.end - slot.start
