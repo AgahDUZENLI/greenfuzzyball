@@ -275,7 +275,7 @@ class CreateRecurringSessionRequest(BaseModel):
     court_id: Optional[UUID] = None
     student_ids: list[UUID] = []
     drill_ids: list[UUID] = []
-
+     
 class SkippedOccurrence(BaseModel):
     date: date
     reason: str
