@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 from datetime import datetime, date, time
 from datetime import date as _Date  # alias to avoid shadowing in fields literally named `date` with a default
@@ -261,6 +261,28 @@ class SessionResponse(BaseModel):
     unrated: bool = False
     status: str = "scheduled"
     cancellation_reason: Optional[str] = None
+
+class CreateRecurringSessionRequest(BaseModel):
+    start_date: date
+    days_of_week: list[Literal['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']]
+    end_mode: Literal['weeks', 'until']
+    weeks: Optional[int] = None
+    end_date: Optional[date] = None
+    start_time: Optional[time] = None
+    duration_minutes: Optional[int] = None
+    type: str
+    notes: Optional[str] = None
+    court_id: Optional[UUID] = None
+    student_ids: list[UUID] = []
+    drill_ids: list[UUID] = []
+
+class SkippedOccurrence(BaseModel):
+    date: date
+    reason: str
+
+class RecurringSessionResponse(BaseModel):
+    created: list[SessionResponse]
+    skipped: list[SkippedOccurrence]
 
 class CancelSessionRequest(BaseModel):
     reason: Optional[str] = None

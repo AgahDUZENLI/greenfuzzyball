@@ -3,7 +3,7 @@ import { colors, spacing, radius } from '../styles/tokens'
 import Typography from './Typography'
 import Button from './Button'
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react'
-import { createSession, updateSession, getCoachCourts, getSessions, getStudents } from '../services/api'
+import { createSession, createRecurringSession, updateSession, getCoachCourts, getSessions, getStudents } from '../services/api'
 import { hasConflict, timeToMinutes, formatTime12, localDateStr } from '../utils/timeUtils'
 import StudentCard from './StudentCard'
 import DateSelector from './DateSelector'
@@ -11,7 +11,10 @@ import TimeSelector from './TimeSelector'
 import CourtSelector from './CourtSelector'
 import SessionSummary from './SessionSummary'
 import LocationFormModal from './LocationFormModal'
+import RecurrenceSelector from './RecurrenceSelector'
 import useIsMobile from '../hooks/useIsMobile'
+
+const JS_DAY_TO_KEY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
 function BookSessionModal({
   student: initialStudent,
@@ -49,6 +52,12 @@ function BookSessionModal({
   const [error, setError] = useState('')
   const [showLocationModal, setShowLocationModal] = useState(false)
   const [editingCourt, setEditingCourt] = useState(null)
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurDays, setRecurDays] = useState([JS_DAY_TO_KEY[new Date(defaultDate + 'T00:00:00').getDay()]])
+  const [recurEndMode, setRecurEndMode] = useState('weeks')
+  const [recurWeeks, setRecurWeeks] = useState(8)
+  const [recurEndDate, setRecurEndDate] = useState(defaultDate)
+  const [recurringResult, setRecurringResult] = useState(null)
 
   useEffect(() => {
     getStudents().then(res => setAllStudents(res.data)).catch(() => setAllStudents([]))
@@ -113,6 +122,27 @@ function BookSessionModal({
         })
         onUpdated && onUpdated()
         onClose()
+      } else if (isRecurring) {
+        const res = await createRecurringSession({
+          start_date: date,
+          days_of_week: recurDays,
+          end_mode: recurEndMode,
+          weeks: recurEndMode === 'weeks' ? recurWeeks : undefined,
+          end_date: recurEndMode === 'until' ? recurEndDate : undefined,
+          start_time: paddedTime,
+          duration_minutes: duration,
+          type,
+          court_id: courtId || null,
+          student_ids: selectedStudents.map(s => s.user_id),
+          drill_ids: initialDrillIds
+        })
+        const { created, skipped } = res.data
+        if (skipped.length > 0) {
+          setRecurringResult({ created, skipped })
+        } else {
+          created.forEach(s => onBooked && onBooked(s))
+          onClose()
+        }
       } else {
         const res = await createSession({
           date,
@@ -131,6 +161,11 @@ function BookSessionModal({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRecurringDone = () => {
+    if (recurringResult) recurringResult.created.forEach(s => onBooked && onBooked(s))
+    onClose()
   }
 
   const selectedDateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
@@ -158,6 +193,57 @@ function BookSessionModal({
   const filteredStudents = allStudents
     .filter(s => !selectedStudents.find(sel => sel.user_id === s.user_id))
     .filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()))
+
+  if (recurringResult) {
+    const total = recurringResult.created.length + recurringResult.skipped.length
+    return (
+      <div onClick={handleRecurringDone} style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'center', zIndex: 9999,
+        padding: isMobile ? 0 : spacing[4]
+      }}>
+        <div onClick={e => e.stopPropagation()} style={{
+          backgroundColor: 'white', borderRadius: isMobile ? 0 : radius['2xl'],
+          width: '100%', maxWidth: isMobile ? 'none' : '480px',
+          maxHeight: isMobile ? '100dvh' : '80vh',
+          overflow: 'hidden', boxShadow: isMobile ? 'none' : '0 20px 60px rgba(0,0,0,0.2)',
+          display: 'flex', flexDirection: 'column'
+        }}>
+          <div style={{ padding: spacing[6], borderBottom: `1px solid ${colors.gray[100]}` }}>
+            <Typography variant="h3">Sessions booked</Typography>
+            <Typography variant="bodySmall" color={colors.gray[500]}>
+              Created {recurringResult.created.length} of {total} sessions
+            </Typography>
+          </div>
+          <div style={{ padding: spacing[6], overflowY: 'auto' }}>
+            <Typography variant="label" mb={spacing[2]} style={{ display: 'block' }}>
+              SKIPPED — ALREADY BOOKED
+            </Typography>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
+              {recurringResult.skipped.map(s => (
+                <div key={s.date} style={{
+                  padding: spacing[3], backgroundColor: colors.warningLight,
+                  borderRadius: radius.lg
+                }}>
+                  <Typography variant="bodySmall" style={{ fontWeight: '600' }}>
+                    {new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', {
+                      weekday: 'short', month: 'long', day: 'numeric'
+                    })}
+                  </Typography>
+                  <Typography variant="caption" color={colors.gray[500]}>{s.reason}</Typography>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: spacing[6], borderTop: `1px solid ${colors.gray[100]}`, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button onClick={handleRecurringDone}>Done</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -293,6 +379,34 @@ function BookSessionModal({
               date={date} onDateChange={setDate}
               duration={duration} onDurationChange={setDuration}
             />
+            {!isEditMode && (
+              <div style={{ marginBottom: spacing[4] }}>
+                <label style={{
+                  display: 'flex', alignItems: 'center',
+                  gap: spacing[2], cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={e => setIsRecurring(e.target.checked)}
+                    style={{ accentColor: colors.primary }}
+                  />
+                  <Typography variant="bodySmall" style={{ fontWeight: '600' }}>
+                    Repeat weekly
+                  </Typography>
+                </label>
+                {isRecurring && (
+                  <div style={{ marginTop: spacing[3] }}>
+                    <RecurrenceSelector
+                      days={recurDays} onDaysChange={setRecurDays}
+                      endMode={recurEndMode} onEndModeChange={setRecurEndMode}
+                      weeks={recurWeeks} onWeeksChange={setRecurWeeks}
+                      endDate={recurEndDate} onEndDateChange={setRecurEndDate}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             <TimeSelector
               timeSlot={timeSlot} onTimeChange={setTimeSlot}
               duration={duration} daySessions={otherDaySessions} conflict={conflict}
@@ -386,11 +500,17 @@ function BookSessionModal({
             }}>
               Cancel
             </button>
-            <Button onClick={handleSubmit} disabled={loading || conflict || selectedStudents.length === 0}>
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                loading || selectedStudents.length === 0 ||
+                (isRecurring ? recurDays.length === 0 : conflict)
+              }
+            >
               <CalendarIcon size={16} />
               {loading
                 ? (isEditMode ? 'Saving...' : 'Booking...')
-                : (isEditMode ? 'Save Changes' : 'Book Session')}
+                : (isEditMode ? 'Save Changes' : (isRecurring ? 'Book Sessions' : 'Book Session'))}
             </Button>
           </div>
         </div>
