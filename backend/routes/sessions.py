@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 import psycopg2.extras
 
@@ -11,10 +13,48 @@ from models.schemas import (
     AddDrillToSessionRequest,
     UpdateSessionRequest,
     CoachCancelSessionRequest,
+    CreateRecurringSessionRequest,
+    RecurringSessionResponse,
 )
 from services.notification_service import create_notification
 
 router = APIRouter()
+
+_WEEKDAY_NAMES = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+_MAX_RECURRING_OCCURRENCES = 60
+
+
+def _insert_session_row(cursor, coach_id, court_id, date_, start_time, duration_minutes, type_, notes, student_ids, drill_ids):
+    cursor.execute("""
+        INSERT INTO sessions (coach_id, court_id, date, start_time, duration_minutes, type, notes)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        RETURNING session_id, court_id, date, start_time, duration_minutes, type, notes, created_at
+    """, (
+        str(coach_id),
+        str(court_id) if court_id else None,
+        date_,
+        start_time,
+        duration_minutes,
+        type_,
+        notes
+    ))
+
+    session = cursor.fetchone()
+    session_id = session["session_id"]
+
+    for student_id in student_ids:
+        cursor.execute("""
+            INSERT INTO session_students (session_id, student_id)
+            VALUES (%s, %s)
+        """, (str(session_id), str(student_id)))
+
+    for drill_id in drill_ids:
+        cursor.execute("""
+            INSERT INTO session_drills (session_id, drill_id)
+            VALUES (%s, %s)
+        """, (str(session_id), str(drill_id)))
+
+    return session_id
 
 
 # ─── CREATE SESSION ───────────────────────────────────────────────────────────
@@ -28,34 +68,10 @@ def create_session(
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
 
-            cursor.execute("""
-                INSERT INTO sessions (coach_id, court_id, date, start_time, duration_minutes, type, notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING session_id, court_id, date, start_time, duration_minutes, type, notes, created_at
-            """, (
-                str(coach["user_id"]),
-                str(data.court_id) if data.court_id else None,
-                data.date,
-                data.start_time,
-                data.duration_minutes,
-                data.type,
-                data.notes
-            ))
-
-            session = cursor.fetchone()
-            session_id = session["session_id"]
-
-            for student_id in data.student_ids:
-                cursor.execute("""
-                    INSERT INTO session_students (session_id, student_id)
-                    VALUES (%s, %s)
-                """, (str(session_id), str(student_id)))
-
-            for drill_id in data.drill_ids:
-                cursor.execute("""
-                    INSERT INTO session_drills (session_id, drill_id)
-                    VALUES (%s, %s)
-                """, (str(session_id), str(drill_id)))
+            session_id = _insert_session_row(
+                cursor, coach["user_id"], data.court_id, data.date, data.start_time,
+                data.duration_minutes, data.type, data.notes, data.student_ids, data.drill_ids
+            )
 
             conn.commit()
 
@@ -118,6 +134,114 @@ def create_session(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not create session"
         )
+
+
+# ─── CREATE RECURRING SESSIONS ─────────────────────────────────────────────────
+
+@router.post("/recurring", response_model=RecurringSessionResponse, status_code=201)
+def create_recurring_session(
+    data: CreateRecurringSessionRequest,
+    conn=Depends(get_db),
+    coach=Depends(get_current_coach)
+):
+    if not data.days_of_week:
+        raise HTTPException(status_code=400, detail="Select at least one day of the week")
+
+    if data.end_mode == "weeks":
+        if not data.weeks or data.weeks < 1:
+            raise HTTPException(status_code=400, detail="weeks must be a positive number")
+        last_date = data.start_date + timedelta(weeks=data.weeks)
+    else:
+        if not data.end_date or data.end_date < data.start_date:
+            raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
+        last_date = data.end_date
+
+    selected_weekdays = {_WEEKDAY_NAMES.index(d) for d in data.days_of_week}
+    occurrence_dates = []
+    day = data.start_date
+    while day <= last_date:
+        if day.weekday() in selected_weekdays:
+            occurrence_dates.append(day)
+        day += timedelta(days=1)
+
+    if not occurrence_dates:
+        raise HTTPException(status_code=400, detail="No sessions fall within the selected range")
+    if len(occurrence_dates) > _MAX_RECURRING_OCCURRENCES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"That would create {len(occurrence_dates)} sessions — please narrow the range (max {_MAX_RECURRING_OCCURRENCES})"
+        )
+
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+            cursor.execute("""
+                SELECT date, start_time, duration_minutes
+                FROM sessions
+                WHERE coach_id = %s AND date BETWEEN %s AND %s AND status != 'cancelled'
+            """, (str(coach["user_id"]), occurrence_dates[0], occurrence_dates[-1]))
+
+            existing_by_date = {}
+            for row in cursor.fetchall():
+                existing_by_date.setdefault(row["date"], []).append(row)
+
+            new_start = data.start_time
+            new_duration = data.duration_minutes or 60
+            created_ids = []
+            skipped = []
+
+            for occ_date in occurrence_dates:
+                conflict = False
+                for existing in existing_by_date.get(occ_date, []):
+                    if new_start is None or existing["start_time"] is None:
+                        continue
+                    existing_start_min = existing["start_time"].hour * 60 + existing["start_time"].minute
+                    existing_end_min = existing_start_min + (existing["duration_minutes"] or 60)
+                    new_start_min = new_start.hour * 60 + new_start.minute
+                    new_end_min = new_start_min + new_duration
+                    if new_start_min < existing_end_min and new_end_min > existing_start_min:
+                        conflict = True
+                        break
+
+                if conflict:
+                    skipped.append({"date": occ_date, "reason": "conflicts with an existing session"})
+                    continue
+
+                session_id = _insert_session_row(
+                    cursor, coach["user_id"], data.court_id, occ_date, data.start_time,
+                    data.duration_minutes, data.type, data.notes, data.student_ids, data.drill_ids
+                )
+                created_ids.append(session_id)
+
+            conn.commit()
+
+            created = []
+            if created_ids:
+                cursor.execute("""
+                    SELECT
+                        s.session_id, s.date, s.start_time, s.duration_minutes,
+                        s.type, s.notes, s.created_at, s.status, s.cancellation_reason,
+                        c.court_id, c.name as court_name, c.area as court_area,
+                        c.address as court_address, c.map_url as court_map_url
+                    FROM sessions s
+                    LEFT JOIN courts c ON s.court_id = c.court_id
+                    WHERE s.session_id = ANY(%s::uuid[])
+                    ORDER BY s.date ASC
+                """, ([str(sid) for sid in created_ids],))
+                created = cursor.fetchall()
+
+            return {"created": created, "skipped": skipped}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"CREATE RECURRING SESSION ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not create recurring sessions"
+        )
+
 
 # ─── GET ALL SESSIONS (with optional date filter) ─────────────────────────────
 
